@@ -1,6 +1,7 @@
 import numpy as np
 import math
-DEBUG = False
+#DEBUG = False
+DEBUG=True
 
 class Cfgtimeobj(object):
     """ A class to handle all the objects that are indexed as
@@ -12,14 +13,12 @@ class Cfgtimeobj(object):
     average = None
     
     def __init__(self,datadict,silent=False):
-        #self.numberofvalues = len(self.data[self.configs[0]][self.times[0]])
         self.data = datadict
 
         self.configs = datadict.keys()
         self.times = datadict[self.configs[0]].keys()
         self.numconfigs = len(self.configs)
         self.numtimes = len(self.times)
-        #print "configs",self.configs,"times",self.times
         if not silent:
             print "numconfigs",self.numconfigs,"numtimes",self.numtimes
 
@@ -42,9 +41,6 @@ class Cfgtimeobj(object):
     @classmethod
     def fromListTuple(cto,listtuple):
         configs = list(range(len(listtuple)))
-        #print configs
-        #cto.configs= configs
-        #cto.times=list(range(len(listtuple[0])))
 
         data = {}
         for cfg in configs:
@@ -52,15 +48,9 @@ class Cfgtimeobj(object):
             d = {}
             for rawtimedata in rawcfgdata:
                 t = rawtimedata[0] # First element is the time
-                # print type(rawtimedata)
-                # print np.array(rawtimedata)
                 arraydata = np.asarray(tuple(rawtimedata)[1:])
-                #data = list(rawtimedata)[1]
                 d[t]=arraydata # rest is data e.g. real,imag
             data[cfg]=d
-        # print data
-        # print blah
-        #cto.data=data
         return cto(data)
         
 
@@ -101,7 +91,6 @@ class Cfgtimeobj(object):
         if time is None:
             return self.data[config]
         if config is None:
-            #timeslice = dict()
             return { cfg:v[time]   for cfg, v in self.data.iteritems() }
         else:
             return self.data[config][time]
@@ -119,14 +108,6 @@ class Cfgtimeobj(object):
     def indexes(self):
         return (self.configs, self.times)
         
-    # def vevs(self):
-    #     self.vevdata = {config: sum(self.get(config=config).values())/float(self.numtimes) for config in self.configs}
-    #     return self.vevdata
-
-    # def average_vev(self):
-    #     #print self.vevs()
-    #     return float(sum(self.vevs().values()))/float(len(self.vevs()))
-
     def average_over_times(self):
         return {config: math.fsum(self.get(config=config).values())/float(self.numtimes) for config in self.configs}
 
