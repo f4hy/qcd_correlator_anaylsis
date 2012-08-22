@@ -5,18 +5,15 @@ import math
 
 class Correlator(configtimeobj.Cfgtimeobj):
 
-    # config_sums = None
 
     vevdata = None
 
     op1 = None
     op2 = None
     
-    # vevsubtracted = False
 
     asv = None
     jkasv = None
-    #pass
 
     @classmethod
     def fromOpvalCTO(corr,opval1,opval2,dts = None):
@@ -66,26 +63,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
             self.op2.verify()
         else:
             print "verify vevs, not implemented"
-        # print float(self[self.configs[0]][self.times[0]])
-        # print len(self[self.configs[0]][self.times[0]])
-        # if len(self[self.configs[0]][self.times[0]])
-        # exit()
         super(Correlator, self).verify()
 
 
         
         
-    # def subvev(self):
-    #     if self.vevsubtracted:
-    #         raise ValueError("vev already subtracted!")
-    #     vevs = self.vevs()
-    #     self.data = {cfg: {t: self.get(time=t,config=cfg)-vevs[cfg] for t in self.times} for cfg in self.configs}
-    #     self.vevsubtracted = True
-    #     self.sums = None
-    #     return 0
-
-    # def average_vev(self):
-    #     return float(sum(self.vevs().values()))/float(len(self.vevs()))
         
     def average_sub_vev(self):
         if not self.asv:
@@ -142,13 +124,6 @@ class Correlator(configtimeobj.Cfgtimeobj):
         effmass_dt = self.effective_mass(dt)
         return {t: jackknife.errorbars(effmass_dt[t],jkemassobj.get(time=t)) for t in self.times[:-dt] }
         
-        
-        
-    # def jackknifed_errors(self):
-    #     jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages())
-    #     #print jk.get(time=0)
-    #     print self.average_over_configs()
-    #     return {t: jackknife.errorbars(self.average_over_configs()[t],jk.get(time=t)) for t in self.times }
         
 
 
