@@ -11,7 +11,7 @@ class Cfgtimeobj(object):
     sums = None
     average = None
     
-    def __init__(self,datadict):
+    def __init__(self,datadict,silent=False):
         #self.numberofvalues = len(self.data[self.configs[0]][self.times[0]])
         self.data = datadict
 
@@ -20,7 +20,8 @@ class Cfgtimeobj(object):
         self.numconfigs = len(self.configs)
         self.numtimes = len(self.times)
         #print "configs",self.configs,"times",self.times
-        print "numconfigs",self.numconfigs,"numtimes",self.numtimes
+        if not silent:
+            print "numconfigs",self.numconfigs,"numtimes",self.numtimes
 
         #print self.indexes()
         
@@ -29,13 +30,14 @@ class Cfgtimeobj(object):
         self.datatype =  type(dataitem)
         self.scalar = np.isscalar(dataitem)
         
-        self.verify()
+        if DEBUG:
+            self.verify()
         
 
         
     @classmethod
-    def fromDataDict(cto,datadict):
-        return cto(datadict)
+    def fromDataDict(cto,datadict,silent=False):
+        return cto(datadict,silent)
 
     @classmethod
     def fromListTuple(cto,listtuple):
@@ -65,7 +67,6 @@ class Cfgtimeobj(object):
     def verify(self):
 
         if not DEBUG:
-            print("not verified")
             return True
         
         if not self.data:

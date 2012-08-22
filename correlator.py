@@ -101,12 +101,12 @@ class Correlator(configtimeobj.Cfgtimeobj):
             jkvev2 = self.op2.jackknifed_full_average()
 
             corrjk = self.jackknifed_averages()
-            jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages())
+            jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages(),silent=True)
             self.jkasv = {c: {t: jk.get(config=c,time=t) - jkvev1[c]*jkvev2[c] for t in self.times} for c in self.configs}
         return self.jkasv
 
     def jackknifed_errors(self):
-        jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknife_average_sub_vev())
+        jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknife_average_sub_vev(),silent=True)
         asv=self.average_sub_vev()
         return {t: jackknife.errorbars(asv[t],jk.get(time=t)) for t in self.times }
 
@@ -138,7 +138,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 except KeyError:
                     print "out of range"
             jkemass[cfg] = emass
-        jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass)
+        jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass,silent=True)
         effmass_dt = self.effective_mass(dt)
         return {t: jackknife.errorbars(effmass_dt[t],jkemassobj.get(time=t)) for t in self.times[:-dt] }
         
