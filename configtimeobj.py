@@ -60,7 +60,7 @@ class Cfgtimeobj(object):
         if not self.data:
             raise ValueError("data obejct empty or false")
 
-        sizes = map(len, self.data.values())
+        sizes = [len(v) for v in self.data.values()]  #map(len, self.data.values())
         if (sizes.count(sizes[0]) != len(sizes)):
             raise ValueError("Object size is inconsistant")
 
