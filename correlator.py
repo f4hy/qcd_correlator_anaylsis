@@ -1,5 +1,4 @@
 import configtimeobj
-import numpy as np
 import jackknife
 import math
 
@@ -15,14 +14,14 @@ class Correlator(configtimeobj.Cfgtimeobj):
     jkasv = None
 
     @classmethod
-    def fromOpvalCTO(corr, opval1, opval2, dts=None):
+    def fromOpvalCTO(cls, opval1, opval2, dts=None):
         if not opval1.compatible(opval2):
             raise Exception("Incompatible opbjects")
         if dts is None:
             print "No dts given, using all"
-            dts = corr.times = opval1.times
+            dts = cls.times = opval1.times
         else:
-            corr.times = dts
+            cls.times = dts
         times = opval1.times
         configs = opval1.configs
         numtimes = opval1.numtimes
@@ -43,16 +42,17 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
-        corr.op1 = opval1
-        corr.op2 = opval2
+        cls.op1 = opval1
+        cls.op2 = opval2
 
         # data = {cfg:
         #         {dt:
-        #          math.fsum(get1(config=cfg, time=((t+dt)%numtimes))*get2(config=cfg, time=t) for t in times)/float(numtimes)
+        #          math.fsum(get1(config=cfg, time=((t+dt)%numtimes))*get2(config=cfg, time=t)
+        #                    for t in times)/float(numtimes)
         #          for dt in dts }
         #          for cfg in configs}
 
-        return corr(data)
+        return cls(data)
 
     def verify(self):
         print "verifying correlator"
@@ -68,7 +68,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
         if not self.asv:
             vev1 = self.op1.average_all()
             vev2 = self.op2.average_all()
-            self.asv = {t: corr - vev1 * vev2 for t, corr in self.average_over_configs().iteritems()}
+            self.asv = {t: corr - vev1 * vev2
+                        for t, corr in self.average_over_configs().iteritems()}
         return self.asv
 
     def jackknife_average_sub_vev(self):
@@ -77,9 +78,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
             jkvev1 = self.op1.jackknifed_full_average()
             jkvev2 = self.op2.jackknifed_full_average()
 
-            corrjk = self.jackknifed_averages()
+            #corrjk = self.jackknifed_averages()
             jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages(), silent=True)
-            self.jkasv = {c: {t: jk.get(config=c, time=t) - jkvev1[c] * jkvev2[c] for t in self.times} for c in self.configs}
+            self.jkasv = {c: {t: jk.get(config=c, time=t) - jkvev1[c] * jkvev2[c]
+                              for t in self.times}
+                          for c in self.configs}
         return self.jkasv
 
     def jackknifed_errors(self):
@@ -116,4 +119,5 @@ class Correlator(configtimeobj.Cfgtimeobj):
             jkemass[cfg] = emass
         jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass, silent=True)
         effmass_dt = self.effective_mass(dt)
-        return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t)) for t in self.times[:-dt]}
+        return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
+                for t in self.times[:-dt]}
