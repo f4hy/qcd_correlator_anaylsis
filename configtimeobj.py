@@ -34,11 +34,11 @@ class Cfgtimeobj(object):
             self.verify()
 
     @classmethod
-    def fromDataDict(cto, datadict, silent=False):
-        return cto(datadict, silent)
+    def fromDataDict(cls, datadict, silent=False):
+        return cls(datadict, silent)
 
     @classmethod
-    def fromListTuple(cto, listtuple):
+    def fromListTuple(cls, listtuple):
         configs = list(range(len(listtuple)))
 
         data = {}
@@ -50,7 +50,7 @@ class Cfgtimeobj(object):
                 arraydata = np.asarray(tuple(rawtimedata)[1:])
                 d[t] = arraydata  # rest is data e.g. real,imag
             data[cfg] = d
-        return cto(data)
+        return cls(data)
 
     def verify(self):
 
