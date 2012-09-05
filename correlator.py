@@ -1,7 +1,7 @@
 import configtimeobj
 import jackknife
 import math
-
+import vev
 
 class Correlator(configtimeobj.Cfgtimeobj):
 
@@ -42,9 +42,14 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
-        cls.op1 = opval1
-        cls.op2 = opval2
+        # cls.op1 = opval1
+        # cls.op2 = opval2
 
+        cls.vev1 = vev.Vev(opval1.average_over_times())
+        cls.vev2 = vev.Vev(opval2.average_over_times())
+
+
+        
         # data = {cfg:
         #         {dt:
         #          math.fsum(get1(config=cfg, time=((t+dt)%numtimes))*get2(config=cfg, time=t)
@@ -60,8 +65,13 @@ class Correlator(configtimeobj.Cfgtimeobj):
         if self.op1 is not None:
             self.op1.verify()
             self.op2.verify()
+        elif self.vev1 is not None:
+            if self.configs != self.vev1.configs:
+                raise ValueError("vev1 configs dont match correlator")
+            if self.configs != self.vev2.configs:
+                raise ValueError("vev2 configs dont match correlator")
         else:
-            print "verify vevs, not implemented"
+            raise ValueError("Correlator not complete missing ops or vev")
         super(Correlator, self).verify()
 
     def average_sub_vev(self):
@@ -121,3 +131,27 @@ class Correlator(configtimeobj.Cfgtimeobj):
         effmass_dt = self.effective_mass(dt)
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[:-dt]}
+
+
+    def reduce_to_bins(self, n):
+        print self.numtimes
+        print self.numconfigs
+        reduced = {}
+        for i,b in enumerate(self.bins(n)):
+            print b
+            size = float(len(b))
+            reduced[i] = {t: math.fsum( (self.get(config=c,time=t) for c in b))/size for t in self.times}
+        print reduced
+        print "modified Correlator object, reduce to bins: "
+        print reduced.keys()
+        self.data = reduced
+        self.configs = reduced.keys()
+        self.numconfigs = len(reduced.keys())
+        Correlator.fromDataDict
+        #return reduced
+            
+    def bins(self,n):
+        """ Yield successive n-sized chunks from configs.
+        """
+        for i in xrange(0, self.numconfigs, n):
+            yield self.configs[i:i+n]
