@@ -7,8 +7,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
     vevdata = None
 
-    op1 = None
-    op2 = None
+    # op1 = None
+    # op2 = None
 
     asv = None
     jkasv = None
@@ -42,8 +42,6 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
-        # cls.op1 = opval1
-        # cls.op2 = opval2
 
         cls.vev1 = vev.Vev(opval1.average_over_times())
         cls.vev2 = vev.Vev(opval2.average_over_times())
@@ -62,22 +60,15 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def verify(self):
         print "verifying correlator"
 
-        if self.op1 is not None:
-            self.op1.verify()
-            self.op2.verify()
-        elif self.vev1 is not None:
-            if self.configs != self.vev1.configs:
-                raise ValueError("vev1 configs dont match correlator")
-            if self.configs != self.vev2.configs:
-                raise ValueError("vev2 configs dont match correlator")
-        else:
-            raise ValueError("Correlator not complete missing ops or vev")
+        assert self.configs == self.vev1.configs
+        assert self.configs == self.vev2.configs
+        
         super(Correlator, self).verify()
 
     def average_sub_vev(self):
         if not self.asv:
-            vev1 = self.op1.average_all()
-            vev2 = self.op2.average_all()
+            vev1 = self.vev1.average()
+            vev2 = self.vev2.average()
             self.asv = {t: corr - vev1 * vev2
                         for t, corr in self.average_over_configs().iteritems()}
         return self.asv
@@ -85,9 +76,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def jackknife_average_sub_vev(self):
         if not self.jkasv:
 
-            jkvev1 = self.op1.jackknifed_full_average()
-            jkvev2 = self.op2.jackknifed_full_average()
-
+            jkvev1 = self.vev1.jackknife()
+            jkvev2 = self.vev2.jackknife()
             #corrjk = self.jackknifed_averages()
             jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages(), silent=True)
             self.jkasv = {c: {t: jk.get(config=c, time=t) - jkvev1[c] * jkvev2[c]
