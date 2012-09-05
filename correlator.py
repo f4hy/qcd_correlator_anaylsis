@@ -57,6 +57,15 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
         return cls(data)
 
+    @classmethod
+    def fromDataDicts(cls, corr, vev1, vev2):
+        """ Create a correlator from a dictionaries for the correlator, and vevs
+        """
+        
+        cls.vev1 = vev.Vev(vev1)
+        cls.vev2 = vev.Vev(vev2)
+        return cls(corr)
+        
     def verify(self):
         print "verifying correlator"
 
