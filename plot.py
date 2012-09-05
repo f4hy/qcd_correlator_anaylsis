@@ -1,5 +1,6 @@
 """Module to help writing and plotting datafiles"""
 import subprocess
+import os
 
 imagetype = "png"
 #imagetype = "eps"
@@ -8,6 +9,9 @@ imagetype = "png"
 def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
     """ plots data with errorbars, data_errors must be a dict with the
     name given by the key and the values are a tuple with (data,errors)"""
+
+    if not os.path.exists(os.path.dirname(basename)):
+        os.makedirs(os.path.dirname(basename))
 
     writedataerrorsfile(basename, data_errors, shifts)
     plotfile = open(basename + ".plt", "w")
