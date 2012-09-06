@@ -4,6 +4,8 @@ import plot
 import build_corr
 import correlator
 
+BIN_SIZE = 100
+
 ops = ["a1pp_0_optype0_op1", "a1pp_0_optype10_op1"]
 
 #folders
@@ -53,5 +55,6 @@ def diagonal_file(data_folder, op):
 for oper in ops:
     correlator = diagonal_file(f_data, oper)
     #correlator = diagonal_ops(f_data, oper)
-    plot_corr(correlator, f_output, oper)
-    print "done with %s %s to %s" % (oper, oper, f_output)
+    binedcor = correlator.reduce_to_bins(BIN_SIZE)
+    plot_corr(binedcor, f_output, oper)
+    print "done with %s %s to %s\n\n" % (oper, oper, f_output)
