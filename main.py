@@ -1,67 +1,57 @@
 #!/usr/bin/env python
 
 import plot
-import configtimeobj
-import read_config_time_file as read
+import build_corr
 import correlator
 
+ops = ["a1pp_0_optype0_op1", "a1pp_0_optype10_op1"]
 
-emass_dts = range(1,4)
-
-# srcop = "a1pp_0_optype0_op1"
-# snkop = "a1pp_0_optype0_op1"
-
-# srcop = "a1mp_0_optype6_op1"
-# snkop = "a1mp_0_optype6_op1"
+#folders
+f_data = "/example/"
+f_output = "/with/slashes/"
 
 
-# if snkop == srcop:
-#     name = "%s"%(srcop)
-# else:
-#     name = "%s.%s"%(srcop,snkop)
-
-#ops = ["a1pp_0_optype0_op1","a1pp_0_optype10_op1","a1pp_0_optype1_op1"]
-ops = ["a1pp_0_optype0_op1","a1pp_0_optype10_op1"]
+def plot_corr(corr, out_folder, name):
 
 
-data_folder = "/home/bfahy/r3/results/rngtest_smear0.17/data/"
-
-out_folder ="/home/bfahy/glueballstesting/rngtest/"
-
-
-
-
-def compute_and_plot(srcop,snkop,data_folder,out_folder,name):
-
-
-    srcdata = read.read_config_time_data_real("%sopvals_%stest1.dat"%(data_folder,srcop))
-    if srcop==snkop:
-        snkdata = srcdata
-    else:
-        snkdata = read.read_config_time_data_real("%sopvals_%stest1.dat"%(data_folder,snkop))
-
-    corr = correlator.Correlator.fromOpvalCTO(srcdata,snkdata,dts=list(range(9)))
-
-    # corr.writefullfile("/home/bfahy/plots/testing/corr/%s" % name)
-    
     avgcorr = corr.average_sub_vev()
     corr_errors = corr.jackknifed_errors()
-    
-    plot_corr = {"%s, \t error" %name : (avgcorr, corr_errors)}
 
-    plot.plotwitherrorbarsnames("%scorrelator%s" % (out_folder,name),
-                                plot_corr, avgcorr.keys() ,autoscale=True)
+    plot_corr_info = {"%s, \t error" % name: (avgcorr,  corr_errors)}
+    plot.plotwitherrorbarsnames("%scorrelator%s" % (out_folder, name),
+                                plot_corr_info, avgcorr.keys(), autoscale=True)
 
+    emass_dts = range(1, 4)
     for dt in emass_dts:
         emass = corr.effective_mass(dt)
         emass_errors = corr.effective_mass_errors(dt)
-        plot_emass = {"%s emass dt=%d, \t error" %(name,dt) : ( emass, emass_errors)}
-        plot.plotwitherrorbarsnames("%semass%d.%s" % (out_folder,dt,name), plot_emass,
-                                    emass.keys() ,autoscale=True)
+        plot_emass = {"%s emass dt=%d, \t error" % (name, dt): (emass, emass_errors)}
 
-    print "done with %s %s to %s" % (srcop,snkop,out_folder)
+        plot.plotwitherrorbarsnames("%semass%d.%s" % (out_folder, dt, name),  plot_emass,
+                                    emass.keys(), autoscale=True)
 
 
-for op in ops:
-    name = op
-    compute_and_plot(op,op,data_folder,out_folder,name)
+def diagonal_ops(data_folder, op):
+    """return correlator
+    """
+    op_file = "%sopvals_%stest1.dat" % (data_folder, op)
+    return build_corr.diag_from_opfiles(op_file)
+
+
+def off_diagonal_ops(data_folder, src_op, snk_op):
+    srcop_file = "%sopvals_%stest1.dat" % (data_folder, src_op)
+    snkop_file = "%sopvals_%stest1.dat" % (data_folder, snk_op)
+    return build_corr.from_opfiles(srcop_file, snkop_file)
+
+
+def diagonal_file(data_folder, op):
+    corrfile = "%scor_src_%s-snk_%stest1.dat" % (data_folder, op, op)
+    vev_file = "%svev_%stest1.dat" % (data_folder, op)
+    return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
+
+
+for oper in ops:
+    correlator = diagonal_file(f_data, oper)
+    #correlator = diagonal_ops(f_data, oper)
+    plot_corr(correlator, f_output, oper)
+    print "done with %s %s to %s" % (oper, oper, f_output)
