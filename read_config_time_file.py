@@ -44,6 +44,13 @@ def read_config_time_data_real(filename, configs=None, times=None):
     returns a configtimeobject
 
     """
+    return configtimeobj.Cfgtimeobj.fromListTuple(read_config_time_data_real_dict(filename,configs,times))
+
+def read_config_time_data_real_dict(filename, configs=None, times=None):
+    """Takes a file ofr the form in the header of this source file and
+    returns a dict
+
+    """
     f = open(filename)
 
     print "reading data from %s" % filename
@@ -61,8 +68,9 @@ def read_config_time_data_real(filename, configs=None, times=None):
     data = rawdata.reshape(configs, times)
     #data = data[:10]
     #print data
-    return configtimeobj.Cfgtimeobj.fromListTuple(data)
+    return data
 
+    
 
 def read_correlator(filename, configs=None, times=None):
     """Takes a file ofr the form in the header of this source file and
