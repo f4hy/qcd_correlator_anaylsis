@@ -3,6 +3,7 @@ import jackknife
 import math
 import vev
 
+
 class Correlator(configtimeobj.Cfgtimeobj):
 
     vevdata = None
@@ -42,12 +43,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
-
         cls.vev1 = vev.Vev(opval1.average_over_times())
         cls.vev2 = vev.Vev(opval2.average_over_times())
 
-
-        
         # data = {cfg:
         #         {dt:
         #          math.fsum(get1(config=cfg, time=((t+dt)%numtimes))*get2(config=cfg, time=t)
@@ -61,17 +59,17 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def fromDataDicts(cls, corr, vev1, vev2):
         """ Create a correlator from a dictionaries for the correlator, and vevs
         """
-        
+
         cls.vev1 = vev.Vev(vev1)
         cls.vev2 = vev.Vev(vev2)
         return cls(corr)
-        
+
     def verify(self):
         print "verifying correlator"
 
         assert self.configs == self.vev1.configs
         assert self.configs == self.vev2.configs
-        
+
         super(Correlator, self).verify()
 
     def average_sub_vev(self):
