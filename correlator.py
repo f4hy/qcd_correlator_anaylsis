@@ -3,6 +3,7 @@ import jackknife
 import math
 import vev
 
+
 class Correlator(configtimeobj.Cfgtimeobj):
 
     vevdata = None
@@ -42,12 +43,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
-
         cls.vev1 = vev.Vev(opval1.average_over_times())
         cls.vev2 = vev.Vev(opval2.average_over_times())
 
-
-        
         # data = {cfg:
         #         {dt:
         #          math.fsum(get1(config=cfg, time=((t+dt)%numtimes))*get2(config=cfg, time=t)
@@ -61,17 +59,17 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def fromDataDicts(cls, corr, vev1, vev2):
         """ Create a correlator from a dictionaries for the correlator, and vevs
         """
-        
+
         cls.vev1 = vev.Vev(vev1)
         cls.vev2 = vev.Vev(vev2)
         return cls(corr)
-        
+
     def verify(self):
         print "verifying correlator"
 
         assert self.configs == self.vev1.configs
         assert self.configs == self.vev2.configs
-        
+
         super(Correlator, self).verify()
 
     def average_sub_vev(self):
@@ -131,26 +129,29 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[:-dt]}
 
-
     def reduce_to_bins(self, n):
-        print self.numtimes
-        print self.numconfigs
+        # print self.numtimes
+        # print self.numconfigs
         reduced = {}
-        for i,b in enumerate(self.bins(n)):
-            print b
+        binedvev1 = {}
+        binedvev2 = {}
+        for i, b in enumerate(self.bins(n)):
+            #print b
             size = float(len(b))
-            reduced[i] = {t: math.fsum( (self.get(config=c,time=t) for c in b))/size for t in self.times}
-        print reduced
-        print "modified Correlator object, reduce to bins: "
-        print reduced.keys()
-        self.data = reduced
-        self.configs = reduced.keys()
-        self.numconfigs = len(reduced.keys())
-        Correlator.fromDataDict
-        #return reduced
-            
-    def bins(self,n):
+            reduced[i] = {t: math.fsum((self.get(config=c, time=t) for c in b)) / size
+                          for t in self.times}
+
+            binedvev1[i] = math.fsum((self.vev1[c] for c in b)) / size
+            binedvev2[i] = math.fsum((self.vev2[c] for c in b)) / size
+        #print reduced
+        print "Binned correlator with %d, reduced to %d bins" % (self.numconfigs, len(reduced.keys()))
+        # Make a new correlator for the bined data
+        return Correlator.fromDataDicts(reduced, binedvev1, binedvev2)
+
+    def bins(self, n):
         """ Yield successive n-sized chunks from configs.
         """
+        if self.numconfigs % n is not 0:
+            print "Warning bin size %d not factor of num configs %d !!!" % (n, self.numconfigs)
         for i in xrange(0, self.numconfigs, n):
-            yield self.configs[i:i+n]
+            yield self.configs[i:i + n]

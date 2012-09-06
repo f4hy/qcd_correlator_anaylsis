@@ -124,7 +124,7 @@ def read_config_vev(filename, configs=None):
 
 
 def guess_dimensions(rawdata):
-    print rawdata[0][0]
+    #print rawdata[0][0]
     if(rawdata[0][0] != 0):
         raise Exception("does not start on time 0 can not guess")
 
