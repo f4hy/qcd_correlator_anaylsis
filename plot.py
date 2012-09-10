@@ -1,6 +1,7 @@
 """Module to help writing and plotting datafiles"""
 import subprocess
 import os
+import logging
 
 size = "960,600"
 imagetype = "png"
@@ -26,7 +27,7 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
         maxrange = maxval + maxval * 0.2
 
         minval = maxval
-        for k, data_error in data_errors.iteritems():
+        for _, data_error in data_errors.iteritems():
             minval = min(min(data_error[0].values()), maxval)
         minrange = minval - minval * 0.2
 
@@ -40,7 +41,7 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
     if imagetype is "eps":
         plotfile.write("set terminal postscript eps color enhanced \n")
     else:
-        
+
         plotfile.write("set terminal png enhanced size %s \n" % size)
     plotfile.write("set ylabel \"%s\" \n" % basename)
     plotfile.write("set output \"%s.%s\" \n" % (basename, imagetype))
@@ -60,7 +61,7 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
     if returncode:
         raise OSError("gnuplot failed to plot" + basename + ".plt")
     else:
-        print("plotted " + basename + ".plt" + " successfully")
+        logging.info("plotted " + basename + ".plt" + " successfully")
 
 
 def writedataerrorsfile(basename, data_errors, shifts):
@@ -81,7 +82,7 @@ def writedataerrorsfile(basename, data_errors, shifts):
         writefile.write("\n")
     writefile.flush()
     writefile.close()
-    print("wrote " + basename + ".out ")
+    logging.info("wrote " + basename + ".out ")
 
 
 def writedatafile(basename, data, indexes):
@@ -99,7 +100,7 @@ def writedatafile(basename, data, indexes):
         writefile.write("\n")
     writefile.flush()
     writefile.close()
-    print("wrote " + basename + ".out ")
+    logging.info("wrote " + basename + ".out ")
 
 
 def plotwithnames(basename, datas, shifts):
@@ -117,12 +118,12 @@ def plotwithnames(basename, datas, shifts):
     maxrange = maxval + maxval * 0.1
 
     minval = maxval
-    for k, data in datas.iteritems():
+    for _, data in datas.iteritems():
         minval = min(min(data), minval)
     minrange = minval - minval * 0.1
 
 #    plotfile.write("set yrange[0:%f] \n" % maxrange)
-    plotfile.write("set yrange[%f:%f] \n" % (minval, maxval))
+    plotfile.write("set yrange[%f:%f] \n" % (minrange, maxrange))
     plotfile.write("set xrange[0:%d] \n" % len(shifts))
     plotfile.write("set nokey\n")
     if imagetype is "eps":
@@ -148,4 +149,4 @@ def plotwithnames(basename, datas, shifts):
     if returncode:
         raise OSError("gnuplot failed to plot" + basename + ".plt")
     else:
-        print("plotted " + basename + ".plt" + " successfully")
+        logging.info("plotted " + basename + ".plt" + " successfully")

@@ -14,6 +14,7 @@ t2,    data
 import numpy as np
 import configtimeobj
 import correlator
+import logging
 
 
 def read_config_time_data_real_imag(filename, configs=None, times=None):
@@ -23,19 +24,18 @@ def read_config_time_data_real_imag(filename, configs=None, times=None):
     """
     f = open(filename)
 
-    print "reading data from %s" % filename
+    logging.info("reading data from %s", filename)
 
     rawdata = np.genfromtxt(f, delimiter=",", comments="#", autostrip=True, dtype='int,float,float')
     f.close()
     if  configs and times:
-        print "using configs: %d and times: %d" % (configs, times)
+        logging.info("using configs: %d and times: %d", configs, times)
     else:
-        print "dimensions not set will guess from data"
+        logging.debug("dimensions not set will guess from data")
         times, configs = guess_dimensions(rawdata)
 
     data = rawdata.reshape(configs, times)
-    #data = data[:10]
-    #print data
+
     return configtimeobj.Cfgtimeobj.fromListTuple(data)
 
 
@@ -44,7 +44,9 @@ def read_config_time_data_real(filename, configs=None, times=None):
     returns a configtimeobject
 
     """
-    return configtimeobj.Cfgtimeobj.fromListTuple(read_config_time_data_real_dict(filename,configs,times))
+    return configtimeobj.Cfgtimeobj.fromListTuple(
+        read_config_time_data_real_dict(filename, configs, times))
+
 
 def read_config_time_data_real_dict(filename, configs=None, times=None):
     """Takes a file ofr the form in the header of this source file and
@@ -53,24 +55,22 @@ def read_config_time_data_real_dict(filename, configs=None, times=None):
     """
     f = open(filename)
 
-    print "reading data from %s" % filename
+    logging.info("reading data from %s", filename)
 
     rawdata = np.genfromtxt(f, delimiter=",", comments="#",
                             autostrip=True, dtype='int,float', usecols=(0, 1))
     f.close()
 
     if  configs and times:
-        print "using configs: %d and times: %d" % (configs, times)
+        logging.info("using configs: %d and times: %d", configs, times)
     else:
-        print "dimensions not set will guess from data"
+        logging.debug("dimensions not set will guess from data")
         times, configs = guess_dimensions(rawdata)
 
     data = rawdata.reshape(configs, times)
     #data = data[:10]
-    #print data
     return data
 
-    
 
 def read_correlator(filename, configs=None, times=None):
     """Takes a file ofr the form in the header of this source file and
@@ -79,39 +79,36 @@ def read_correlator(filename, configs=None, times=None):
     """
     f = open(filename)
 
-    print "reading data from %s" % filename
+    logging.info("reading data from %s", filename)
 
     rawdata = np.genfromtxt(f, delimiter=",", comments="#",
                             autostrip=True, dtype='int,float', usecols=(0, 1))
     f.close()
 
     if  configs and times:
-        print "using configs: %d and times: %d" % (configs, times)
+        logging.info("using configs: %d and times: %d", configs, times)
     else:
-        print "dimensions not set will guess from data"
+        logging.debug("dimensions not set will guess from data")
         times, configs = guess_dimensions(rawdata)
 
     data = rawdata.reshape(configs, times)
     #data = data[:10]
-    #print data
     return correlator.Correlator.fromListTuple(data)
 
 
 def read_config_vev(filename, configs=None):
     f = open(filename)
 
-    print "reading vev from %s" % filename
+    logging.info("reading vev from %s", filename)
 
     rawdata = np.genfromtxt(f, delimiter=",", comments="#",
                             autostrip=True, dtype='float', usecols=0)
     f.close()
 
-    #print rawdata
-
     if  configs:
-        print "using configs: %d" % (configs)
+        logging.info("using configs: %d", configs)
     else:
-        print "vev dimensions not set will guess from data"
+        logging.debug("vev dimensions not set will guess from data")
         configs = len(rawdata)
 
     # rawdata = rawdata[:10]
@@ -124,7 +121,7 @@ def read_config_vev(filename, configs=None):
 
 
 def guess_dimensions(rawdata):
-    #print rawdata[0][0]
+
     if(rawdata[0][0] != 0):
         raise Exception("does not start on time 0 can not guess")
 
@@ -134,8 +131,7 @@ def guess_dimensions(rawdata):
             time += 1
         elif(datum[0] == 0):
             configs = ((rawdata.shape[0]) / time)
-            print "guessing time = %d" % time
-            print "guessing configs = %d" % configs
+            logging.debug("guessing time = %d \tguessing configs = %d", time, configs)
             return (time, configs)
         else:
             raise Exception("number of times could not be guessed")

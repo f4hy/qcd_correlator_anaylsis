@@ -18,9 +18,6 @@ def jackknife_errors(data, datajk):
 
 
 def errorbars(data, datajk):
-    #print [ (data - datajk[cfg]) ** 2 for cfg in datajk.keys() ]
     total = math.fsum(((data - datajk[cfg]) ** 2) for cfg in datajk.keys())
     fm = float(len(datajk))
-    #print "FM",fm
-    #print total
     return math.sqrt(((fm - 1.0) / (fm)) * total)
