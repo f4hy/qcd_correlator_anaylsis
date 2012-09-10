@@ -2,6 +2,7 @@ import configtimeobj
 import jackknife
 import math
 import vev
+import logging
 
 
 class Correlator(configtimeobj.Cfgtimeobj):
@@ -19,7 +20,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         if not opval1.compatible(opval2):
             raise Exception("Incompatible opbjects")
         if dts is None:
-            print "No dts given, using all"
+            logging.warning("No dts given, using all")
             dts = cls.times = opval1.times
         else:
             cls.times = dts
@@ -65,7 +66,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return cls(corr)
 
     def verify(self):
-        print "verifying correlator"
+        logging.debug("verifying correlator")
 
         assert self.configs == self.vev1.configs
         assert self.configs == self.vev2.configs
@@ -86,14 +87,14 @@ class Correlator(configtimeobj.Cfgtimeobj):
             jkvev1 = self.vev1.jackknife()
             jkvev2 = self.vev2.jackknife()
             #corrjk = self.jackknifed_averages()
-            jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages(), silent=True)
+            jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages())
             self.jkasv = {c: {t: jk.get(config=c, time=t) - jkvev1[c] * jkvev2[c]
                               for t in self.times}
                           for c in self.configs}
         return self.jkasv
 
     def jackknifed_errors(self):
-        jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknife_average_sub_vev(), silent=True)
+        jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknife_average_sub_vev())
         asv = self.average_sub_vev()
         return {t: jackknife.errorbars(asv[t], jk.get(time=t)) for t in self.times}
 
@@ -104,9 +105,10 @@ class Correlator(configtimeobj.Cfgtimeobj):
             try:
                 emass[t] = (1.0 / float(dt)) * math.log(asv[t] / asv[t + dt])
             except ValueError:
+                #logging.debug("invalid argument to log, setting to zero")
                 emass[t] = 0.0
             except KeyError:
-                print "out of range"
+                logging.error("index out of range")
         return emass
 
     def effective_mass_errors(self, dt):
@@ -120,33 +122,34 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 try:
                     emass[t] = (1.0 / float(dt)) * math.log(asvc[t] / asvc[t + dt])
                 except ValueError:
+                    #logging.debug("invalid argument to log, setting to zero")
                     emass[t] = 0.0
                 except ZeroDivisionError:
+                    logging.debug("div by zero, setting to zero")
                     emass[t] = 0.0
                 except KeyError:
-                    print "out of range"
+                    logging.error("index out of range")
             jkemass[cfg] = emass
-        jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass, silent=True)
+        jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass)
         effmass_dt = self.effective_mass(dt)
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[:-dt]}
 
     def reduce_to_bins(self, n):
-        # print self.numtimes
-        # print self.numconfigs
         reduced = {}
         binedvev1 = {}
         binedvev2 = {}
         for i, b in enumerate(self.bins(n)):
-            #print b
+            # logging.debug("bin:")
+            # logging.debug(b)
             size = float(len(b))
             reduced[i] = {t: math.fsum((self.get(config=c, time=t) for c in b)) / size
                           for t in self.times}
 
             binedvev1[i] = math.fsum((self.vev1[c] for c in b)) / size
             binedvev2[i] = math.fsum((self.vev2[c] for c in b)) / size
-        #print reduced
-        print "Binned correlator with %d, reduced to %d bins" % (self.numconfigs, len(reduced.keys()))
+
+        logging.info("Binned from %d, reduced to %d bins", self.numconfigs, len(reduced.keys()))
         # Make a new correlator for the bined data
         return Correlator.fromDataDicts(reduced, binedvev1, binedvev2)
 
@@ -154,6 +157,6 @@ class Correlator(configtimeobj.Cfgtimeobj):
         """ Yield successive n-sized chunks from configs.
         """
         if self.numconfigs % n is not 0:
-            print "Warning bin size %d not factor of num configs %d !!!" % (n, self.numconfigs)
+            logging.warning("Bin size %d not factor of num configs %d !!!", n, self.numconfigs)
         for i in xrange(0, self.numconfigs, n):
             yield self.configs[i:i + n]

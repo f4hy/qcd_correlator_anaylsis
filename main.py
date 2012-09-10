@@ -3,6 +3,9 @@
 import plot
 import build_corr
 import correlator
+import logging
+
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
 BIN_SIZE = 100
 
@@ -51,10 +54,9 @@ def diagonal_file(data_folder, op):
     vev_file = "%svev_%stest1.dat" % (data_folder, op)
     return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
 
-
 for oper in ops:
     correlator = diagonal_file(f_data, oper)
     #correlator = diagonal_ops(f_data, oper)
     binedcor = correlator.reduce_to_bins(BIN_SIZE)
     plot_corr(binedcor, f_output, oper)
-    print "done with %s %s to %s\n\n" % (oper, oper, f_output)
+    logging.info("done with %s %s to %s\n\n", oper, oper, f_output)

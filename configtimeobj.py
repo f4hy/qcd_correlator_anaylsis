@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import logging
 #DEBUG = False
 DEBUG = True
 
@@ -13,17 +14,15 @@ class Cfgtimeobj(object):
     sums = None
     average = None
 
-    def __init__(self, datadict, silent=False):
+    def __init__(self, datadict):
         self.data = datadict
 
         self.configs = datadict.keys()
         self.times = datadict[self.configs[0]].keys()
         self.numconfigs = len(self.configs)
         self.numtimes = len(self.times)
-        if not silent:
-            print "numconfigs", self.numconfigs, "numtimes", self.numtimes
 
-        #print self.indexes()
+        logging.debug("created cto with configs %d, times %d", self.numconfigs, self.numtimes)
 
         dataitem = self[self.configs[0]][self.times[0]]
 
@@ -34,8 +33,8 @@ class Cfgtimeobj(object):
             self.verify()
 
     @classmethod
-    def fromDataDict(cls, datadict, silent=False):
-        return cls(datadict, silent)
+    def fromDataDict(cls, datadict):
+        return cls(datadict)
 
     @classmethod
     def fromListTuple(cls, listtuple):
@@ -60,19 +59,19 @@ class Cfgtimeobj(object):
         if not self.data:
             raise ValueError("data obejct empty or false")
 
-        sizes = [len(v) for v in self.data.values()]  #map(len, self.data.values())
+        sizes = [len(v) for v in self.data.values()]  # map(len, self.data.values())
         if (sizes.count(sizes[0]) != len(sizes)):
             raise ValueError("Object size is inconsistant")
 
         for cfg in self.configs:
             for time in self.times:
                 if type(self.data[cfg][time]) != self.datatype:
-                    print type(self.data[cfg][time])
+                    logging.error(str(type(self.data[cfg][time])))
                     raise TypeError("Not all data is the same type")
                 if self.data[cfg][time] == None:
                     raise ValueError("indexed value is none")
 
-        print("Cfg Time Object verified for consistancy")
+        logging.debug("Cfg Time Object verified for consistancy")
         return True
 
     def __getitem__(self, key):
