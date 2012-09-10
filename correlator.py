@@ -121,6 +121,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
                     emass[t] = (1.0 / float(dt)) * math.log(asvc[t] / asvc[t + dt])
                 except ValueError:
                     emass[t] = 0.0
+                except ZeroDivisionError:
+                    emass[t] = 0.0
                 except KeyError:
                     print "out of range"
             jkemass[cfg] = emass
