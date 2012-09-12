@@ -48,6 +48,7 @@ def main():
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
                 plot_corr(binedcor, args.output_dir, oper)
+                binedcor.writefullfile(args.output_dir + "binned_%d" % args.bins)
             else:
                 plot_corr(correlator, args.output_dir, oper)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
