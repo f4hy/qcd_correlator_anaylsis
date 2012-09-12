@@ -28,3 +28,9 @@ class Vev(object):
     def jackknife(self):
         return {cfg: (math.fsum(self.data.values()) - self.get(cfg)) / (self.numconfigs - 1)
                 for cfg in self.configs}
+
+    def writefullfile(self, filename):
+        outfile = open(filename, 'w')
+        for config in self.configs:
+            outfile.write("%f\n" % (self[config]))
+        outfile.close()
