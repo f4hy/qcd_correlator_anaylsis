@@ -2,22 +2,72 @@
 
 import plot
 import build_corr
-import correlator
 import logging
+import argparse
+import os
 
-logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+parser = argparse.ArgumentParser(description="compute and plot effective masses")
+parser.add_argument("-i", "--input-dir", type=str, required=True,
+                    help="directory to read files from")
+parser.add_argument("-o", "--output-dir", type=str, required=True,
+                    help="directory to write plots to")
+parser.add_argument("-r", "--operators", action='append', required=True,
+                    help="operator to make \n\n e.g. -r a1pp_0_optype0_op1")
+parser.add_argument("-b", "--bins", type=int, default=1, help="number of bins")
+parser.add_argument("-m", "--make-from-operators",
+                    help="build from operators rather than correlator files", action="store_true")
+parser.add_argument("--off-diagonals", action="store_true",
+                    help="do the off diagonals")
+parser.add_argument("-v", "--verbose", action="store_true",
+                    help="increase output verbosity")
 
-BIN_SIZE = 100
+args = parser.parse_args()
 
-ops = ["a1pp_0_optype0_op1", "a1pp_0_optype10_op1"]
+if not os.path.exists(args.input_dir):
+    print "input directory doesnt exist"
+    parser.print_help()
+    parser.exit()
 
-#folders
-f_data = "/example/"
-f_output = "/with/slashes/"
+if args.verbose:
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+    logging.debug("Verbose debuging mode activated")
+else:
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
+print args.operators
+
+
+def main():
+    if not args.off_diagonals:
+        for oper in args.operators:
+            if args.make_from_operators:
+                correlator = diagonal_ops(args.input_dir, oper)
+            else:
+                correlator = diagonal_file(args.input_dir, oper)
+
+            if args.bins > 1:
+                binedcor = correlator.reduce_to_bins(args.bins)
+                plot_corr(binedcor, args.output_dir, oper)
+            else:
+                plot_corr(correlator, args.output_dir, oper)
+            logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
+    else:
+        for src_oper in args.operators:
+            for snk_oper in args.operators:
+                if args.make_from_operators:
+                    correlator = off_diagonal_ops(args.input_dir, src_oper, snk_oper)
+                else:
+                    correlator = off_diagonal_file(args.input_dir, src_oper, snk_oper)
+
+                if args.bins > 1:
+                    binedcor = correlator.reduce_to_bins(args.bins)
+                    plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
+                else:
+                    plot_corr(correlator, args.output_dir, src_oper + snk_oper)
+                logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
 
 
 def plot_corr(corr, out_folder, name):
-
 
     avgcorr = corr.average_sub_vev()
     corr_errors = corr.jackknifed_errors()
@@ -54,9 +104,12 @@ def diagonal_file(data_folder, op):
     vev_file = "%svev_%stest1.dat" % (data_folder, op)
     return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
 
-for oper in ops:
-    correlator = diagonal_file(f_data, oper)
-    #correlator = diagonal_ops(f_data, oper)
-    binedcor = correlator.reduce_to_bins(BIN_SIZE)
-    plot_corr(binedcor, f_output, oper)
-    logging.info("done with %s %s to %s\n\n", oper, oper, f_output)
+
+def off_diagonal_file(data_folder, src_op, snk_op):
+    corrfile = "%scor_src_%s-snk_%stest1.dat" % (data_folder, src_op, snk_op)
+    src_vev_file = "%svev_%stest1.dat" % (data_folder, src_op)
+    snk_vev_file = "%svev_%stest1.dat" % (data_folder, snk_op)
+    return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file)
+
+if __name__ == "__main__":
+    main()
