@@ -32,5 +32,5 @@ class Vev(object):
     def writefullfile(self, filename):
         outfile = open(filename, 'w')
         for config in self.configs:
-            outfile.write("%f\n" % (self[config]))
+            outfile.write("{!r}\n".format(self[config]))
         outfile.close()

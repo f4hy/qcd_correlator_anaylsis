@@ -137,12 +137,12 @@ class Cfgtimeobj(object):
         outfile = open(filename, 'w')
         for config in self.configs:
             for time in self.times:
-                outfile.write("%d   %f\n" % (time, self.get(config=config, time=time)))
+                outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)))
         outfile.close()
 
     def writeeachconfig(self, filename):
         for config in self.configs:
             outfile = open(filename + '.' + str(config), 'w')
             for time in self.times:
-                outfile.write("%d   %f\n" % (time, self.get(config=config, time=time)))
+                outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)))
             outfile.close()
