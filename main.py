@@ -48,7 +48,7 @@ def main():
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
                 plot_corr(binedcor, args.output_dir, oper)
-                binedcor.writefullfile(args.output_dir + "binned_%d" % args.bins)
+                binedcor.writefullfile(args.output_dir + "binned_%d_%s" % (args.bins,oper))
             else:
                 plot_corr(correlator, args.output_dir, oper)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
@@ -63,7 +63,8 @@ def main():
                 if args.bins > 1:
                     binedcor = correlator.reduce_to_bins(args.bins)
                     plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
-                    binedcor.writefullfile(args.output_dir + "binned_%d" % args.bins)
+                    binedcor.writefullfile(args.output_dir + "binned_%d_%s_%s" %
+                                           (args.bins,src_oper,snk_oper))
                 else:
                     plot_corr(correlator, args.output_dir, src_oper + snk_oper)
                 logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
@@ -75,7 +76,7 @@ def plot_corr(corr, out_folder, name):
     corr_errors = corr.jackknifed_errors()
 
     plot_corr_info = {"%s, \t error" % name: (avgcorr,  corr_errors)}
-    plot.plotwitherrorbarsnames("%scorrelator%s" % (out_folder, name),
+    plot.plotwitherrorbarsnames("%scorrelator.%s" % (out_folder, name),
                                 plot_corr_info, avgcorr.keys(), autoscale=True)
 
     emass_dts = range(1, 4)
