@@ -39,10 +39,10 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
     #plotfile.write("set yrange[%f:%f] \n" % (minrange, maxrange))
     plotfile.write("set xrange[0:%d] \n" % len(shifts))
     if imagetype is "eps":
-        plotfile.write("set terminal postscript eps color enhanced \n")
+        plotfile.write("set terminal postscript eps color  \n")
     else:
 
-        plotfile.write("set terminal png enhanced size %s \n" % size)
+        plotfile.write("set terminal png  size %s \n" % size)
     plotfile.write("set ylabel \"%s\" \n" % basename)
     plotfile.write("set output \"%s.%s\" \n" % (basename, imagetype))
     plotfile.write("set style line 1 lt 1 lc 1 pt 9 ps 2  lw 2 \n")
@@ -127,7 +127,7 @@ def plotwithnames(basename, datas, shifts):
     plotfile.write("set xrange[0:%d] \n" % len(shifts))
     plotfile.write("set nokey\n")
     if imagetype is "eps":
-        plotfile.write("set terminal postscript eps color enhanced \n")
+        plotfile.write("set terminal postscript eps color  \n")
     else:
         plotfile.write("set terminal png \n")
     plotfile.write("set ylabel \"%s\" \n" % basename)

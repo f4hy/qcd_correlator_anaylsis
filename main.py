@@ -103,15 +103,17 @@ def off_diagonal_ops(data_folder, src_op, snk_op):
 
 
 def diagonal_file(data_folder, op):
-    corrfile = "%scor_src_%s-snk_%stest1.dat" % (data_folder, op, op)
-    vev_file = "%svev_%stest1.dat" % (data_folder, op)
+    corrfile = "%s%s-%s.A1gp.conn.dat" % (data_folder, op, op)
+    vev_file = "%svev.dat" % data_folder
     return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
 
 
 def off_diagonal_file(data_folder, src_op, snk_op):
-    corrfile = "%scor_src_%s-snk_%stest1.dat" % (data_folder, src_op, snk_op)
-    src_vev_file = "%svev_%stest1.dat" % (data_folder, src_op)
-    snk_vev_file = "%svev_%stest1.dat" % (data_folder, snk_op)
+    corrfile = "%s%s-%s.A1gp.conn.dat" % (data_folder, src_op, snk_op)
+    src_vev_file = "%svev.dat" % data_folder
+    snk_vev_file = "%svev.dat" % data_folder
+    # src_vev_file = "%svev_%stest1.dat" % (data_folder, src_op)
+    # snk_vev_file = "%svev_%stest1.dat" % (data_folder, snk_op)
     return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file)
 
 if __name__ == "__main__":
