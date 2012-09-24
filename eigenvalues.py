@@ -4,6 +4,8 @@ time step \t lambda0 \t lambda1 \t lambda2 ...
 import os
 import numpy as np
 import math
+import logging
+
 #from scipy import linalg
 import cPickle as pickle
 
@@ -32,9 +34,9 @@ def readfile_neigenvalues(basedir, N):
         rawdata = np.loadtxt(f, comments="#", usecols=(tuple(range(1, N+1))))
         data[filename] = dict(enumerate(rawdata))
 
-    # print("configs", len(data))
-    # print("timesteps"
-    print("Done reading file")
+        logging.debug("read %s", filename)
+
+    logging.info("done reading files")
     return data
 
 def readfullfile_config_time(filename):
@@ -45,7 +47,7 @@ def readfullfile_config_time(filename):
     timestep  corrilator  imaginarypart
     """
 
-    print("reading chimera formated file %s\n" % filename)
+    logging.info("reading chimera formated file %s\n", filename)
     
     f = open(filename)
 
@@ -81,10 +83,11 @@ def read_configdir_time_evalues(dirname, N=-1):
     data = {}
     configdata = {}
 
-    print(os.path.relpath(dirname))
+    logging.debug("Reading from %s",(os.path.relpath(dirname)))
+    
     # Hopfully no files that are digits!
     configs = [x for x in os.listdir(dirname) if x.isdigit()]
-    print(configs)
+    logging.debug("found configs ",configs)
 
     
     for config in configs:
@@ -105,21 +108,15 @@ def read_configdir_time_evalues(dirname, N=-1):
         configdata ={}
         for time in times:
 
-            # print(dirname,config,filebasename)
             filepath=dirname + config + "/" + filebasename+ '.' + str(time)
             f = open(filepath)
 
             
             
             rawdata = np.loadtxt(f, comments="#")
-            # print(rawdata)
-            # print(rawdata[0:3])
-            # print(dirname + config + "/" + filebasename+ '.' + str(time))
             configdata[time] = rawdata[0:N]
+            logging.info("Done reading file %s" %filepath)
 
-        # print("configs", len(data))
-            # print("timesteps"
-            # print("Done reading file %s" %filepath)
         data[config] = configdata
     return data
     
@@ -145,20 +142,21 @@ def read_configdir_timeorlevel_evalues(dirname, N=-1, store=True, recall=True):
 
     if(recall):
         try:
-            print "opening pickle"
+            logging.info("opening pickle")
             data= pickle.load( open( dirname + "save.p", "rb" ) )
             return data
         except IOError as e:
-            print "no picked file, building from scratch"
+            logging.error("no picked file, building from scratch")
                 
 
     data = {}
     configdata = {}
 
-    print(os.path.relpath(dirname))
+    logging.debug("Reading from %s",(os.path.relpath(dirname)))
     # Hopfully no files that are digits!
     configs = [x for x in os.listdir(dirname) if x.isdigit()]
-    print(configs)
+
+    logging.info(configs)
     # configs = ['1000','1220']
     
     for config in configs:
@@ -175,7 +173,7 @@ def read_configdir_timeorlevel_evalues(dirname, N=-1, store=True, recall=True):
         # ensures all of the files are actually there in order
 
         if("time" in filebasename):
-            print("Config %s is in time format" %config)
+            logging.debug("Config %s is in time format", config)
             times = range(len(files))
             configdata ={}
             for time in times:
@@ -186,26 +184,21 @@ def read_configdir_timeorlevel_evalues(dirname, N=-1, store=True, recall=True):
                 configdata[time] = rawdata[0:N]
 
         elif("level" in filebasename):
-            print("Config %s is in level format" %config)
+            logging.debug("Config %s is in level format", config)
             levels = range(len(files))
             
             rawdata = None
             for level in levels[0:N]:
                 filepath=dirname + config + "/" + filebasename+ '.' + str(level)
-                print("reading file %s" %filepath )
+                logging.debug("reading file %s" %filepath )
                 f = open(filepath)
                 
                 readdata = np.loadtxt(f, comments="#")
-#                print readdata
                 if rawdata is not None:
                     rawdata = np.column_stack((rawdata,readdata))
                 else:
                     rawdata = readdata
-                #print(rawdata)
 
-                # configdata[time] = rawdata[0:N]
-                # configdata[time][] = rawdata[0:N]
-            #print(dict(enumerate(rawdata)))
                 
             configdata = dict(enumerate(rawdata))
             
@@ -214,13 +207,10 @@ def read_configdir_timeorlevel_evalues(dirname, N=-1, store=True, recall=True):
             
 
 
-        # print("configs", len(data))
-            # print("timesteps"
-            # print("Done reading file %s" %filepath)
         data[config] = configdata
     if(store):
         pickle.dump( data, open( dirname+"save.p", "wb" )  )
-        print "stored data as %s save.p" % dirname
+        logging.info("stored data as %s save.p", dirname)
     return data
     
     
@@ -302,7 +292,7 @@ if __name__ == "__main__":
     data = readfile_neigenvalues(testdir, 1)
     import tools
     x, trash = tools.computecors(data, 1)
-    print(x)
+    #print(x)
     raise SystemExit
     testarray = np.ones(1)
     time = 71
@@ -316,15 +306,15 @@ if __name__ == "__main__":
 # #            break
         break
 #    testarray = testarray[:2]
-    print(testarray[t_o])
-    print(testarray[time])
+    #print(testarray[t_o])
+    #print(testarray[time])
     M= np.mat(np.outer(testarray[t_o], testarray[time]))
-    print("M")
+    #print("M")
     lamb, evec = np.linalg.eig(M)
     # print "evec", len(evec)
     # print evec
 
-    print "eigenvalues", lamb
+    #print "eigenvalues", lamb
     # print evec[0]
     # print np.vdot(evec[0], evec[0])
     # e1= evec[0]/math.sqrt(np.vdot(evec[0], evec[0]))
