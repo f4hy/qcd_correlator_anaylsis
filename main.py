@@ -40,7 +40,14 @@ print args.operators
 def main():
     if not args.off_diagonals:
         for oper in args.operators:
-            if args.make_from_operators:
+            if oper == "eigen":
+                correlator = eigenvalue_24_balls(args.input_dir)
+                logging.info("writeing correlator to %s" % args.output_dir)
+                correlator.writefullfile(args.output_dir + "corvalue")
+                logging.info("wrote correlator")
+            elif oper == "eigen32":
+                correlator = eigenvalue_32_balls(args.input_dir)                
+            elif args.make_from_operators:
                 correlator = diagonal_ops(args.input_dir, oper)
             else:
                 correlator = diagonal_file(args.input_dir, oper)
@@ -89,6 +96,17 @@ def plot_corr(corr, out_folder, name):
                                     emass.keys(), autoscale=True)
 
 
+def eigenvalue_24_balls(data_folder):
+    """build a correlator from my 24cubed eigenvalue datafiles
+    """
+    return build_corr.from_eigenvalue_24cubed_opfiles(data_folder)
+
+def eigenvalue_32_balls(data_folder):
+    """build a correlator from my 32cubed eigenvalue datafiles
+    """
+    return build_corr.from_eigenvalue_32cubed_opfiles(data_folder)
+
+    
 def diagonal_ops(data_folder, op):
     """return correlator
     """
