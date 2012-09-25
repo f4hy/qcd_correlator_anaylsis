@@ -21,9 +21,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
             raise Exception("Incompatible opbjects")
         if dts is None:
             logging.warning("No dts given, using all")
-            dts = cls.times = opval1.times
-        else:
-            cls.times = dts
+            dts = opval1.times
         times = opval1.times
         configs = opval1.configs
         numtimes = opval1.numtimes
@@ -44,8 +42,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
-        cls.vev1 = vev.Vev(opval1.average_over_times())
-        cls.vev2 = vev.Vev(opval2.average_over_times())
+        vev1 = vev.Vev(opval1.average_over_times())
+        vev2 = vev.Vev(opval2.average_over_times())
 
         # data = {cfg:
         #         {dt:
@@ -54,16 +52,19 @@ class Correlator(configtimeobj.Cfgtimeobj):
         #          for dt in dts }
         #          for cfg in configs}
 
-        return cls(data)
+        
+        return cls(data, vev1, vev2)
+
+    def __init__(self, datadict, vev1, vev2):
+        self.vev1 = vev.Vev(vev1)
+        self.vev2 = vev.Vev(vev2)
+        super(Correlator, self).__init__(datadict)
 
     @classmethod
     def fromDataDicts(cls, corr, vev1, vev2):
         """ Create a correlator from a dictionaries for the correlator, and vevs
         """
-
-        cls.vev1 = vev.Vev(vev1)
-        cls.vev2 = vev.Vev(vev2)
-        return cls(corr)
+        return cls(corr, vev1, vev2)
 
     def verify(self):
         logging.debug("verifying correlator")
