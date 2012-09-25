@@ -42,11 +42,9 @@ def main():
         for oper in args.operators:
             if oper == "eigen":
                 correlator = eigenvalue_24_balls(args.input_dir)
-                logging.info("writeing correlator to %s" % args.output_dir)
-                correlator.writefullfile(args.output_dir + "corvalue")
-                logging.info("wrote correlator")
             elif oper == "eigen32":
-                correlator = eigenvalue_32_balls(args.input_dir)                
+                logging.debug("operator eigen32 selected reading 32cubed glueballs")
+                correlator = eigenvalue_32_balls(args.input_dir)
             elif args.make_from_operators:
                 correlator = diagonal_ops(args.input_dir, oper)
             else:
@@ -55,7 +53,7 @@ def main():
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
                 plot_corr(binedcor, args.output_dir, oper)
-                binedcor.writefullfile(args.output_dir + "binned_%d_%s" % (args.bins,oper))
+                binedcor.writefullfile(args.output_dir + "binned_%d_%s" % (args.bins, oper))
             else:
                 plot_corr(correlator, args.output_dir, oper)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
@@ -71,7 +69,7 @@ def main():
                     binedcor = correlator.reduce_to_bins(args.bins)
                     plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
                     binedcor.writefullfile(args.output_dir + "binned_%d_%s_%s" %
-                                           (args.bins,src_oper,snk_oper))
+                                           (args.bins, src_oper, snk_oper))
                 else:
                     plot_corr(correlator, args.output_dir, src_oper + snk_oper)
                 logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
@@ -101,12 +99,13 @@ def eigenvalue_24_balls(data_folder):
     """
     return build_corr.from_eigenvalue_24cubed_opfiles(data_folder)
 
+
 def eigenvalue_32_balls(data_folder):
     """build a correlator from my 32cubed eigenvalue datafiles
     """
     return build_corr.from_eigenvalue_32cubed_opfiles(data_folder)
 
-    
+
 def diagonal_ops(data_folder, op):
     """return correlator
     """
