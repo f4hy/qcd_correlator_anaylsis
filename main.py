@@ -24,17 +24,17 @@ parser.add_argument("-f", "--format", type=str, required=False,
                     help="fromat of the correlator files in the directory\n\n"
                     "e.g. {}-{}.A1gp.conn.dat where {} are replaced with operator strings"
                     "Defaults to '{}-{}.dat'",
-                    default = "{}-{}.dat")
+                    default="{}-{}.dat")
 parser.add_argument("-fv", "--format-vev", type=str, required=False,
                     help="fromat of the vev files in the directory\n\n"
                     "e.g. {}-A1gp.conn.vev where {} are replaced with operator strings"
                     "Defaults to '{}.vev'",
-                    default = "{}.vev")
+                    default="{}.vev")
 
 args = parser.parse_args()
 
-cor_template=args.format
-vev_template=args.format_vev
+cor_template = args.format
+vev_template = args.format_vev
 
 if not os.path.exists(args.input_dir):
     print "input directory doesnt exist"
@@ -123,24 +123,24 @@ def eigenvalue_32_balls(data_folder):
 def diagonal_ops(data_folder, op):
     """return correlator
     """
-    op_file = datafolder + cor_template.format(op)
+    op_file = data_folder + cor_template.format(op)
     return build_corr.diag_from_opfiles(op_file)
 
 
 def off_diagonal_ops(data_folder, src_op, snk_op):
-    srcop_file = data_folder+cor_template.format(src_op)
-    snkop_file = data_folder+cor_template.format(snk_op)
+    srcop_file = data_folder + cor_template.format(src_op)
+    snkop_file = data_folder + cor_template.format(snk_op)
     return build_corr.from_opfiles(srcop_file, snkop_file)
 
 
 def diagonal_file(data_folder, op):
-    corrfile = data_folder + cor_template.format(op,op)
+    corrfile = data_folder + cor_template.format(op, op)
     vev_file = data_folder + vev_template.format(op)
     return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
 
 
 def off_diagonal_file(data_folder, src_op, snk_op):
-    corrfile = data_folder+ cor_template.format(src_op,snk_op)
+    corrfile = data_folder + cor_template.format(src_op, snk_op)
     src_vev_file = data_folder + vev_template.format(src_op)
     snk_vev_file = data_folder + vev_template.format(snk_op)
     # src_vev_file = "%svev_%stest1.dat" % (data_folder, src_op)
