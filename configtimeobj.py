@@ -94,6 +94,7 @@ class Cfgtimeobj(object):
     def compatible(self, otherobj):
 
         if self.configs == otherobj.configs and self.times == otherobj.times:
+            logging.debug("verified objects are compatible")
             return True
         else:
             return False
