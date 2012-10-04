@@ -2,6 +2,7 @@ import read_config_time_file as read
 import eigenvalues
 import correlator
 import configtimeobj
+from itertools import product
 
 def corr_and_vev_from_files(corrfile, srcvevfile, snkvevfile):
 
@@ -34,3 +35,21 @@ def from_eigenvalue_32cubed_opfiles(dirname):
     return correlator.Correlator.fromOpvalCTO(data, data)
 
 
+def matrix_from_opfiles(opfile_list):
+    datas = [read.read_config_time_data_real(op) for op in opfile_list]
+
+    
+    
+    matrix = {}
+    # Product give all possible combinations
+    for e1,e2 in product(enumerate(datas, start=1),repeat=2):
+        print "e1,e2"
+        print e1
+        print e2
+        index1,data1 = e1
+        index2,data2 = e2
+        print index1,data1,index2,data2
+        matrix[(index1,index2)] = correlator.Correlator.fromOpvalCTO(data1,data2)
+
+    print matrix
+    return matrix
