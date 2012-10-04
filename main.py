@@ -98,7 +98,7 @@ def plot_corr(corr, out_folder, name):
     plot.plotwitherrorbarsnames("%scorrelator.%s" % (out_folder, name),
                                 plot_corr_info, avgcorr.keys(), autoscale=True)
 
-    emass_dts = range(1, 4)
+    emass_dts = range(1, 3)
     for dt in emass_dts:
         emass = corr.effective_mass(dt)
         emass_errors = corr.effective_mass_errors(dt)
