@@ -12,17 +12,22 @@ def corr_and_vev_from_files(corrfile, srcvevfile, snkvevfile):
     return correlator.Correlator.fromDataDicts(corrdata, vevdata_src, vevdata_snk)
 
 
-def from_opfiles(src_opfile, snk_opfile, N=8):
+def from_opfiles(src_opfile, snk_opfile, N=None):
     srcdata = read.read_config_time_data_real(src_opfile)
     snkdata = read.read_config_time_data_real(snk_opfile)
 
-    return correlator.Correlator.fromOpvalCTO(srcdata, snkdata, dts=list(range(N)))
+    if N is None:
+        return correlator.Correlator.fromOpvalCTO(srcdata, snkdata)
+    else:
+        return correlator.Correlator.fromOpvalCTO(srcdata, snkdata, dts=list(range(N)))
 
 
 def diag_from_opfiles(opfile, N=8):
     opdata = read.read_config_time_data_real(opfile)
-    return correlator.Correlator.fromOpvalCTO(opdata, opdata, dts=list(range(N)))
-
+    if N is None:
+        return correlator.Correlator.fromOpvalCTO(opdata, opdata)
+    else:
+        return correlator.Correlator.fromOpvalCTO(opdata, opdata, dts=list(range(N)))
 
 def from_eigenvalue_24cubed_opfiles(dirname):
     rawdata = eigenvalues.readfile_neigenvalues(dirname, 112)
