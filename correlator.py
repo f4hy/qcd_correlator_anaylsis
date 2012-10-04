@@ -42,8 +42,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
-        vev1 = vev.Vev(opval1.average_over_times())
-        vev2 = vev.Vev(opval2.average_over_times())
+        vev1 = opval1.average_over_times()
+        vev2 = opval2.average_over_times()
 
         # data = {cfg:
         #         {dt:
