@@ -6,6 +6,7 @@ import struct
 import build_corr
 import logging
 import numpy as np
+from main import plot_corr
 from itertools import combinations
 
 def diagonalize_using_coefs(coef_matrix, corr_matrix):
@@ -22,11 +23,12 @@ def diagonalize_using_coefs(coef_matrix, corr_matrix):
     times =  first_elm.times
         
     diaged = {}
+    v = {}
     # for cfg in configs:
     #     matrix_of_cors[cfg] = {t: np.matrix(np.zeros((2,2))) for t in times}
 
     for cfg in configs:
-        v = np.matrix(np.array([c.vev1[cfg] for c in corr_matrix.diagonal().flat]))*np.transpose(coef_matrix)
+        v[cfg] = np.matrix(np.array([c.vev1[cfg] for c in corr_matrix.diagonal().flat]))*np.transpose(coef_matrix)
         diaged[cfg] = [coef_matrix*np.matrix(np.array([c.get(config=cfg,time=t) for c in corr_matrix.flat]).reshape(2,2))*np.transpose(coef_matrix) for t in times]
         # for t in times:
         #     m= np.matrix(np.array([c.get(config=cfg,time=t) for c in corr_matrix.flat]).reshape(2,2))
@@ -40,16 +42,54 @@ def diagonalize_using_coefs(coef_matrix, corr_matrix):
     print coef_matrix
     print size
 
-    for i in range(size):
-        for j in range(size):
-            print (i,j)
-            for cfg in configs:
-                print "cfg",cfg
-                for t in times:
-                    print "{}, {!r}".format(t,diaged[cfg][t][i,j])
-    
-    exit(0)
+    # for i in range(size):
+    #     for j in range(size):
+    #         print (i,j)
+    #         for cfg in configs:
+    #             print "cfg",cfg
+    #             for t in times:
+    #                 print "{}, {!r}".format(t,diaged[cfg][t][i,j])
 
+    print type(v)
+    print type(diaged)
+    print type(diaged.keys()[0])
+    #print diaged
+    
+    #return diaged,v
+
+    print diaged[configs[0]][times[0]]
+    print diaged[configs[1]][times[1]]
+    
+    zero_zero = {cfg: {t: diaged[cfg][t][0,0] for t in times} for cfg in configs}
+    vev_zero = {cfg: v[cfg][0,0] for cfg in configs}
+
+    one_one = {cfg: {t: diaged[cfg][t][1,1] for t in times} for cfg in configs}
+    vev_one = {cfg: v[cfg][0,1] for cfg in configs}
+    
+    
+    print zero_zero[configs[0]][times[0]]
+    print zero_zero[configs[1]][times[1]]
+
+    print v[configs[0]]
+    print v[configs[1]]
+    print type(vev_zero[configs[0]])
+    print vev_zero[configs[0]]
+    print vev_zero[configs[1]]
+
+    print vev_one[configs[0]]
+    print vev_one[configs[1]]
+        
+    corr0 = correlator.Correlator.fromDataDicts(zero_zero,vev_zero,vev_zero)
+    corr1 = correlator.Correlator.fromDataDicts(one_one,vev_one,vev_one)
+
+    plot_corr(corr0, "/tmp/diag/", "diagzero")
+    plot_corr(corr1, "/tmp/diag/", "diagone")
+    
+    #exit(0)
+
+
+
+    
     
 def get_diagonalize_coefs(corr_matrix,t,t0):
     first_elm = corr_matrix.flat[0]
@@ -77,10 +117,16 @@ def get_diagonalize_coefs(corr_matrix,t,t0):
     print evecs
     print evecs.flat[1]*22.6922
     print evecs.flat[3]*22.6922
+    print evals
+    return evecs
     #print evecs[0][0]*22.6922, evecs[0][1]*22.6922
     
 
 def build_matrix_of_cors(corr_matrix):
+    """Takes a matrix of corelator objects and returns an
+    cfg_time_dict whose elements is a matrix of values
+
+    """
     for cor1,cor2 in combinations(corr_matrix.flat,2):
         assert  cor1.compatible(cor2)
 
@@ -95,10 +141,14 @@ def build_matrix_of_cors(corr_matrix):
              for c in corr_matrix.flat]).reshape(2,2)) for t in times]
                                
 
+def split_matrix_of_cors(corr_matrix, vevs):
+    """ Takes a dictionar whose elements are """
+    pass
+        
 if __name__ == "__main__":
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    exampledir = "/home/bfahy/r3/effectivemasses/meyer_binned/stream_1/"
+    exampledir = "/home/bfahy/r3/effectivemasses/meyer_binned/total/"
     corfile11 = exampledir +  "binned_500_a1pp_0_optype0_op1_a1pp_0_optype0_op1.cor"
     vev1file = exampledir + "binned_500_a1pp_0_optype0_op1_a1pp_0_optype0_op1.vev1"
     vev2file = exampledir + "binned_500_a1pp_0_optype0_op1_a1pp_0_optype0_op1.vev2"
@@ -138,8 +188,13 @@ if __name__ == "__main__":
 
     print np.matrix([[a,b],[c,d]])
     print np.matrix([[cor11,cor12],[cor21,cor22]])
-    get_diagonalize_coefs(np.matrix([[cor11,cor12],[cor21,cor22]]),1,2)
-    exit(0)
+    coefs = get_diagonalize_coefs(np.matrix([[cor11,cor12],[cor21,cor22]]),1,2)
+    print coefs
+    print np.matrix(coefs)
+    #diagonalize_using_coefs(np.matrix(coefs),np.matrix([[cor11,cor12],[cor21,cor22]]))
+    #exit(0)
 
+    
+    
     diagonalize_using_coefs(np.matrix([[a,b],[c,d]]),np.matrix([[cor11,cor12],[cor21,cor22]]))
     #sum_correlators_with_coeffs(zip([1.0],[cor11]))
