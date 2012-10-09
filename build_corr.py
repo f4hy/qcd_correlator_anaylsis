@@ -58,3 +58,42 @@ def matrix_from_opfiles(opfile_list):
 
     print matrix
     return matrix
+
+
+def matrix_from_cor_and_vev(directory,cortemplate,srcvevtemplate,snkvevtemplate,operator_list):
+
+    matrix = {}
+    for e1,e2 in product(enumerate(operator_list, start=1),repeat=2):
+        print "e1,e2"
+        print e1
+        print e2
+        index1,op1 = e1
+        index2,op2 = e2
+        corfile = (directory+cortemplate).format(op1,op2)
+        srcvevfile = (directory+srcvevtemplate).format(op1,op2)
+        snkvevfile = (directory+snkvevtemplate).format(op1,op2)
+        matrix[(index1,index2)] = corr_and_vev_from_files(corfile,srcvevfile,snkvevfile)
+
+
+        
+    print matrix
+    return matrix
+    # datas = [read.read_config_time_data_real(op) for op in opfile_list]
+
+    
+    
+    # matrix = {}
+    # Product give all possible combinations
+    # for e1,e2 in product(enumerate(datas, start=1),repeat=2):
+    #     print "e1,e2"
+    #     print e1
+    #     print e2
+    #     index1,data1 = e1
+    #     index2,data2 = e2
+    #     print index1,data1,index2,data2
+    #     matrix[(index1,index2)] = correlator.Correlator.fromOpvalCTO(data1,data2)
+
+    # print matrix
+    # return matrix
+
+    
