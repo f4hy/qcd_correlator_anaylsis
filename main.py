@@ -11,6 +11,8 @@ parser.add_argument("-i", "--input-dir", type=str, required=True,
                     help="directory to read files from")
 parser.add_argument("-o", "--output-dir", type=str, required=True,
                     help="directory to write plots to")
+parser.add_argument("-ob", "--output-bins", type=str, required=False,
+                    help="directory to write binned data to")
 parser.add_argument("-r", "--operators", action='append', required=True,
                     help="operator to make \n\n e.g. -r a1pp_0_optype0_op1")
 parser.add_argument("-b", "--bins", type=int, default=1, help="number of bins")
@@ -42,13 +44,16 @@ if not os.path.exists(args.input_dir):
     parser.exit()
 
 
+if not args.output_bins:
+    args.output_bins = args.output_dir
+
 if args.verbose:
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
     logging.debug("Verbose debuging mode activated")
 else:
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-print args.operators
+logging.info("Running with operators" + str(args.operators))
 
 
 def main():
@@ -67,7 +72,7 @@ def main():
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
                 plot_corr(binedcor, args.output_dir, oper)
-                binedcor.writefullfile(args.output_dir + "binned_%d_%s" % (args.bins, oper))
+                binedcor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             else:
                 plot_corr(correlator, args.output_dir, oper)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
@@ -82,7 +87,7 @@ def main():
                 if args.bins > 1:
                     binedcor = correlator.reduce_to_bins(args.bins)
                     plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
-                    binedcor.writefullfile(args.output_dir + "binned_%d_%s_%s" %
+                    binedcor.writefullfile(args.output_bins + "binned_%d_%s_%s" %
                                            (args.bins, src_oper, snk_oper))
                 else:
                     plot_corr(correlator, args.output_dir, src_oper + snk_oper)
