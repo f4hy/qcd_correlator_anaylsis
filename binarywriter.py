@@ -8,8 +8,14 @@ import correlator
 import struct
 import build_corr
 import logging
+import math
+from itertools import combinations
+
+
 
 def write_binary_correlator(filename,cor):
+
+
 
     f = open(filename,'wb')
     NSTRINGS = 20
@@ -47,8 +53,12 @@ def write_binary_correlator(filename,cor):
         f.write(struct.pack('d', cor.vev1[cfg]))
 
 
-def write_binary_correlator_matrix(filename,size,cor_matrix):
+def write_binary_correlator_matrix(filename,cor_matrix):
 
+    assert all(c1.compatible(c2) for c1,c2 in combinations(cor_matrix.values(),2))
+
+    size = int(math.sqrt(len(cor_matrix)))
+        
     first = cor_matrix[(1,1)]
     
     f = open(filename,'wb')
@@ -125,50 +135,31 @@ if __name__ == "__main__":
     
     
 
-    exampledir = "/home/bfahy/r3/meyer_results_moreops/stream_1/data/"
-    opfile1 = exampledir +  "opvals_a1pp_0_optype0_op1_diag.dat"
-    opfile2 = exampledir +  "opvals_a1pp_0_optype5_op1_diag.dat"
-    opfile3 = exampledir +  "opvals_a1pp_0_optype10_op1_diag.dat"
+    # exampledir = "/home/bfahy/r3/meyer_results_moreops/stream_1/data/"
+    # opfile1 = exampledir +  "opvals_a1pp_0_optype0_op1_diag.dat"
+    # opfile2 = exampledir +  "opvals_a1pp_0_optype5_op1_diag.dat"
+    # opfile3 = exampledir +  "opvals_a1pp_0_optype11_op1_diag.dat"
 
-    matrix = build_corr.matrix_from_opfiles([opfile1,opfile2,opfile3])
+    #matrix1 = build_corr.matrix_from_opfiles([opfile1,opfile2,opfile3])
+
+    #ops = ["a1pp_0_optype{}_op1".format(i) for i in [0,1,3,5,10,11]]
+    ops = ["a1pp_0_optype{}_op1".format(i) for i in [5,11]]
+    # ops = ["a1pp_0_optype{}_op1".format(i) for i in [0,10]]
+
+    directory = "/home/bfahy/r3/effectivemasses/meyer_moreops/total/"
     
-    # cor11 = build_corr.from_opfiles(opfile1, opfile1)
-    # cor12 = build_corr.from_opfiles(opfile1, opfile2)
-    # cor21 = build_corr.from_opfiles(opfile2, opfile1)
-    # cor22 = build_corr.from_opfiles(opfile2, opfile2)
-    
-    
-
+    matrix = build_corr.matrix_from_cor_and_vev(directory,"binned_500_{}_{}.cor","binned_500_{}_{}.vev1","binned_500_{}_{}.vev2", ops)
 
     
-    # exampledir = "/home/bfahy/data/example_cors/"
-    # corfile = exampledir +  "cor_src_a1pp_0_optype0_op1-snk_a1pp_0_optype0_op1test1.dat"
-    # vev1file = exampledir + "vev_a1pp_0_optype0_op1test1.dat"
-    # vev2file = exampledir + "vev_a1pp_0_optype0_op1test1.dat"
-    # cor00 = build_corr.corr_and_vev_from_files(corfile, vev1file, vev2file)
 
-    # exampledir = "/home/bfahy/r3/test_data/"
-    # corfile11 = exampledir +  "isoscalar_OhD_A1gp_1_000_Single_Site_0-isoscalar_OhD_A1gp_1_000_Single_Site_0.A1gp.conn.dat"
-    # corfile12 = exampledir +  "isoscalar_OhD_A1gp_1_000_Single_Site_0-isoscalar_OhD_A1gp_1_000_Singly_Displaced_2.A1gp.conn.dat"
-    # corfile22 = exampledir +  "isoscalar_OhD_A1gp_1_000_Singly_Displaced_2-isoscalar_OhD_A1gp_1_000_Singly_Displaced_2.A1gp.conn.dat"
-    # vev1file = exampledir + "vev.dat"
-    # cor11 = build_corr.corr_and_vev_from_files(corfile11, vev1file, vev1file)
-    # cor12 = build_corr.corr_and_vev_from_files(corfile12, vev1file, vev1file)
-    # cor22 = build_corr.corr_and_vev_from_files(corfile22, vev1file, vev1file)
 
-    # exampledir = "/home/bfahy/r3/diag_test_data/"
+    # directory = "/home/bfahy/r3/diag_test_data/"
     # ops = ['Single_Site_0', 'Triply_Displaced_O_3', 'Triply_Displaced_U_0', 'Triply_Displaced_U_2']
-    # template = "isovector_du_OhD_A1um_1_000_"
-    # vevfile = exampledir + "vev.dat"
-    # matrix = {}
-    # print list(enumerate(ops, start=1))
-    # for j, op1 in enumerate(ops, start=1):
-    #     for i, op2 in enumerate(ops, start=1):
-    #         corfile = "{d}{temp}{oper1}-{temp}{oper2}.0.conn.dat".format(d=exampledir,
-    #                                                           temp=template,oper1 = op1, oper2 = op2)
-    #         matrix[(i,j)] = build_corr.corr_and_vev_from_files(corfile, vevfile, vevfile)
-    # print matrix
-
+    
+    # matrix = build_corr.matrix_from_cor_and_vev(directory,"isovector_du_OhD_A1um_1_000_{}-isovector_du_OhD_A1um_1_000_{}.0.conn.dat","vev.dat","vev.dat", ops)
+    
+    
+    
     # corfile11 = exampledir +  "isoscalar_OhD_A1gp_1_000_Single_Site_0-isoscalar_OhD_A1gp_1_000_Single_Site_0.A1gp.conn.dat"
     # corfile12 = exampledir +  "isoscalar_OhD_A1gp_1_000_Single_Site_0-isoscalar_OhD_A1gp_1_000_Singly_Displaced_2.A1gp.conn.dat"
     # corfile22 = exampledir +  "isoscalar_OhD_A1gp_1_000_Singly_Displaced_2-isoscalar_OhD_A1gp_1_000_Singly_Displaced_2.A1gp.conn.dat"
@@ -181,8 +172,7 @@ if __name__ == "__main__":
     #matrix = {(1,1) : cor11}
 
     
-    
     #write_binary_correlator("bin500.data1pp",cor11)
-    write_binary_correlator_matrix("newop.data1pp", 3,matrix)
+    write_binary_correlator_matrix("newop.data1pp",matrix)
 
     
