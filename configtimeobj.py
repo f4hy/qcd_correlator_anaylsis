@@ -138,7 +138,10 @@ class Cfgtimeobj(object):
         outfile = open(filename, 'w')
         for config in self.configs:
             for time in self.times:
-                outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)))
+                if self.datatype is type(np.array(1.0)):
+                    outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)[0]))
+                else:
+                    outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)))
         outfile.close()
 
     def writeeachconfig(self, filename):
