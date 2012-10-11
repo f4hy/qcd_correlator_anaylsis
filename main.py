@@ -53,12 +53,12 @@ if args.verbose:
 else:
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-logging.info("Running with operators" + str(args.operators))
+logging.info("Running with operators" + str([x.strip() for x in args.operators]))
 
 
 def main():
     if not args.off_diagonals:
-        for oper in args.operators:
+        for oper in [x.strip() for x in args.operators]:
             if oper == "eigen":
                 correlator = eigenvalue_24_balls(args.input_dir)
             elif oper == "eigen32":
@@ -78,7 +78,7 @@ def main():
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
     else:
         for src_oper in args.operators:
-            for snk_oper in args.operators:
+            for snk_oper in [x.strip() for x in args.operators]:
                 if args.make_from_operators:
                     correlator = off_diagonal_ops(args.input_dir, src_oper, snk_oper)
                 else:
