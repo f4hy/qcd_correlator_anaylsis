@@ -57,7 +57,7 @@ logging.info("Running with operators" + str([x.strip() for x in args.operators])
 
 
 def plot_diagonal():
-    for oper in [x.strip() for x in args.operators]:
+    for oper in [op.strip() for op in args.operators]:
         if oper == "eigen":
             correlator = eigenvalue_24_balls(args.input_dir)
         elif oper == "eigen32":
@@ -76,20 +76,21 @@ def plot_diagonal():
                 plot_corr(correlator, args.output_dir, oper)
                 logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
 
+
 def plot_off_diagonal():
-    #matrix = build_corr.matrix_from_cor_and_vev(directory,cor_template,vev_template,"binned_500_{}_{}.vev2", args.operators)
-    
+
     if args.make_from_operators:
         filelist = [args.input_dir + cor_template.format(op) for op in args.operators]
         matrix = build_corr.matrix_from_opfiles(filelist)
     else:
-        matrix = build_corr.matrix_from_cor_and_vev(directory,cor_template,vev_template,vev_template, args.operators)
+        matrix = build_corr.matrix_from_cor_and_vev(directory, cor_template,
+                                                    vev_template, vev_template, args.operators)
     print matrix
-    for index,correlator in matrix.iteritems():
+    for index, correlator in matrix.iteritems():
 
         print index
-        src_oper = args.operators[index[0]-1]
-        snk_oper = args.operators[index[1]-1]
+        src_oper = args.operators[index[0] - 1]
+        snk_oper = args.operators[index[1] - 1]
         if args.bins > 1:
             binedcor = correlator.reduce_to_bins(args.bins)
             plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
@@ -98,8 +99,7 @@ def plot_off_diagonal():
         else:
             plot_corr(correlator, args.output_dir, src_oper + snk_oper)
             logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
-        
-        
+
 
 def main():
     if not args.off_diagonals:
@@ -151,9 +151,10 @@ def off_diagonal_ops(data_folder, src_op, snk_op):
     snkop_file = data_folder + cor_template.format(snk_op)
     return build_corr.from_opfiles(srcop_file, snkop_file)
 
+
 def op_files(data_folder, ops):
     return [data_folder + cor_template.format(op) for op in ops]
-    
+
 
 def diagonal_file(data_folder, op):
     corrfile = data_folder + cor_template.format(op, op)
