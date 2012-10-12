@@ -83,7 +83,7 @@ def plot_off_diagonal():
         filelist = [args.input_dir + cor_template.format(op) for op in args.operators]
         matrix = build_corr.matrix_from_opfiles(filelist)
     else:
-        matrix = build_corr.matrix_from_cor_and_vev(directory, cor_template,
+        matrix = build_corr.matrix_from_cor_and_vev(args.input_dir, cor_template,
                                                     vev_template, vev_template, args.operators)
     print matrix
     for index, correlator in matrix.iteritems():

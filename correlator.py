@@ -52,7 +52,6 @@ class Correlator(configtimeobj.Cfgtimeobj):
         #          for dt in dts }
         #          for cfg in configs}
 
-        
         return cls(data, vev1, vev2)
 
     def __init__(self, datadict, vev1, vev2):
