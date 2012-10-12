@@ -54,9 +54,9 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
                        % (basename, index * 2 + 2, index * 2 + 3, index + 1, name))
     plotfile.write("\n")
 #    subprocess.check_call(["gnuplot ", " %s.plt" % basename])
-    plotfile.flush()
+    # plotfile.flush()
     plotfile.close()
-    subprocess.call(["sync"])
+    # subprocess.call(["sync"])
     returncode = subprocess.call(["gnuplot", basename + ".plt"])
     if returncode:
         raise OSError("gnuplot failed to plot" + basename + ".plt")
@@ -142,9 +142,9 @@ def plotwithnames(basename, datas, shifts):
 
     plotfile.write("\n")
 #    subprocess.check_call(["gnuplot ", " %s.plt" % basename])
-    plotfile.flush()
+    # plotfile.flush()
     plotfile.close()
-    subprocess.call(["sync"])
+    # subprocess.call(["sync"])
     returncode = subprocess.call(["gnuplot", basename + ".plt"])
     if returncode:
         logging.error("gnuplot failed to plot" + basename + ".plt")
