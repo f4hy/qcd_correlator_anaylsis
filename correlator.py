@@ -34,11 +34,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
             opc2 = get2(config=cfg)
             inerdata = {}
             for dt in dts:
-                acc = 0.0
-                for t in times:
-                    #acc += get1(config=cfg, time=((t+dt)%numtimes))*get2(config=cfg, time=t)
-                    shifted_t = (t + dt) % numtimes
-                    acc += opc1[shifted_t] * opc2[t]
+                #acc = 0.0
+                acc = math.fsum(opc1[(t + dt) % numtimes] * opc2[t] for t in times)
+                # for t in times:
+                #     shifted_t = (t + dt) % numtimes
+                #     acc += opc1[shifted_t] * opc2[t]
                 inerdata[dt] = acc / float(numtimes)
             data[cfg] = inerdata
 
