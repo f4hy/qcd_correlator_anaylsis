@@ -59,7 +59,7 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
     # subprocess.call(["sync"])
     returncode = subprocess.call(["gnuplot", basename + ".plt"])
     if returncode:
-        raise OSError("gnuplot failed to plot" + basename + ".plt")
+        logging.error("gnuplot failed to plot" + basename + ".plt")
     else:
         logging.info("plotted " + basename + ".plt" + " successfully")
 
