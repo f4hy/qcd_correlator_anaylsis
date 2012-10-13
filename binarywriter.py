@@ -72,9 +72,9 @@ if __name__ == "__main__":
     ops = ["a1pp_0_optype{}_op1".format(i) for i in [0,1,3,5,10,11]]
 
     directory = "/home/bfahy/r3/effectivemasses/meyer_moreops/total/"
-    
-    matrix = build_corr.matrix_from_cor_and_vev(directory,"binned_500_{}_{}.cor","binned_500_{}_{}.vev1","binned_500_{}_{}.vev2", ops)
-
+    corformat = "binned_500_{}_{}.cor"
+    vevformat = "binned_500_{0}_{0}.vev1"
+    matrix = build_corr.matrix_from_cor_and_vev(directory, corformat, vevformat, ops)
 
     # directory = "/home/bfahy/r3/diag_test_data/"
     # ops = ['Single_Site_0', 'Triply_Displaced_O_3', 'Triply_Displaced_U_0', 'Triply_Displaced_U_2']

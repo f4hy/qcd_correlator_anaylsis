@@ -1,8 +1,6 @@
 import numpy as np
 import math
 import logging
-#DEBUG = False
-DEBUG = True
 
 
 class Cfgtimeobj(object):
@@ -29,7 +27,7 @@ class Cfgtimeobj(object):
         self.datatype = type(dataitem)
         self.scalar = np.isscalar(dataitem)
 
-        if DEBUG:
+        if __debug__:
             self.verify()
 
     @classmethod
@@ -53,7 +51,7 @@ class Cfgtimeobj(object):
 
     def verify(self):
 
-        if not DEBUG:
+        if not __debug__:
             return True
 
         if not self.data:
