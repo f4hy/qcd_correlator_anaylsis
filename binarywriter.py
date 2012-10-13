@@ -11,17 +11,17 @@ import logging
 import math
 from itertools import combinations
 
-def write_binary_correlator_matrix(filename,cor_matrix):
+def write_binary_correlator_matrix(filename, cor_matrix):
 
-    assert all(c1.compatible(c2) for c1,c2 in combinations(cor_matrix.values(),2))
+    assert all(c1.compatible(c2) for c1, c2 in combinations(cor_matrix.values(), 2))
 
     size = int(math.sqrt(len(cor_matrix)))
         
-    first = cor_matrix[(1,1)]
+    first = cor_matrix[(1, 1)]
     
-    f = open(filename,'wb')
+    f = open(filename, 'wb')
     NSTRINGS = 20
-    f.write(struct.pack('i',NSTRINGS)) # Nstrings
+    f.write(struct.pack('i', NSTRINGS)) # Nstrings
     f.write("                                    \0")
     f.write("                                    \0")
     f.write("                                    \0")
@@ -42,46 +42,38 @@ def write_binary_correlator_matrix(filename,cor_matrix):
     f.write("                                               1 \0")
     f.write("                                                 \0")
     f.write("                                    \0")
-    f.write(struct.pack('i',size)) # NCOR
-    f.write(struct.pack('i',first.numtimes-1)) # MAX_DT
-    f.write(struct.pack('i',first.numtimes)) # T_PERIOD
-    f.write(struct.pack('i',first.numconfigs)) # NBINS
+    f.write(struct.pack('i', size)) # NCOR
+    f.write(struct.pack('i', first.numtimes-1)) # MAX_DT
+    f.write(struct.pack('i', first.numtimes)) # T_PERIOD
+    f.write(struct.pack('i', first.numconfigs)) # NBINS
     
     for cfg in first.configs:
         for t in first.times:
-            for j in range(1,size+1):
-                for i in range(1,j+1):
-                    f.write(struct.pack('d', cor_matrix[(i,j)].get(config=cfg,time=t)))
+            for j in range(1, size+1):
+                for i in range(1, j+1):
+                    f.write(struct.pack('d', cor_matrix[(i, j)].get(config=cfg, time=t)))
 
     for cfg in first.configs:
-        for diag in range(1,size+1):
-            f.write(struct.pack('d', cor_matrix[(diag,diag)].vev1[cfg]))
+        for diag in range(1, size+1):
+            f.write(struct.pack('d', cor_matrix[(diag, diag)].vev1[cfg]))
         
         
 if __name__ == "__main__":
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-
     # exampledir = "/home/bfahy/r3/meyer_results_moreops/stream_1/data/"
     # opfile1 = exampledir +  "opvals_a1pp_0_optype0_op1_diag.dat"
     # opfile2 = exampledir +  "opvals_a1pp_0_optype5_op1_diag.dat"
     # opfile3 = exampledir +  "opvals_a1pp_0_optype11_op1_diag.dat"
+    #matrix = build_corr.matrix_from_opfiles([opfile1, opfile2, opfile3])
 
-    #matrix1 = build_corr.matrix_from_opfiles([opfile1,opfile2,opfile3])
-
-    ops = ["a1pp_0_optype{}_op1".format(i) for i in [0,1,3,5,10,11]]
+    ops = ["a1pp_0_optype{}_op1".format(op) for op in [0, 1, 3, 5, 10, 11]]
 
     directory = "/home/bfahy/r3/effectivemasses/meyer_moreops/total/"
-    
-    matrix = build_corr.matrix_from_cor_and_vev(directory,"binned_500_{}_{}.cor","binned_500_{}_{}.vev1","binned_500_{}_{}.vev2", ops)
+    corformat = "binned_500_{}_{}.cor"
+    vevformat = "binned_500_{0}_{0}.vev1"
+    matrix = build_corr.matrix_from_cor_and_vev(directory, corformat, vevformat, ops)
 
-
-    # directory = "/home/bfahy/r3/diag_test_data/"
-    # ops = ['Single_Site_0', 'Triply_Displaced_O_3', 'Triply_Displaced_U_0', 'Triply_Displaced_U_2']
-    
-    # matrix = build_corr.matrix_from_cor_and_vev(directory,"isovector_du_OhD_A1um_1_000_{}-isovector_du_OhD_A1um_1_000_{}.0.conn.dat","vev.dat","vev.dat", ops)
-    
-    
-    write_binary_correlator_matrix("newop.data1pp",matrix)
+    write_binary_correlator_matrix("newop.data1pp", matrix)
 
     
