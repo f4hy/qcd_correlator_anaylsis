@@ -2,6 +2,7 @@ import read_config_time_file as read
 import eigenvalues
 import correlator
 import configtimeobj
+import logging
 from itertools import product
 
 
@@ -44,6 +45,7 @@ def from_eigenvalue_32cubed_opfiles(dirname):
 
 
 def matrix_from_opfiles(opfile_list):
+    logging.debug("building matrix of correlators using %s", str(opfile_list))
     datas = [read.read_config_time_data_real(op) for op in opfile_list]
 
     matrix = {}
@@ -57,7 +59,7 @@ def matrix_from_opfiles(opfile_list):
 
 
 def matrix_from_cor_and_vev(directory, cortemplate, vevtemplate, operator_list):
-
+    logging.debug("building matrix of correlators using %s", str(operator_list))
     matrix = {}
     for e1, e2 in product(enumerate(operator_list, start=1), repeat=2):
         index1, op1 = e1
