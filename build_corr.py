@@ -56,15 +56,15 @@ def matrix_from_opfiles(opfile_list):
     return matrix
 
 
-def matrix_from_cor_and_vev(directory, cortemplate, srcvevtemplate, snkvevtemplate, operator_list):
+def matrix_from_cor_and_vev(directory, cortemplate, vevtemplate, operator_list):
 
     matrix = {}
     for e1, e2 in product(enumerate(operator_list, start=1), repeat=2):
         index1, op1 = e1
         index2, op2 = e2
         corfile = (directory + cortemplate).format(op1, op2)
-        srcvevfile = (directory + srcvevtemplate).format(op1, op2)
-        snkvevfile = (directory + snkvevtemplate).format(op1, op2)
+        srcvevfile = (directory + vevtemplate).format(op1)
+        snkvevfile = (directory + vevtemplate).format(op2)
         matrix[(index1, index2)] = corr_and_vev_from_files(corfile, srcvevfile, snkvevfile)
 
     return matrix
