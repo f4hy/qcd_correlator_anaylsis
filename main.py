@@ -56,17 +56,18 @@ else:
 logging.info("Running with operators" + str([x.strip() for x in args.operators]))
 
 
-def plot_diagonal():
-    for oper in [op.strip() for op in args.operators]:
-        if oper == "eigen":
-            correlator = eigenvalue_24_balls(args.input_dir)
-        elif oper == "eigen32":
-            logging.debug("operator eigen32 selected reading 32cubed glueballs")
-            correlator = eigenvalue_32_balls(args.input_dir)
-        elif args.make_from_operators:
-            correlator = diagonal_ops(args.input_dir, oper)
-        else:
-            correlator = diagonal_file(args.input_dir, oper)
+def main():
+    if not args.off_diagonals:
+        for oper in [x.strip() for x in args.operators]:
+            if oper == "eigen":
+                correlator = eigenvalue_24_balls(args.input_dir)
+            elif oper == "eigen32":
+                logging.debug("operator eigen32 selected reading 32cubed glueballs")
+                correlator = eigenvalue_32_balls(args.input_dir)
+            elif args.make_from_operators:
+                correlator = diagonal_ops(args.input_dir, oper)
+            else:
+                correlator = diagonal_file(args.input_dir, oper)
 
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
@@ -74,38 +75,23 @@ def plot_diagonal():
                 binedcor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             else:
                 plot_corr(correlator, args.output_dir, oper)
-                logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
-
-
-def plot_off_diagonal():
-
-    if args.make_from_operators:
-        filelist = [args.input_dir + cor_template.format(op) for op in args.operators]
-        matrix = build_corr.matrix_from_opfiles(filelist)
+            logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
     else:
-        matrix = build_corr.matrix_from_cor_and_vev(args.input_dir, cor_template,
-                                                    vev_template, args.operators)
-    print matrix
-    for index, correlator in matrix.iteritems():
+        for src_oper in args.operators:
+            for snk_oper in [x.strip() for x in args.operators]:
+                if args.make_from_operators:
+                    correlator = off_diagonal_ops(args.input_dir, src_oper, snk_oper)
+                else:
+                    correlator = off_diagonal_file(args.input_dir, src_oper, snk_oper)
 
-        print index
-        src_oper = args.operators[index[0] - 1]
-        snk_oper = args.operators[index[1] - 1]
-        if args.bins > 1:
-            binedcor = correlator.reduce_to_bins(args.bins)
-            plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
-            binedcor.writefullfile(args.output_bins + "binned_%d_%s_%s" %
-                                   (args.bins, src_oper, snk_oper))
-        else:
-            plot_corr(correlator, args.output_dir, src_oper + snk_oper)
-            logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
-
-
-def main():
-    if not args.off_diagonals:
-        plot_diagonal()
-    else:
-        plot_off_diagonal()
+                if args.bins > 1:
+                    binedcor = correlator.reduce_to_bins(args.bins)
+                    plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
+                    binedcor.writefullfile(args.output_bins + "binned_%d_%s_%s" %
+                                           (args.bins, src_oper, snk_oper))
+                else:
+                    plot_corr(correlator, args.output_dir, src_oper + snk_oper)
+                logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
 
 
 def plot_corr(corr, out_folder, name):
@@ -150,10 +136,6 @@ def off_diagonal_ops(data_folder, src_op, snk_op):
     srcop_file = data_folder + cor_template.format(src_op)
     snkop_file = data_folder + cor_template.format(snk_op)
     return build_corr.from_opfiles(srcop_file, snkop_file)
-
-
-def op_files(data_folder, ops):
-    return [data_folder + cor_template.format(op) for op in ops]
 
 
 def diagonal_file(data_folder, op):
