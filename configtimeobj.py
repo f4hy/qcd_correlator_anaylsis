@@ -66,7 +66,7 @@ class Cfgtimeobj(object):
                 if type(self.data[cfg][time]) != self.datatype:
                     logging.error(str(type(self.data[cfg][time])))
                     raise TypeError("Not all data is the same type")
-                if self.data[cfg][time] == None:
+                if self.data[cfg][time] is None:
                     raise ValueError("indexed value is none")
 
         logging.debug("Cfg Time Object verified for consistancy")
@@ -85,7 +85,7 @@ class Cfgtimeobj(object):
         if time is None:
             return self.data[config]
         if config is None:
-            return {cfg: v[time]   for cfg, v in self.data.iteritems()}
+            return {cfg: v[time] for cfg, v in self.data.iteritems()}
         else:
             return self.data[config][time]
 
@@ -134,12 +134,12 @@ class Cfgtimeobj(object):
 
     def writefullfile(self, filename):
         outfile = open(filename, 'w')
-        for config in self.configs:
-            for time in self.times:
+        for cfg in self.configs:
+            for t in self.times:
                 if self.datatype is type(np.array(1.0)):
-                    outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)[0]))
+                    outfile.write("{!r},   {!r}\n".format(t, self.get(config=cfg, time=t)[0]))
                 else:
-                    outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)))
+                    outfile.write("{!r},   {!r}\n".format(t, self.get(config=cfg, time=t)))
         outfile.close()
 
     def writeeachconfig(self, filename):

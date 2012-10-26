@@ -84,7 +84,7 @@ def read_configdir_time_evalues(dirname, N=-1):
 
     # Hopfully no files that are digits!
     configs = [x for x in os.listdir(dirname) if x.isdigit()]
-    logging.debug("found configs ", configs)
+    logging.debug("found configs %s", str(configs))
 
     for config in configs:
 
@@ -270,8 +270,7 @@ def diagonalize(data):
     return newdata
 
 if __name__ == "__main__":
-    """test readinput"""
-    pass
+    logging.debug("no longer runable")
 #     testdir = "./alleigens860/"
 #     data = readfile_neigenvalues(testdir, 1)
 #     import tools

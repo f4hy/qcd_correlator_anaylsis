@@ -1,5 +1,5 @@
 import read_config_time_file as read
-import eigenvalues
+import eigenvalues as eigen
 import correlator
 import configtimeobj
 import logging
@@ -33,14 +33,14 @@ def diag_from_opfiles(opfile, N=8):
 
 
 def from_eigenvalue_24cubed_opfiles(dirname):
-    rawdata = eigenvalues.readfile_neigenvalues(dirname, 112)
-    data = configtimeobj.Cfgtimeobj.fromDataDict(eigenvalues.reduce_to_trace(rawdata))
+    rawdata = eigen.readfile_neigenvalues(dirname, 112)
+    data = configtimeobj.Cfgtimeobj.fromDataDict(eigen.reduce_to_trace(rawdata))
     return correlator.Correlator.fromOpvalCTO(data, data)
 
 
 def from_eigenvalue_32cubed_opfiles(dirname):
-    rawdata = eigenvalues.read_configdir_timeorlevel_evalues(dirname, 264, recall=False, store=False)
-    data = configtimeobj.Cfgtimeobj.fromDataDict(eigenvalues.reduce_to_trace(rawdata))
+    rawdata = eigen.read_configdir_timeorlevel_evalues(dirname, 264, recall=False, store=False)
+    data = configtimeobj.Cfgtimeobj.fromDataDict(eigen.reduce_to_trace(rawdata))
     return correlator.Correlator.fromOpvalCTO(data, data)
 
 
