@@ -79,13 +79,17 @@ class Cfgtimeobj(object):
         self.data[key] = value
 
     def get(self, config=None, time=None):
-
-        if config is None and time is None:
-            return self.data
+        """The common case is if both are not none unfortunatly that
+        is checked last. This might mean thousands of unessisary if
+        checks but I think this is the most readable and readablity counts
+        """
+        if config is None:
+            if time is None:
+                return self.data
+            else:
+                return {cfg: v[time] for cfg, v in self.data.iteritems()}
         if time is None:
             return self.data[config]
-        if config is None:
-            return {cfg: v[time] for cfg, v in self.data.iteritems()}
         else:
             return self.data[config][time]
 
