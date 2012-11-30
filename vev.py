@@ -26,8 +26,11 @@ class Vev(object):
         return math.fsum(self.data.values()) / float(self.numconfigs)
 
     def jackknife(self):
-        return {cfg: (math.fsum(self.data.values()) - self.get(cfg)) / (self.numconfigs - 1)
-                for cfg in self.configs}
+        if self.numconfigs > 1:
+            return {cfg: (math.fsum(self.data.values()) - self.get(cfg)) / (self.numconfigs - 1)
+                    for cfg in self.configs}
+        else:
+            return {cfg: (math.fsum(self.data.values()) - self.get(cfg)) for cfg in self.configs}
 
     def writefullfile(self, filename):
         outfile = open(filename, 'w')

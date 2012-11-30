@@ -126,8 +126,12 @@ class Cfgtimeobj(object):
 
     def jackknifed_averages(self):
         sums = self.sum_over_configs()
-        return {cfg: {t: (sums[t] - self.get(time=t, config=cfg)) / (self.numconfigs - 1)
-                      for t in self.times} for cfg in self.configs}
+        if self.numconfigs > 1:
+            return {cfg: {t: (sums[t] - self.get(time=t, config=cfg)) / (self.numconfigs - 1)
+                          for t in self.times} for cfg in self.configs}
+        else:
+            return {cfg: {t: (sums[t] - self.get(time=t, config=cfg)) for t in self.times}
+                    for cfg in self.configs}
 
     def jackknifed_full_average(self):
         total = self.average_all()
