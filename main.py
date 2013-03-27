@@ -31,11 +31,20 @@ parser.add_argument("-fv", "--format-vev", type=str, required=False,
                     help="fromat of the vev files in the directory\n\n"
                     "e.g. {}-A1gp.conn.vev where {} are replaced with operator strings"
                     "Defaults to '{}.vev'",
-                    default="{}.vev")
+                    default=None)
+parser.add_argument("-nv", "--no-vev", action="store_true", required=False,
+                    help="Specify no vev so should be set to zeros\n")
+
+
 
 args = parser.parse_args()
 
 cor_template = args.format
+if (not args.make_from_operators) and (not args.format_vev and not args.no_vev):
+    print "Error: must specify vev format"
+    parser.print_help()
+    print "\nError: must specify vev format"
+    parser.exit()
 vev_template = args.format_vev
 
 if not os.path.exists(args.input_dir):
@@ -140,8 +149,11 @@ def off_diagonal_ops(data_folder, src_op, snk_op):
 
 def diagonal_file(data_folder, op):
     corrfile = data_folder + cor_template.format(op, op)
-    vev_file = data_folder + vev_template.format(op)
-    return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
+    if(args.no_vev):
+        return build_corr.corr_and_vev_from_files(corrfile)
+    else:
+        vev_file = data_folder + vev_template.format(op)
+        return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
 
 
 def off_diagonal_file(data_folder, src_op, snk_op):

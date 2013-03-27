@@ -6,12 +6,19 @@ import logging
 from itertools import product
 
 
-def corr_and_vev_from_files(corrfile, srcvevfile, snkvevfile):
+def corr_and_vev_from_files(corrfile, srcvevfile=None, snkvevfile=None):
 
     corrdata = read.read_config_time_data_real(corrfile).data
-    vevdata_src = read.read_config_vev(srcvevfile)
-    vevdata_snk = read.read_config_vev(snkvevfile)
+    if(srcvevfile):
+        vevdata_src = read.read_config_vev(srcvevfile)
+    else:
+        vevdata_src = {cfg: 0.0 for cfg in corrdata}
+    if(snkvevfile):
+        vevdata_snk = read.read_config_vev(snkvevfile)
+    else:
+        vevdata_snk = {cfg: 0.0 for cfg in corrdata}
     return correlator.Correlator.fromDataDicts(corrdata, vevdata_src, vevdata_snk)
+
 
 
 def from_opfiles(src_opfile, snk_opfile, N=None):
