@@ -34,7 +34,8 @@ def diag_from_opfiles(opfile, N=8):
 
 def from_eigenvalue_24cubed_opfiles(dirname):
     rawdata = eigen.readfile_neigenvalues(dirname, 112)
-    data = configtimeobj.Cfgtimeobj.fromDataDict(eigen.reduce_to_trace(rawdata))
+    data = configtimeobj.Cfgtimeobj.fromDataDict(eigen.reduce_to_weighted_trace(rawdata))
+    data.writeeachconfig(dirname[:-1]+"_weighted/weighted")
     return correlator.Correlator.fromOpvalCTO(data, data)
 
 
