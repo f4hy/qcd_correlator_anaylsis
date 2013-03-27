@@ -4,6 +4,7 @@ time step \t lambda0 \t lambda1 \t lambda2 ...
 import os
 import numpy as np
 import logging
+import math
 import cPickle as pickle
 
 #DEBUG = True
@@ -218,6 +219,17 @@ def reduce_to_trace(data):
     for config, values in data.iteritems():
         newconfvalue = {}
         for time, array in values.iteritems():
+            newconfvalue[time] = sum(array)
+            newdata[config] = newconfvalue
+
+    return newdata
+
+def reduce_to_weighted_trace(data):
+    newdata = {}
+    for config, values in data.iteritems():
+        newconfvalue = {}
+        for time, array in values.iteritems():
+            array = [lamb*math.exp(-64*lamb*lamb) for lamb in array]
             newconfvalue[time] = sum(array)
             newdata[config] = newconfvalue
 
