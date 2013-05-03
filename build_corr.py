@@ -6,9 +6,9 @@ import logging
 from itertools import product
 
 
-def corr_and_vev_from_files(corrfile, srcvevfile=None, snkvevfile=None):
+def corr_and_vev_from_files(corrfile, srcvevfile=None, snkvevfile=None, cfgs=None, ts=None):
 
-    corrdata = read.read_config_time_data_real(corrfile).data
+    corrdata = read.read_config_time_data_real(corrfile, configs=cfgs, times=ts).data
     if(srcvevfile):
         vevdata_src = read.read_config_vev(srcvevfile)
     else:

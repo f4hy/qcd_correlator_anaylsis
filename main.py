@@ -34,6 +34,8 @@ parser.add_argument("-fv", "--format-vev", type=str, required=False,
                     default=None)
 parser.add_argument("-nv", "--no-vev", action="store_true", required=False,
                     help="Specify no vev so should be set to zeros\n")
+parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
+parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
 
 
 
@@ -150,10 +152,10 @@ def off_diagonal_ops(data_folder, src_op, snk_op):
 def diagonal_file(data_folder, op):
     corrfile = data_folder + cor_template.format(op, op)
     if(args.no_vev):
-        return build_corr.corr_and_vev_from_files(corrfile)
+        return build_corr.corr_and_vev_from_files(corrfile, cfgs=args.configs, ts=args.times)
     else:
         vev_file = data_folder + vev_template.format(op)
-        return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
+        return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file, cfgs=args.configs, ts=args.times)
 
 
 def off_diagonal_file(data_folder, src_op, snk_op):
@@ -162,7 +164,7 @@ def off_diagonal_file(data_folder, src_op, snk_op):
     snk_vev_file = data_folder + vev_template.format(snk_op)
     # src_vev_file = "%svev_%stest1.dat" % (data_folder, src_op)
     # snk_vev_file = "%svev_%stest1.dat" % (data_folder, snk_op)
-    return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file)
+    return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file, cfgs=args.configs, ts=args.times)
 
 if __name__ == "__main__":
     main()
