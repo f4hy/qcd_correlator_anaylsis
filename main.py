@@ -11,6 +11,8 @@ parser.add_argument("-i", "--input-dir", type=str, required=True,
                     help="directory to read files from")
 parser.add_argument("-o", "--output-dir", type=str, required=True,
                     help="directory to write plots to")
+parser.add_argument("-ob", "--output-bins", type=str, required=False,
+                    help="directory to write binned data to")
 parser.add_argument("-r", "--operators", action='append', required=True,
                     help="operator to make \n\n e.g. -r a1pp_0_optype0_op1")
 parser.add_argument("-b", "--bins", type=int, default=1, help="number of bins")
@@ -29,11 +31,22 @@ parser.add_argument("-fv", "--format-vev", type=str, required=False,
                     help="fromat of the vev files in the directory\n\n"
                     "e.g. {}-A1gp.conn.vev where {} are replaced with operator strings"
                     "Defaults to '{}.vev'",
-                    default="{}.vev")
+                    default=None)
+parser.add_argument("-nv", "--no-vev", action="store_true", required=False,
+                    help="Specify no vev so should be set to zeros\n")
+parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
+parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
+
+
 
 args = parser.parse_args()
 
 cor_template = args.format
+if (not args.make_from_operators) and (not args.format_vev and not args.no_vev):
+    print "Error: must specify vev format"
+    parser.print_help()
+    print "\nError: must specify vev format"
+    parser.exit()
 vev_template = args.format_vev
 
 if not os.path.exists(args.input_dir):
@@ -42,18 +55,21 @@ if not os.path.exists(args.input_dir):
     parser.exit()
 
 
+if not args.output_bins:
+    args.output_bins = args.output_dir
+
 if args.verbose:
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
     logging.debug("Verbose debuging mode activated")
 else:
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-print args.operators
+logging.info("Running with operators" + str([x.strip() for x in args.operators]))
 
 
 def main():
     if not args.off_diagonals:
-        for oper in args.operators:
+        for oper in [unstriped.strip() for unstriped in args.operators]:
             if oper == "eigen":
                 correlator = eigenvalue_24_balls(args.input_dir)
             elif oper == "eigen32":
@@ -67,13 +83,13 @@ def main():
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
                 plot_corr(binedcor, args.output_dir, oper)
-                binedcor.writefullfile(args.output_dir + "binned_%d_%s" % (args.bins, oper))
+                binedcor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             else:
                 plot_corr(correlator, args.output_dir, oper)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
     else:
         for src_oper in args.operators:
-            for snk_oper in args.operators:
+            for snk_oper in [unstriped.strip() for unstriped in args.operators]:
                 if args.make_from_operators:
                     correlator = off_diagonal_ops(args.input_dir, src_oper, snk_oper)
                 else:
@@ -82,7 +98,7 @@ def main():
                 if args.bins > 1:
                     binedcor = correlator.reduce_to_bins(args.bins)
                     plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
-                    binedcor.writefullfile(args.output_dir + "binned_%d_%s_%s" %
+                    binedcor.writefullfile(args.output_bins + "binned_%d_%s_%s" %
                                            (args.bins, src_oper, snk_oper))
                 else:
                     plot_corr(correlator, args.output_dir, src_oper + snk_oper)
@@ -135,8 +151,11 @@ def off_diagonal_ops(data_folder, src_op, snk_op):
 
 def diagonal_file(data_folder, op):
     corrfile = data_folder + cor_template.format(op, op)
-    vev_file = data_folder + vev_template.format(op)
-    return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file)
+    if(args.no_vev):
+        return build_corr.corr_and_vev_from_files(corrfile, cfgs=args.configs, ts=args.times)
+    else:
+        vev_file = data_folder + vev_template.format(op)
+        return build_corr.corr_and_vev_from_files(corrfile, vev_file, vev_file, cfgs=args.configs, ts=args.times)
 
 
 def off_diagonal_file(data_folder, src_op, snk_op):
@@ -145,7 +164,7 @@ def off_diagonal_file(data_folder, src_op, snk_op):
     snk_vev_file = data_folder + vev_template.format(snk_op)
     # src_vev_file = "%svev_%stest1.dat" % (data_folder, src_op)
     # snk_vev_file = "%svev_%stest1.dat" % (data_folder, snk_op)
-    return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file)
+    return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file, cfgs=args.configs, ts=args.times)
 
 if __name__ == "__main__":
     main()

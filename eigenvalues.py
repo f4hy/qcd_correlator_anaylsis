@@ -4,6 +4,7 @@ time step \t lambda0 \t lambda1 \t lambda2 ...
 import os
 import numpy as np
 import logging
+import math
 import cPickle as pickle
 
 #DEBUG = True
@@ -84,7 +85,7 @@ def read_configdir_time_evalues(dirname, N=-1):
 
     # Hopfully no files that are digits!
     configs = [x for x in os.listdir(dirname) if x.isdigit()]
-    logging.debug("found configs ", configs)
+    logging.debug("found configs %s", str(configs))
 
     for config in configs:
 
@@ -223,6 +224,17 @@ def reduce_to_trace(data):
 
     return newdata
 
+def reduce_to_weighted_trace(data):
+    newdata = {}
+    for config, values in data.iteritems():
+        newconfvalue = {}
+        for time, array in values.iteritems():
+            array = [lamb*math.exp(-64*lamb*lamb) for lamb in array]
+            newconfvalue[time] = sum(array)
+            newdata[config] = newconfvalue
+
+    return newdata
+
 
 def reduce_to_trace_n_n(data, n, m):
     newdata = {}
@@ -270,8 +282,7 @@ def diagonalize(data):
     return newdata
 
 if __name__ == "__main__":
-    """test readinput"""
-    pass
+    logging.debug("no longer runable")
 #     testdir = "./alleigens860/"
 #     data = readfile_neigenvalues(testdir, 1)
 #     import tools

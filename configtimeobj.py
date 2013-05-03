@@ -1,8 +1,6 @@
 import numpy as np
 import math
 import logging
-#DEBUG = False
-DEBUG = True
 
 
 class Cfgtimeobj(object):
@@ -29,7 +27,7 @@ class Cfgtimeobj(object):
         self.datatype = type(dataitem)
         self.scalar = np.isscalar(dataitem)
 
-        if DEBUG:
+        if __debug__:
             self.verify()
 
     @classmethod
@@ -53,7 +51,7 @@ class Cfgtimeobj(object):
 
     def verify(self):
 
-        if not DEBUG:
+        if not __debug__:
             return True
 
         if not self.data:
@@ -68,7 +66,7 @@ class Cfgtimeobj(object):
                 if type(self.data[cfg][time]) != self.datatype:
                     logging.error(str(type(self.data[cfg][time])))
                     raise TypeError("Not all data is the same type")
-                if self.data[cfg][time] == None:
+                if self.data[cfg][time] is None:
                     raise ValueError("indexed value is none")
 
         logging.debug("Cfg Time Object verified for consistancy")
@@ -81,13 +79,17 @@ class Cfgtimeobj(object):
         self.data[key] = value
 
     def get(self, config=None, time=None):
-
-        if config is None and time is None:
-            return self.data
+        """The common case is if both are not none unfortunatly that
+        is checked last. This might mean thousands of unessisary if
+        checks but I think this is the most readable and readablity counts
+        """
+        if config is None:
+            if time is None:
+                return self.data
+            else:
+                return {cfg: v[time] for cfg, v in self.data.iteritems()}
         if time is None:
             return self.data[config]
-        if config is None:
-            return {cfg: v[time]   for cfg, v in self.data.iteritems()}
         else:
             return self.data[config][time]
 
@@ -124,8 +126,12 @@ class Cfgtimeobj(object):
 
     def jackknifed_averages(self):
         sums = self.sum_over_configs()
-        return {cfg: {t: (sums[t] - self.get(time=t, config=cfg)) / (self.numconfigs - 1)
-                      for t in self.times} for cfg in self.configs}
+        if self.numconfigs > 1:
+            return {cfg: {t: (sums[t] - self.get(time=t, config=cfg)) / (self.numconfigs - 1)
+                          for t in self.times} for cfg in self.configs}
+        else:
+            return {cfg: {t: (sums[t] - self.get(time=t, config=cfg)) for t in self.times}
+                    for cfg in self.configs}
 
     def jackknifed_full_average(self):
         total = self.average_all()
@@ -136,9 +142,12 @@ class Cfgtimeobj(object):
 
     def writefullfile(self, filename):
         outfile = open(filename, 'w')
-        for config in self.configs:
-            for time in self.times:
-                outfile.write("{!r},   {!r}\n".format(time, self.get(config=config, time=time)))
+        for cfg in self.configs:
+            for t in self.times:
+                if self.datatype is type(np.array(1.0)):
+                    outfile.write("{!r},   {!r}\n".format(t, self.get(config=cfg, time=t)[0]))
+                else:
+                    outfile.write("{!r},   {!r}\n".format(t, self.get(config=cfg, time=t)))
         outfile.close()
 
     def writeeachconfig(self, filename):
