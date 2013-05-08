@@ -37,7 +37,7 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
 
     plotfile.write("set yrange[0:%f] \n" % maxrange)
     #plotfile.write("set yrange[%f:%f] \n" % (minrange, maxrange))
-    plotfile.write("set xrange[0:%d] \n" % len(shifts))
+    plotfile.write("set xrange[{}:{}] \n".format(min(shifts), max(shifts)))
     if imagetype is "eps":
         plotfile.write("set terminal postscript eps color  \n")
     else:
@@ -71,7 +71,7 @@ def writedataerrorsfile(basename, data_errors, shifts):
     names = data_errors.keys()
     writefile.write("# time \t \"%s \" \n" % "\t".join(names))
 
-    for shift in shifts:
+    for shift in sorted(shifts):
         writefile.write(str(shift))
         for _, values in data_errors.iteritems():
             writefile.write(",\t")
