@@ -126,10 +126,11 @@ def covariance_matrix(cor, tmin, tmax):
     aoc = cor.average_over_configs()
     for i in range(tmin, tmax):
         ave_i = aoc[i]
-        for j in range(tmin, tmax):
+        for j in range(i, tmax):
             ave_j = aoc[j]
             mymat[i - tmin][j - tmin] = np.mean([(cor[n][i] - ave_i) * (cor[n][j] - ave_j)
                                                  for n in cor.configs]) * nm1
+            mymat[j - tmin][i - tmin] = mymat[i - tmin][j - tmin]
 
     return mymat
 
