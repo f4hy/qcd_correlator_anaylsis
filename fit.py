@@ -123,22 +123,21 @@ def bootstrap_ensamble(cor, N=64):
     return [bootstrap(cor) for i in range(N)]
 
 
-def covariance_matrix(cor,tmin, tmax):
+def covariance_matrix(cor, tmin, tmax):
     # print(cor.data)
     # reformat = np.array([c.values() for c in cor.data.values()])
     # print(reformat)
-    nm1 = (1.0 / (len(cor.configs)-1))
-    mymat = np.identity(tmax-tmin)
+    nm1 = (1.0 / (len(cor.configs) - 1))
+    mymat = np.identity(tmax - tmin)
+    aoc = cor.average_over_configs()
     for i in range(tmin, tmax):
-        ave_i = np.mean(cor.get(time=i).values())
+        ave_i = aoc[i]
         for j in range(tmin, tmax):
-            ave_j = np.mean(cor.get(time=j).values())
-            mymat[i-tmin][j-tmin] = np.mean([(cor.get(config=n, time=i) - ave_i) * (cor.get(config=n, time=j) - ave_j)
-                                  for n in cor.configs]) * nm1
+            ave_j = aoc[j]
+            mymat[i - tmin][j - tmin] = np.mean([(cor[n][i] - ave_i) * (cor[n][j] - ave_j)
+                                                 for n in cor.configs]) * nm1
 
     return mymat
-    # print(np.cov(reformat))
-
 
 
 def CholeskyInverse(t):
