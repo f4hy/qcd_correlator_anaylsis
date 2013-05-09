@@ -160,11 +160,12 @@ def diagonal_file(data_folder, op):
 
 def off_diagonal_file(data_folder, src_op, snk_op):
     corrfile = data_folder + cor_template.format(src_op, snk_op)
-    src_vev_file = data_folder + vev_template.format(src_op)
-    snk_vev_file = data_folder + vev_template.format(snk_op)
-    # src_vev_file = "%svev_%stest1.dat" % (data_folder, src_op)
-    # snk_vev_file = "%svev_%stest1.dat" % (data_folder, snk_op)
-    return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file, cfgs=args.configs, ts=args.times)
+    if(args.no_vev):
+        return build_corr.corr_and_vev_from_files(corrfile, cfgs=args.configs, ts=args.times)
+    else:
+        src_vev_file = data_folder + vev_template.format(src_op)
+        snk_vev_file = data_folder + vev_template.format(snk_op)
+        return build_corr.corr_and_vev_from_files(corrfile, src_vev_file, snk_vev_file, cfgs=args.configs, ts=args.times)
 
 if __name__ == "__main__":
     main()
