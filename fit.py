@@ -25,42 +25,34 @@ def fit(fn, cor, tmin, tmax):
 
     # cov_fun = lambda v: np.sum(  )
 
-    cov = covariance_matrix(cor)
-
-    inv_cov = linalg.inv(cov, overwrite_a = True)
-    inv_cov = np.identity(len(cor.times))
     initial_guess = [2.0, 2.0]
     x = np.arange(32)[tmin:tmax]
-    # x = cor.times[tmin:tmax]
-    y = np.exp((-1.0) * np.arange(32))
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
-    print len(x)
-    print len(y)
-    print fun(initial_guess, x, y)
     v, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
     if not success:
         raise ValueError()
+    initial_guess = v
     boot_masses = []
     for i in bootstrap_ensamble(cor, 5):
         ave_cor = i.average_sub_vev()
         y = [ave_cor[t] for t in range(tmin, tmax)]
-        cov = covariance_matrix(i)
-        chol = linalg.cholesky(cov)
+        cov = covariance_matrix(i, tmin, tmax)
 
-        inv_cov = linalg.inv(cov, overwrite_a = True)
+        inv_cov = bestInverse(cov)
 
-        cov_fun = lambda v: np.sum( ((ave_cor[t] - fn(v,t))*inv_cov[t][tp]*(ave_cor[tp] - fn(v,tp)) for t in range(tmin, tmax) for tp in range(tmin, tmax) ))
-        # cov_fun_root = lambda v: np.sqrt(np.sum( ((ave_cor[t] - fn(v,t))*inv_cov[t][tp]*(ave_cor[tp] - fn(v,tp)) for t in range(tmin, tmax) for tp in range(tmin, tmax) )))
+        cov_fun = lambda v: np.sum( ((ave_cor[t] - fn(v,t))*inv_cov[t-tmin][tp-tmin]*(ave_cor[tp] - fn(v,tp)) for t in range(tmin, tmax) for tp in range(tmin, tmax) ))
         #would like to use minimize, but seems to be not installed
-        fit = fmin(cov_fun, initial_guess, maxfun=1000000)
         v, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
-        # fit = leastsq(cov_fun, initial_guess, maxfev=100000)
+        initial_guess = v
+        covariant_fit = fmin(cov_fun, initial_guess, maxfun=1000000)
         # fit = minimize(cov_fun, initial_guess, method='BFGS')
-        print "fit", fit
-        print "v", v
+
+        # fit = leastsq(cov_fun, initial_guess, maxfev=100000)
+        logging.debug("Covariant fit {}, regular fit {}".format(repr(covariant_fit), repr(v)))
         # fit = fit.x
-        boot_masses.append(fit[0])
+
+        boot_masses.append(covariant_fit[0])
 
     if not success:
         raise ValueError()
@@ -98,7 +90,7 @@ def plot_fit(fn, cor, tmin, tmax, filename=None):
 
 def make_fake_cor():
     cfgs = list(range(5))
-    times = list(range(5))
+    times = list(range(16))
     data = {}
     vev = {}
     for c in cfgs:
@@ -107,7 +99,7 @@ def make_fake_cor():
         for t in times:
 
             tmp[t] = 5.0 * np.exp((-0.5) * t) + 6.0 * np.exp((-1.5) * t)
-            tmp[t] *= 1 + (pylab.rand() * 0.001)
+            tmp[t] += (pylab.rand() * 0.0001)*tmp[t]
         # print tmp
         data[c] = tmp
 
@@ -131,21 +123,22 @@ def bootstrap_ensamble(cor, N=64):
     return [bootstrap(cor) for i in range(N)]
 
 
-def covariance_matrix(cor):
+def covariance_matrix(cor,tmin, tmax):
     # print(cor.data)
     # reformat = np.array([c.values() for c in cor.data.values()])
     # print(reformat)
     nm1 = (1.0 / (len(cor.configs)-1))
-    mymat = np.identity(len(cor.times))
-    for i in cor.times:
+    mymat = np.identity(tmax-tmin)
+    for i in range(tmin, tmax):
         ave_i = np.mean(cor.get(time=i).values())
-        for j in cor.times:
+        for j in range(tmin, tmax):
             ave_j = np.mean(cor.get(time=j).values())
-            mymat[i][j] = np.mean([(cor.get(config=n, time=i) - ave_i) * (cor.get(config=n, time=j) - ave_j)
+            mymat[i-tmin][j-tmin] = np.mean([(cor.get(config=n, time=i) - ave_i) * (cor.get(config=n, time=j) - ave_j)
                                   for n in cor.configs]) * nm1
 
     return mymat
     # print(np.cov(reformat))
+
 
 
 def CholeskyInverse(t):
@@ -165,9 +158,49 @@ def CholeskyInverse(t):
             B[j][i] = B[i][j] = -np.sum([t[i][k]*B[k][j] for k in range(i+1,nrows)])/t[i][i]
     return B
 
+class InversionError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+def bestInverse(M):
+    TOLERANCE = 1.E-5
+
+    def invert_error(i):
+        return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
+
+    inv = linalg.inv(M)         # Will raise error if singular
+    error = invert_error(inv)
+
+    try:
+        chol = linalg.cholesky(M,check_finite=False )
+    except np.linalg.linalg.LinAlgError:
+        logging.debug("Not positive definite!")
+
+    else:
+        chol_inv = CholeskyInverse(chol)
+        chol_error = invert_error(chol_inv)
+
+        logging.debug("Inversions errors were inv={}, chol={}".format(error, chol_error))
+
+        if chol_error > TOLERANCE and error >TOLERANCE:
+            raise InversionError("Could not invert within tolerance")
+
+        if chol_error < error:
+            logging.debug("Using choleskey inverse")
+            inv = chol_inv
+        else:
+            logging.debug("Using standard inverse")
+
+
+    return inv
+
+
+
 
 if __name__ == "__main__":
-    # pylab.plot(np.arange(32), make_fake_cor()[0])
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)    # pylab.plot(np.arange(32), make_fake_cor()[0])
     # pylab.show()
     # cor = make_fake_cor()
     # ave_cor = cor.average_sub_vev()
@@ -182,7 +215,7 @@ if __name__ == "__main__":
     srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
     cor = build_corr.corr_and_vev_from_files(corrfile, srcvevfile, snkvevfile)
 
-    # cor = make_fake_cor()
+    #cor = make_fake_cor()
     # plot_fit(single_exp, cor, 3, 5)
 
     # corrfile = "/tmp/fakecor/fake.cor"
@@ -191,11 +224,11 @@ if __name__ == "__main__":
     # cor = make_fake_cor()
     # cor.writefullfile("/tmp/fakecor/real")
     # ave_cor = cor.average_sub_vev()
-    cov =  covariance_matrix(cor)
+    # cov =  covariance_matrix(cor)
     # cov = np.matrix([[ 4,-1,  0],
     #                  [-1, 3,-1],
     #                  [ 0,-1, 4]])
-
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)    # pylab.plot(np.aran
     # print cov
     # cov = cov[5:10, 5:10]
     # print "condition number", np.linalg.cond(cov)
@@ -208,20 +241,26 @@ if __name__ == "__main__":
     #             smallest = ((tmin, tmax), condition_num)
 
     # print smallest
-    cov = cov[2:4, 2:4]
-    # cov *= (1.0/cov.max())
-    inv_cov = linalg.inv(cov)
+    plot_fit(single_exp, cor, 2, 12)
+    # cov = cov[2:6, 2:6]
 
 
-    print "inv_cov",inv_cov
-    print np.dot(cov, inv_cov)
-    print np.max(np.abs(np.dot(cov, inv_cov) - np.identity(len(cov))))
-    try:
-        chol = linalg.cholesky(cov,check_finite=False )
-        chol_inv = CholeskyInverse(chol)
-        print "chol", chol
-        print "inv_chol", chol_inv
-        print np.dot(cov, chol_inv)
-        print np.max(np.abs((np.dot(cov, chol_inv) - np.identity(len(cov)))))
-    except np.linalg.linalg.LinAlgError:
-        print "Not positive definite"
+    # # cov *= (1.0/cov.max())
+    # print cov
+    # print bestInverse(cov)
+
+    # inv_cov = linalg.inv(cov)
+
+
+    # print "inv_cov",inv_cov
+    # print np.dot(cov, inv_cov)
+    # print np.max(np.abs(np.dot(cov, inv_cov) - np.identity(len(cov))))
+    # try:
+    #     chol = linalg.cholesky(cov,check_finite=False )
+    #     chol_inv = CholeskyInverse(chol)
+    #     print "chol", chol
+    #     print "inv_chol", chol_inv
+    #     print np.dot(cov, chol_inv)
+    #     print np.max(np.abs((np.dot(cov, chol_inv) - np.identity(len(cov)))))
+    # except np.linalg.linalg.LinAlgError:
+    #     print "Not positive definite"
