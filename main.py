@@ -90,20 +90,23 @@ def main():
     else:
         for src_oper in args.operators:
             for snk_oper in [unstriped.strip() for unstriped in args.operators]:
-                if args.make_from_operators:
-                    correlator = off_diagonal_ops(args.input_dir, src_oper, snk_oper)
-                else:
-                    correlator = off_diagonal_file(args.input_dir, src_oper, snk_oper)
+                try:
+                    if args.make_from_operators:
+                        correlator = off_diagonal_ops(args.input_dir, src_oper, snk_oper)
+                    else:
+                        correlator = off_diagonal_file(args.input_dir, src_oper, snk_oper)
 
-                if args.bins > 1:
-                    binedcor = correlator.reduce_to_bins(args.bins)
-                    plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
-                    binedcor.writefullfile(args.output_bins + "binned_%d_%s_%s" %
-                                           (args.bins, src_oper, snk_oper))
-                else:
-                    plot_corr(correlator, args.output_dir, src_oper + snk_oper)
-                logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
-
+                    if args.bins > 1:
+                        binedcor = correlator.reduce_to_bins(args.bins)
+                        plot_corr(binedcor, args.output_dir, src_oper + snk_oper)
+                        binedcor.writefullfile(args.output_bins + "binned_%d_%s_%s" %
+                                               (args.bins, src_oper, snk_oper))
+                    else:
+                        plot_corr(correlator, args.output_dir, src_oper + snk_oper)
+                    logging.info("done with %s %s to %s\n---\n", src_oper, snk_oper, args.output_dir)
+                except IOError:
+                    logging.error("File not found for {} and {}\nContinuing".format(src_oper, snk_oper))
+                    continue
 
 def plot_corr(corr, out_folder, name):
 
