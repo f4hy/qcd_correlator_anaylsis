@@ -34,6 +34,8 @@ parser.add_argument("-fv", "--format-vev", type=str, required=False,
                     default=None)
 parser.add_argument("-nv", "--no-vev", action="store_true", required=False,
                     help="Specify no vev so should be set to zeros\n")
+parser.add_argument("-dt", "--delta-t", nargs='+', required=False, default=[1,3], type=int,
+                    help="which delta-t's to compute for effective masses \n")
 parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
 parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
 
@@ -117,7 +119,7 @@ def plot_corr(corr, out_folder, name):
     plot.plotwitherrorbarsnames("%scorrelator.%s" % (out_folder, name),
                                 plot_corr_info, avgcorr.keys(), autoscale=True)
 
-    emass_dts = range(1, 3)
+    emass_dts = args.delta_t
     for dt in emass_dts:
         emass = corr.effective_mass(dt)
         emass_errors = corr.effective_mass_errors(dt)
