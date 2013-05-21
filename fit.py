@@ -10,11 +10,18 @@ from scipy import linalg
 from scipy.optimize import leastsq
 from scipy.optimize import fmin
 # from scipy.optimize import minimize
-
+Nt = 128
 
 def single_exp(v, x):
     return (v[1] * np.exp((-1.0) * v[0] * x))
 
+def periodic_exp(v, x):
+    return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(Nt/2.0)) )))
+
+
+def cosh(v, x):
+    #return ((2*v[1])/np.exp(v[0]*Nt/2.0) * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
+    return (v[1] * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
 
 def fit(fn, cor, tmin, tmax):
     fun = lambda v, mx, my: (fn(v, mx) - my)
