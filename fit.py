@@ -23,12 +23,12 @@ def fit(fn, cor, tmin, tmax):
     x = np.arange(32)[tmin:tmax]
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
-    v, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
+    original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
     if not success:
         raise ValueError()
-    initial_guess = v
-    boot_masses = []
-    for i in bootstrap_ensamble(cor):
+    initial_guess = original_ensamble_params
+
+    def cov_fit(correlator,guess):
         ave_cor = i.average_sub_vev()
         y = [ave_cor[t] for t in range(tmin, tmax)]
         cov = covariance_matrix(i, tmin, tmax)
@@ -37,10 +37,13 @@ def fit(fn, cor, tmin, tmax):
 
         cov_fun = lambda v: np.sum(((ave_cor[t] - fn(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn(v, tp))
                                     for t in range(tmin, tmax) for tp in range(tmin, tmax)))
-        v, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
-        initial_guess = v
+        uncorrelated_fit_values, success = leastsq(fun, guess, args=(x, y), maxfev=100000)
+        if not success:
+            raise ValueError()
+
+        guess = uncorrelated_fit_values
         #would like to use minimize, but seems to be not installed
-        results = fmin(cov_fun, initial_guess, maxfun=1000000, full_output=1, disp=0, retall=0)
+        results = fmin(cov_fun, guess, ftol=1.E-7, maxfun=1000000, full_output=1, disp=0, retall=0)
         covariant_fit, fit_info, flag = results[0], results[1:-1], results[-1]
         # covariant_fit = minimize(cov_fun, initial_guess)
         logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))
@@ -48,14 +51,33 @@ def fit(fn, cor, tmin, tmax):
             logging.error("Fitter flag set to {}. Error!")
             raise RuntimeError("Fitter failed")
 
-        logging.debug("Covariant fit {}, regular fit {}".format(repr(covariant_fit), repr(v)))
+        logging.debug("Covariant fit {}, regular fit {}".format(repr(covariant_fit),
+                                                                repr(uncorrelated_fit_values)))
 
-        boot_masses.append(covariant_fit[0])
+        return(covariant_fit)
 
-    if not success:
-        raise ValueError()
-    print 'Estimater parameters: ', v
+    boot_masses = []
+    boot_amps = []
+    for i in bootstrap_ensamble(cor):
+        fitted_params = cov_fit(i, original_ensamble_params)
+        boot_masses.append(fitted_params[0])
+        boot_amps.append(fitted_params[1])
+
+    original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
+
+    print 'Uncorelated total fit: ', original_ensamble_params
+    print 'Correlated total fit:  ', original_ensamble_correlatedfit
     print 'boot parameter masses: ', np.mean(boot_masses), np.var(boot_masses)
+
+    v = (np.mean(boot_masses), np.mean(boot_amps))
+    cov = covariance_matrix(cor, tmin, tmax)
+    inv_cov = bestInverse(cov)
+    chi_sqr = np.sum(((ave_cor[t] - fn(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn(v, tp))
+                      for t in range(tmin, tmax) for tp in range(tmin, tmax)))
+
+    print "Chi_Sq", chi_sqr
+    dof = len(x) - 2
+    print "Chi_Sq / dof", chi_sqr/dof
 
     return (v, boot_masses)
 
@@ -113,7 +135,7 @@ def bootstrap(cor):
     return correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2)
 
 
-def bootstrap_ensamble(cor, N=64):
+def bootstrap_ensamble(cor, N=256):
     return [bootstrap(cor) for i in range(N)]
 
 
@@ -192,12 +214,11 @@ def bestInverse(M):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    corrfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.cor"
-    srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
-    cor = build_corr.corr_and_vev_from_files(corrfile, srcvevfile, snkvevfile)
+    corrfile = "/home/bfahy/r2/testdata/myformatcorsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat"
+    # srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
 
-    #cor = make_fake_cor()
+    cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=50, ts=18)
 
-    plot_fit(single_exp, cor, 3, 8)
+    plot_fit(single_exp, cor, 10, 18)
