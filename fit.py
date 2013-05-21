@@ -5,12 +5,14 @@ import logging
 import correlator
 import build_corr
 import pylab
+import argparse
 
 from scipy import linalg
 from scipy.optimize import leastsq
 from scipy.optimize import fmin
 # from scipy.optimize import minimize
 Nt = 128
+NBOOTSTRAPS = 100
 
 def single_exp(v, x):
     return (v[1] * np.exp((-1.0) * v[0] * x))
@@ -23,7 +25,7 @@ def cosh(v, x):
     #return ((2*v[1])/np.exp(v[0]*Nt/2.0) * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
     return (v[1] * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
 
-def fit(fn, cor, tmin, tmax):
+def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     fun = lambda v, mx, my: (fn(v, mx) - my)
 
     initial_guess = [0.01, 1.0]
@@ -65,7 +67,7 @@ def fit(fn, cor, tmin, tmax):
 
     boot_masses = []
     boot_amps = []
-    for i in bootstrap_ensamble(cor):
+    for i in bootstrap_ensamble(cor,N=bootstraps):
         fitted_params = cov_fit(i, original_ensamble_params)
         boot_masses.append(fitted_params[0])
         boot_amps.append(fitted_params[1])
@@ -82,14 +84,14 @@ def fit(fn, cor, tmin, tmax):
     chi_sqr = np.sum(((ave_cor[t] - fn(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn(v, tp))
                       for t in range(tmin, tmax) for tp in range(tmin, tmax)))
 
-    print "Chi_Sq", chi_sqr
+    print u'\u03c7\u00b2 =', chi_sqr
     dof = len(x) - 2
-    print "Chi_Sq / dof", chi_sqr/dof
+    print u"\u03c7\u00b2 / dof = ", chi_sqr/dof
 
     return (v, boot_masses)
 
 
-def plot_fit(fn, cor, tmin, tmax, filename=None):
+def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     X = np.linspace(tmin, tmax, 200 * 5)
     fitted_params, boot_masses = fit(fn, cor, tmin, tmax)
 
@@ -99,8 +101,8 @@ def plot_fit(fn, cor, tmin, tmax, filename=None):
     corplot.errorbar(cor.times, cor.average_sub_vev().values(), yerr=cor.jackknifed_errors(), fmt='o')
     corplot.plot(cor.times, cor.average_sub_vev().values(), 'ro', X, fn(fitted_params, X))
     plt.ylim([0, max(cor.average_sub_vev().values())])
-    emass = cor.effective_mass(1)
-    emass_errors = cor.effective_mass_errors(1).values()
+    emass = cor.effective_mass(3)
+    emass_errors = cor.effective_mass_errors(3).values()
     emassplot = plt.subplot(212)
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
     fitplt = emassplot.errorbar(X, np.mean(boot_masses) * np.ones_like(X), yerr=np.std(boot_masses))
@@ -142,7 +144,7 @@ def bootstrap(cor):
     return correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2)
 
 
-def bootstrap_ensamble(cor, N=256):
+def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
     return [bootstrap(cor) for i in range(N)]
 
 
@@ -219,13 +221,26 @@ def bestInverse(M):
             logging.debug("Using standard inverse")
     return inv
 
-
+args = None
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="compute fits")
+    parser.add_argument("-i", "--inputfile", type=str, required=True,
+                        help="Correlator file to read from")
+    parser.add_argument("-ts", "--time-start", type=int, required=True,
+                        help="first time slice to start a fit")
+    parser.add_argument("-te", "--time-end", type=int, required=True,
+                        help="last time slice to fit")
+    parser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
+                        help="Number of straps")
+
+    args = parser.parse_args()
+
+
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    corrfile = "/home/bfahy/r2/testdata/myformatcorsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat"
+    corrfile = args.inputfile
     # srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
 
-    cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=50, ts=18)
+    cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=551, ts=23)
 
-    plot_fit(single_exp, cor, 10, 18)
+    plot_fit(single_exp, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
