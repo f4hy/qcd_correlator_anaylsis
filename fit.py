@@ -19,7 +19,7 @@ def single_exp(v, x):
 def fit(fn, cor, tmin, tmax):
     fun = lambda v, mx, my: (fn(v, mx) - my)
 
-    initial_guess = [2.0, 2.0]
+    initial_guess = [0.01, 1.0]
     x = np.arange(32)[tmin:tmax]
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
