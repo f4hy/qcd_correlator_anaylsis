@@ -26,6 +26,8 @@ def cosh(v, x):
     return (v[1] * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
 
 def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
+    logging.info("Fitting data from t={} to t={} using {} bootstrap smaples".format(tmin,tmax,bootstraps))
+
     fun = lambda v, mx, my: (fn(v, mx) - my)
 
     initial_guess = [0.01, 1.0]
