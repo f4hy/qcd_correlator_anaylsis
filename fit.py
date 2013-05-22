@@ -96,7 +96,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 
 def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     X = np.linspace(tmin, tmax, 200 * 5)
-    fitted_params, boot_masses = fit(fn, cor, tmin, tmax)
+    fitted_params, boot_masses = fit(fn, cor, tmin, tmax, bootstraps)
 
     plt.figure()
     corplot = plt.subplot(211)
