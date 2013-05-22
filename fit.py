@@ -29,7 +29,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     fun = lambda v, mx, my: (fn(v, mx) - my)
 
     initial_guess = [0.01, 1.0]
-    x = np.arange(32)[tmin:tmax]
+    x = np.array(range(tmin,tmax))
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
@@ -41,11 +41,14 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
         ave_cor = i.average_sub_vev()
         y = [ave_cor[t] for t in range(tmin, tmax)]
         cov = covariance_matrix(i, tmin, tmax)
-
         inv_cov = bestInverse(cov)
+        start_time = i.times[0]
+        aoc = np.fromiter(ave_cor.values(),np.float)[tmin-start_time:tmax-start_time]
 
-        cov_fun = lambda v: np.sum(((ave_cor[t] - fn(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn(v, tp))
-                                    for t in range(tmin, tmax) for tp in range(tmin, tmax)))
+        def cov_fun(g):
+            """ Function to be minizied. computed using matrix mult"""
+            vect = aoc - fn(g,x)
+            return vect.dot(inv_cov).dot(vect)
         uncorrelated_fit_values, success = leastsq(fun, guess, args=(x, y), maxfev=100000)
         if not success:
             raise ValueError()
@@ -150,15 +153,15 @@ def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
 
 def covariance_matrix(cor, tmin, tmax):
     nm1 = (1.0 / (len(cor.configs) - 1))
+    nm0 = 1.0 / (len(cor.configs))
     mymat = np.identity(tmax - tmin)
     start_time = cor.times[0]
     aoc = np.fromiter(cor.average_over_configs().values(),np.float)[tmin-start_time:tmax-start_time]
-
-    for c,v in cor.data.iteritems():
+    for v in cor.data.values():
         b = np.fromiter(v.values(), np.float)[tmin-start_time:tmax-start_time] - aoc
+        # b = np.array(v.values()[tmin-start_time:tmax-start_time]).flat-aoc
         mymat += np.outer(b,b)
-    return (mymat/cor.numconfigs)/(cor.numconfigs-1)
-
+    return mymat*nm1*nm0
 
 def CholeskyInverse(t):
     """
@@ -226,6 +229,8 @@ if __name__ == "__main__":
                         help="last time slice to fit")
     parser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
                         help="Number of straps")
+    parser.add_argument("-p", "--plot", action="store_true", required=False,
+                        help="Plot the resulting fit")
 
     args = parser.parse_args()
 
@@ -236,5 +241,7 @@ if __name__ == "__main__":
     # srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
 
     cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=551, ts=23)
-
-    plot_fit(single_exp, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+    if args.plot:
+        plot_fit(single_exp, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+    else:
+        fit(single_exp, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
