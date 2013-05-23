@@ -8,6 +8,7 @@ import pylab
 import argparse
 
 from scipy import linalg
+from scipy.special import gammaincc
 from scipy.optimize import leastsq
 from scipy.optimize import fmin
 # from scipy.optimize import minimize
@@ -89,12 +90,16 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     chi_sqr = np.sum(((ave_cor[t] - fn(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn(v, tp))
                       for t in range(tmin, tmax) for tp in range(tmin, tmax)))
 
-    print u'\u03c7\u00b2 =', chi_sqr
     dof = len(x) - 2
-    print u"\u03c7\u00b2 / dof = ", chi_sqr/dof
+    print u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}'.format(
+        chi_sqr,chi_sqr/dof, quality_of_fit(dof, chi_sqr))
 
     return (v, boot_masses)
 
+
+def quality_of_fit(degrees_of_freedom, chi_sqr):
+    dof = degrees_of_freedom
+    return gammaincc(dof/2.0, chi_sqr / 2.0)
 
 def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     X = np.linspace(tmin, tmax, 200 * 5)
