@@ -18,12 +18,12 @@ Nt = 128
 NBOOTSTRAPS = 100
 
 def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
-    logging.info("Fitting data from t={} to t={} using {} bootstrap smaples".format(tmin,tmax,bootstraps))
+    logging.info("Fitting data to {} from t={} to t={} using {} bootstrap smaples".format(fn.description, tmin, tmax, bootstraps))
 
     tmax = tmax+1 # I use ranges, so this needs to be offset by one
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
 
-    initial_guess = [0.01, 1.0]
+    initial_guess = fn.starting_guess
     x = np.array(range(tmin,tmax))
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
@@ -242,6 +242,8 @@ if __name__ == "__main__":
                         help="Number of straps")
     parser.add_argument("-p", "--plot", action="store_true", required=False,
                         help="Plot the resulting fit")
+    parser.add_argument("-Nt", "--period", type=int, required=False,
+                        help="Period in time direction (not required for all functions)")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
     parser.add_argument("-f", "--function", choices=functions.keys(),
@@ -255,7 +257,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    funct = functions[args.function]()
+    funct = functions[args.function](Nt=args.period)
 
     corrfile = args.inputfile
     vev1 = args.vev
