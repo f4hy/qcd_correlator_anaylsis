@@ -156,7 +156,7 @@ def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
 def covariance_matrix(cor, tmin, tmax):
     nm1 = (1.0 / (len(cor.configs) - 1))
     nm0 = 1.0 / (len(cor.configs))
-    mymat = np.identity(tmax - tmin)
+    mymat = np.zeros(((tmax - tmin),(tmax - tmin)))
     start_time = cor.times[0]
     aoc = np.fromiter(cor.average_over_configs().values(),np.float)[tmin-start_time:tmax-start_time]
     for v in cor.data.values():
