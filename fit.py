@@ -29,6 +29,7 @@ def cosh(v, x):
 def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     logging.info("Fitting data from t={} to t={} using {} bootstrap smaples".format(tmin,tmax,bootstraps))
 
+    tmax = tmax+1 # I use ranges, so this needs to be offset by one
     fun = lambda v, mx, my: (fn(v, mx) - my)
 
     initial_guess = [0.01, 1.0]
