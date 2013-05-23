@@ -18,7 +18,7 @@ def single_exp(v, x):
     return (v[1] * np.exp((-1.0) * v[0] * x))
 
 def periodic_exp(v, x):
-    return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(Nt/2.0)) )))
+    return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(Nt)) )))
 
 
 def cosh(v, x):
