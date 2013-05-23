@@ -254,8 +254,8 @@ if __name__ == "__main__":
     corrfile = args.inputfile
     # srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
 
-    cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=551, ts=23)
+    cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=347, ts=24)
     if args.plot:
-        plot_fit(single_exp, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+        plot_fit(cosh, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
     else:
-        fit(single_exp, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+        fit(cosh, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
