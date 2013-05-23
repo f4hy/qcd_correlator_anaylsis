@@ -230,6 +230,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="compute fits")
     parser.add_argument("-i", "--inputfile", type=str, required=True,
                         help="Correlator file to read from")
+    parser.add_argument("-v1", "--vev", type=str, required=False,
+                        help="vev file to read from")
+    parser.add_argument("-v2", "--vev2", type=str, required=False,
+                        help="vev2 file to read from")
     parser.add_argument("-ts", "--time-start", type=int, required=True,
                         help="first time slice to start a fit")
     parser.add_argument("-te", "--time-end", type=int, required=True,
@@ -251,12 +255,15 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
+    funct = functions[args.function]()
 
     corrfile = args.inputfile
-    # srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
+    vev1 = args.vev
+    vev2 = vev1
+    if args.vev2:
+        vev2 = args.vev2
 
-    funct = functions[args.function]()
-    cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=347, ts=24)
+    cor = build_corr.corr_and_vev_from_files(corrfile, vev1, vev2, cfgs=347, ts=24)
     if args.plot:
         plot_fit(funct, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
     else:
