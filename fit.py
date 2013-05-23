@@ -80,6 +80,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
+    print 'fit range', x
     print 'Uncorelated total fit: ', original_ensamble_params
     print 'Correlated total fit:  ', original_ensamble_correlatedfit
     print 'boot parameter masses: ', np.mean(boot_masses), np.var(boot_masses)
@@ -238,11 +239,17 @@ if __name__ == "__main__":
                         help="Number of straps")
     parser.add_argument("-p", "--plot", action="store_true", required=False,
                         help="Plot the resulting fit")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="increase output verbosity")
 
     args = parser.parse_args()
 
+    if args.verbose:
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        logging.debug("Verbose debuging mode activated")
+    else:
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
     corrfile = args.inputfile
     # srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
