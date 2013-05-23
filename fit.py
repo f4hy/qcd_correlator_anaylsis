@@ -6,6 +6,8 @@ import correlator
 import build_corr
 import pylab
 import argparse
+from fitfunctions import *
+import inspect, sys
 
 from scipy import linalg
 from scipy.special import gammaincc
@@ -15,22 +17,11 @@ from scipy.optimize import fmin
 Nt = 128
 NBOOTSTRAPS = 100
 
-def single_exp(v, x):
-    return (v[1] * np.exp((-1.0) * v[0] * x))
-
-def periodic_exp(v, x):
-    return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(Nt)) )))
-
-
-def cosh(v, x):
-    #return ((2*v[1])/np.exp(v[0]*Nt/2.0) * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
-    return (v[1] * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
-
 def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     logging.info("Fitting data from t={} to t={} using {} bootstrap smaples".format(tmin,tmax,bootstraps))
 
     tmax = tmax+1 # I use ranges, so this needs to be offset by one
-    fun = lambda v, mx, my: (fn(v, mx) - my)
+    fun = lambda v, mx, my: (fn.formula(v, mx) - my)
 
     initial_guess = [0.01, 1.0]
     x = np.array(range(tmin,tmax))
@@ -51,7 +42,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 
         def cov_fun(g):
             """ Function to be minizied. computed using matrix mult"""
-            vect = aoc - fn(g,x)
+            vect = aoc - fn.formula(g,x)
             return vect.dot(inv_cov).dot(vect)
         uncorrelated_fit_values, success = leastsq(fun, guess, args=(x, y), maxfev=100000)
         if not success:
@@ -89,7 +80,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     v = (np.mean(boot_masses), np.mean(boot_amps))
     cov = covariance_matrix(cor, tmin, tmax)
     inv_cov = bestInverse(cov)
-    chi_sqr = np.sum(((ave_cor[t] - fn(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn(v, tp))
+    chi_sqr = np.sum(((ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn.formula(v, tp))
                       for t in range(tmin, tmax) for tp in range(tmin, tmax)))
 
     dof = len(x) - 2
@@ -111,7 +102,7 @@ def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     corplot = plt.subplot(211)
 
     corplot.errorbar(cor.times, cor.average_sub_vev().values(), yerr=cor.jackknifed_errors(), fmt='o')
-    corplot.plot(cor.times, cor.average_sub_vev().values(), 'ro', X, fn(fitted_params, X))
+    corplot.plot(cor.times, cor.average_sub_vev().values(), 'ro', X, fn.formula(fitted_params, X))
     plt.ylim([0, max(cor.average_sub_vev().values())])
     emass = cor.effective_mass(3)
     emass_errors = cor.effective_mass_errors(3).values()
@@ -228,7 +219,14 @@ def bestInverse(M):
     return inv
 
 args = None
+
+
+
 if __name__ == "__main__":
+
+    function_list = inspect.getmembers(sys.modules["fitfunctions"], inspect.isclass)
+    functions = {name: f for name,f in function_list}
+
     parser = argparse.ArgumentParser(description="compute fits")
     parser.add_argument("-i", "--inputfile", type=str, required=True,
                         help="Correlator file to read from")
@@ -242,6 +240,8 @@ if __name__ == "__main__":
                         help="Plot the resulting fit")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("-f", "--function", choices=functions.keys(),
+                        required=False, default="cosh", help="function to fit to")
 
     args = parser.parse_args()
 
@@ -255,8 +255,9 @@ if __name__ == "__main__":
     corrfile = args.inputfile
     # srcvevfile = snkvevfile = "/home/bfahy/r2/combined_results/lattice_26_beta_6.0/total_both/binned_500_A1++_1.looptype3_opnum0_size4_A1++_1.looptype3_opnum0_size4.vev1"
 
+    funct = functions[args.function]()
     cor = build_corr.corr_and_vev_from_files(corrfile, None, None, cfgs=347, ts=24)
     if args.plot:
-        plot_fit(cosh, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+        plot_fit(funct, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
     else:
-        fit(cosh, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+        fit(funct, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
