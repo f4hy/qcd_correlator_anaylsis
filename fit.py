@@ -40,11 +40,11 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     initial_guess = original_ensamble_params
 
     def cov_fit(correlator,guess):
-        ave_cor = i.average_sub_vev()
+        ave_cor = correlator.average_sub_vev()
         y = [ave_cor[t] for t in range(tmin, tmax)]
-        cov = covariance_matrix(i, tmin, tmax)
+        cov = covariance_matrix(correlator, tmin, tmax)
         inv_cov = bestInverse(cov)
-        start_time = i.times[0]
+        start_time = correlator.times[0]
         aoc = np.fromiter(ave_cor.values(),np.float)[tmin-start_time:tmax-start_time]
 
         def cov_fun(g):
@@ -72,8 +72,8 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 
     boot_masses = []
     boot_amps = []
-    for i in bootstrap_ensamble(cor,N=bootstraps):
-        fitted_params = cov_fit(i, original_ensamble_params)
+    for strap in bootstrap_ensamble(cor,N=bootstraps):
+        fitted_params = cov_fit(strap, original_ensamble_params)
         boot_masses.append(fitted_params[0])
         boot_amps.append(fitted_params[1])
 
