@@ -50,7 +50,8 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 
         guess = uncorrelated_fit_values
         #would like to use minimize, but seems to be not installed
-        results = fmin(cov_fun, guess, ftol=1.E-7, maxfun=1000000, full_output=1, disp=0, retall=0)
+        results = fmin(cov_fun, guess, ftol=1.E-7, maxfun=1000000, maxiter=100000,
+                       full_output=1, disp=0, retall=0)
         covariant_fit, fit_info, flag = results[0], results[1:-1], results[-1]
         # covariant_fit = minimize(cov_fun, initial_guess)
         logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))
@@ -63,21 +64,24 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 
         return(covariant_fit)
 
-    boot_masses = []
-    boot_amps = []
+    boot_params = []
     for strap in bootstrap_ensamble(cor,N=bootstraps):
         fitted_params = cov_fit(strap, original_ensamble_params)
-        boot_masses.append(fitted_params[0])
-        boot_amps.append(fitted_params[1])
+        boot_params.append(fitted_params)
 
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
-    print 'fit range', x
-    print 'Uncorelated total fit: ', original_ensamble_params
-    print 'Correlated total fit:  ', original_ensamble_correlatedfit
-    print 'boot parameter masses: ', np.mean(boot_masses), np.var(boot_masses)
+    print ''
+    print 'Uncorelated total fit: ', {n:p for n,p in zip(fn.parameter_names,original_ensamble_params)}
+    print 'Correlated total fit:  ', {n:p for n,p in zip(fn.parameter_names,original_ensamble_correlatedfit)}
+    boot_averages =  np.mean(boot_params, 0)
+    boot_std = np.std(boot_params, 0)
+    print "\nBootstrap fitted parameters----------------------"
+    for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
+        print u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std)
+    print "--------------------------------------------------"
 
-    v = (np.mean(boot_masses), np.mean(boot_amps))
+    v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
     inv_cov = bestInverse(cov)
     chi_sqr = np.sum(((ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn.formula(v, tp))
@@ -87,7 +91,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     print u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}'.format(
         chi_sqr,chi_sqr/dof, quality_of_fit(dof, chi_sqr))
 
-    return (v, boot_masses)
+    return boot_averages, boot_std
 
 
 def quality_of_fit(degrees_of_freedom, chi_sqr):
@@ -96,20 +100,24 @@ def quality_of_fit(degrees_of_freedom, chi_sqr):
 
 def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     X = np.linspace(tmin, tmax, 200 * 5)
-    fitted_params, boot_masses = fit(fn, cor, tmin, tmax, bootstraps)
+    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, bootstraps)
 
     plt.figure()
     corplot = plt.subplot(211)
 
-    corplot.errorbar(cor.times, cor.average_sub_vev().values(), yerr=cor.jackknifed_errors(), fmt='o')
-    corplot.plot(cor.times, cor.average_sub_vev().values(), 'ro', X, fn.formula(fitted_params, X))
+    cordata = corplot.errorbar(cor.times, cor.average_sub_vev().values(),
+                               yerr=cor.jackknifed_errors(), fmt='o')
+    corfit, = corplot.plot(X, fn.formula(fitted_params, X))
+    corplot.legend([cordata,corfit], ["data",fn.template.format(*fitted_params)])
     plt.ylim([0, max(cor.average_sub_vev().values())])
     emass = cor.effective_mass(3)
     emass_errors = cor.effective_mass_errors(3).values()
     emassplot = plt.subplot(212)
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
-    fitplt = emassplot.errorbar(X, np.mean(boot_masses) * np.ones_like(X), yerr=np.std(boot_masses))
-    plt.legend([dataplt, fitplt], ["data", u"fit m={:.5f}\xb1{:.5f}".format(np.mean(boot_masses), np.std(boot_masses))])
+    named_params = {n:(m,e) for n,m,e in zip(fn.parameter_names, fitted_params, fitted_errors)}
+    mass, mass_err = named_params["mass"]
+    fitplt = emassplot.errorbar(X, mass * np.ones_like(X), yerr=mass_err)
+    plt.legend([dataplt, fitplt], ["data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
     plt.ylim([0, 1])
     plt.xlim([0, tmax + 2])
     if(filename):
