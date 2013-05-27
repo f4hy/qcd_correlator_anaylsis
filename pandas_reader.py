@@ -24,7 +24,7 @@ def complex_converter(txt):
 
 
 def read_datadict_paraenformat_real(filename, real=True):
-    f = open("corsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat")
+    f = open(filename)
     df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
                      converters={1: parse_pair})
 

@@ -279,8 +279,6 @@ if __name__ == "__main__":
     if args.vev2:
         vev2 = args.vev2
 
-
-
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     if args.plot:
         plot_fit(funct, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
