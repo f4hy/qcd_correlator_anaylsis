@@ -104,8 +104,12 @@ def quality_of_fit(degrees_of_freedom, chi_sqr):
 
 
 def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
+    emass_dt = 3
+
     X = np.linspace(tmin, tmax, 200 * 5)
+    massX = np.linspace(tmin, tmax-emass_dt, 200 * 5)
     fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, bootstraps)
+
 
     plt.figure()
     corplot = plt.subplot(211)
@@ -115,15 +119,16 @@ def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     corfit, = corplot.plot(X, fn.formula(fitted_params, X))
     corplot.legend([cordata, corfit], ["data", fn.template.format(*fitted_params)])
     plt.ylim([0, max(cor.average_sub_vev().values())])
-    emass = cor.effective_mass(3)
-    emass_errors = cor.effective_mass_errors(3).values()
+    plt.xlim([0, tmax + 2])
+    emass = cor.effective_mass(emass_dt)
+    emass_errors = cor.effective_mass_errors(emass_dt).values()
     emassplot = plt.subplot(212)
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
     named_params = {n: (m, e) for n, m, e in zip(fn.parameter_names, fitted_params, fitted_errors)}
     mass, mass_err = named_params["mass"]
-    fitplt = emassplot.errorbar(X, mass * np.ones_like(X), yerr=mass_err)
+    fitplt = emassplot.errorbar(massX, mass * np.ones_like(massX), yerr=mass_err)
     plt.legend([dataplt, fitplt], ["data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
-    plt.ylim([0, 1])
+    plt.ylim([0, max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
     if(filename):
         plt.savefig(filename)
