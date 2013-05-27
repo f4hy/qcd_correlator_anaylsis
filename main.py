@@ -34,11 +34,10 @@ parser.add_argument("-fv", "--format-vev", type=str, required=False,
                     default=None)
 parser.add_argument("-nv", "--no-vev", action="store_true", required=False,
                     help="Specify no vev so should be set to zeros\n")
-parser.add_argument("-dt", "--delta-t", nargs='+', required=False, default=[1,3], type=int,
+parser.add_argument("-dt", "--delta-t", nargs='+', required=False, default=[1, 3], type=int,
                     help="which delta-t's to compute for effective masses \n")
 parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
 parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
-
 
 
 args = parser.parse_args()
@@ -109,6 +108,7 @@ def main():
                 except IOError:
                     logging.error("File not found for {} and {}\nContinuing".format(src_oper, snk_oper))
                     continue
+
 
 def plot_corr(corr, out_folder, name):
 

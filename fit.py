@@ -6,8 +6,10 @@ import correlator
 import build_corr
 import pylab
 import argparse
-from fitfunctions import *
-import inspect, sys
+
+from fitfunctions import *  # noqa
+import inspect
+import sys
 
 from scipy import linalg
 from scipy.special import gammaincc
@@ -17,14 +19,16 @@ from scipy.optimize import fmin
 Nt = 128
 NBOOTSTRAPS = 100
 
-def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
-    logging.info("Fitting data to {} from t={} to t={} using {} bootstrap smaples".format(fn.description, tmin, tmax, bootstraps))
 
-    tmax = tmax+1 # I use ranges, so this needs to be offset by one
+def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
+    logging.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
+        fn.description, tmin, tmax, bootstraps))
+
+    tmax = tmax+1  # I use ranges, so this needs to be offset by one
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
 
     initial_guess = fn.starting_guess
-    x = np.array(range(tmin,tmax))
+    x = np.array(range(tmin, tmax))
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
@@ -32,17 +36,17 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
         raise ValueError()
     initial_guess = original_ensamble_params
 
-    def cov_fit(correlator,guess):
+    def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
         y = [ave_cor[t] for t in range(tmin, tmax)]
         cov = covariance_matrix(correlator, tmin, tmax)
         inv_cov = bestInverse(cov)
         start_time = correlator.times[0]
-        aoc = np.fromiter(ave_cor.values(),np.float)[tmin-start_time:tmax-start_time]
+        aoc = np.fromiter(ave_cor.values(), np.float)[tmin-start_time:tmax-start_time]
 
         def cov_fun(g):
             """ Function to be minizied. computed using matrix mult"""
-            vect = aoc - fn.formula(g,x)
+            vect = aoc - fn.formula(g, x)
             return vect.dot(inv_cov).dot(vect)
         uncorrelated_fit_values, success = leastsq(fun, guess, args=(x, y), maxfev=100000)
         if not success:
@@ -65,16 +69,16 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
         return(covariant_fit)
 
     boot_params = []
-    for strap in bootstrap_ensamble(cor,N=bootstraps):
+    for strap in bootstrap_ensamble(cor, N=bootstraps):
         fitted_params = cov_fit(strap, original_ensamble_params)
         boot_params.append(fitted_params)
 
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
     print ''
-    print 'Uncorelated total fit: ', {n:p for n,p in zip(fn.parameter_names,original_ensamble_params)}
-    print 'Correlated total fit:  ', {n:p for n,p in zip(fn.parameter_names,original_ensamble_correlatedfit)}
-    boot_averages =  np.mean(boot_params, 0)
+    print 'Uncorelated total fit: ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)}
+    print 'Correlated total fit:  ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)}
+    boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
     print "\nBootstrap fitted parameters----------------------"
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
@@ -89,7 +93,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 
     dof = len(x) - 2
     print u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}'.format(
-        chi_sqr,chi_sqr/dof, quality_of_fit(dof, chi_sqr))
+        chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr))
 
     return boot_averages, boot_std
 
@@ -97,6 +101,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
 def quality_of_fit(degrees_of_freedom, chi_sqr):
     dof = degrees_of_freedom
     return gammaincc(dof/2.0, chi_sqr / 2.0)
+
 
 def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     X = np.linspace(tmin, tmax, 200 * 5)
@@ -108,13 +113,13 @@ def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     cordata = corplot.errorbar(cor.times, cor.average_sub_vev().values(),
                                yerr=cor.jackknifed_errors(), fmt='o')
     corfit, = corplot.plot(X, fn.formula(fitted_params, X))
-    corplot.legend([cordata,corfit], ["data",fn.template.format(*fitted_params)])
+    corplot.legend([cordata, corfit], ["data", fn.template.format(*fitted_params)])
     plt.ylim([0, max(cor.average_sub_vev().values())])
     emass = cor.effective_mass(3)
     emass_errors = cor.effective_mass_errors(3).values()
     emassplot = plt.subplot(212)
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
-    named_params = {n:(m,e) for n,m,e in zip(fn.parameter_names, fitted_params, fitted_errors)}
+    named_params = {n: (m, e) for n, m, e in zip(fn.parameter_names, fitted_params, fitted_errors)}
     mass, mass_err = named_params["mass"]
     fitplt = emassplot.errorbar(X, mass * np.ones_like(X), yerr=mass_err)
     plt.legend([dataplt, fitplt], ["data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
@@ -162,14 +167,15 @@ def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
 def covariance_matrix(cor, tmin, tmax):
     nm1 = (1.0 / (len(cor.configs) - 1))
     nm0 = 1.0 / (len(cor.configs))
-    mymat = np.zeros(((tmax - tmin),(tmax - tmin)))
+    mymat = np.zeros(((tmax - tmin), (tmax - tmin)))
     start_time = cor.times[0]
-    aoc = np.fromiter(cor.average_over_configs().values(),np.float)[tmin-start_time:tmax-start_time]
+    aoc = np.fromiter(cor.average_over_configs().values(), np.float)[tmin-start_time:tmax-start_time]
     for v in cor.data.values():
         b = np.fromiter(v.values(), np.float)[tmin-start_time:tmax-start_time] - aoc
         # b = np.array(v.values()[tmin-start_time:tmax-start_time]).flat-aoc
-        mymat += np.outer(b,b)
+        mymat += np.outer(b, b)
     return mymat*nm1*nm0
+
 
 def CholeskyInverse(t):
     """
@@ -183,10 +189,11 @@ def CholeskyInverse(t):
     for j in reversed(range(nrows)):
         tjj = t[j][j]
         S = np.sum([t[j][k] * B[j][k] for k in range(j + 1, nrows)])
-        B[j][j] = 1.0 / tjj**2 - S / tjj  # flake8: noqa
+        B[j][j] = 1.0 / tjj**2 - S / tjj  # noqa
         for i in reversed(range(j)):
             B[j][i] = B[i][j] = -np.sum([t[i][k] * B[k][j] for k in range(i + 1, nrows)]) / t[i][i]
     return B
+
 
 class InversionError(Exception):
     def __init__(self, value):
@@ -206,7 +213,7 @@ def bestInverse(M):
     error = invert_error(inv)
 
     try:
-        chol = linalg.cholesky(M, check_finite=False )
+        chol = linalg.cholesky(M, check_finite=False)
     except np.linalg.linalg.LinAlgError:
         logging.error("Not positive definite!")
 
@@ -229,11 +236,10 @@ def bestInverse(M):
 args = None
 
 
-
 if __name__ == "__main__":
 
     function_list = inspect.getmembers(sys.modules["fitfunctions"], inspect.isclass)
-    functions = {name: f for name,f in function_list}
+    functions = {name: f for name, f in function_list}
 
     parser = argparse.ArgumentParser(description="compute fits")
     parser.add_argument("-i", "--inputfile", type=str, required=True,
