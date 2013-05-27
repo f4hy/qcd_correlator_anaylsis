@@ -42,7 +42,7 @@ def read_datadict_paraenformat_real(filename, real=True):
     df = df.set_index("config")
     df = df.set_index("time", append=True)
 
-    logging.debug("Read file, got {} configs and {} times".format(cfgs_counts[0], time_counts[0]))
+    logging.info("Read file, got {} configs and {} times".format(time_counts[0], cfgs_counts[0]))
 
     logging.debug("checking consistancy")
     assert all(time_counts[0] == count for count in time_counts), "Inconsistant time counts!"
