@@ -61,6 +61,9 @@ if (not args.make_from_operators) and (not args.format_vev and not args.no_vev):
     parser.exit()
 vev_template = args.format_vev
 
+args.input_dir = os.path.normpath(args.input_dir) + os.sep
+args.output_dir = os.path.normpath(args.output_dir) + os.sep
+
 if not os.path.exists(args.input_dir):
     print "input directory doesnt exist"
     parser.print_help()
