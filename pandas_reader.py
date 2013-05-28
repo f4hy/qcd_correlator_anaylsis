@@ -61,10 +61,11 @@ def read_datadict_paraenformat_real(filename, real=True):
     # for row in df.iterrows():
     #     print row
 
+
 def read_datadict_commacomplex(filename, real=True):
 
     f = open(filename)
-    df = pd.read_csv(f, delimiter=',', names=["time", "correlator", "correlator_imag"] )
+    df = pd.read_csv(f, delimiter=',', names=["time", "correlator", "correlator_imag"])
 
     if(real):
         del df["correlator_imag"]
@@ -99,6 +100,7 @@ def read_datadict_commacomplex(filename, real=True):
 
     return data_dict
 
+
 def read_datadict_ambiguouscomplex(filename, real=True):
     if determine_format(filename) == "complex pairs":
         return read_datadict_paraenformat_real(filename, real)
@@ -119,7 +121,7 @@ def determine_format(filename):
 
 if __name__ == "__main__":
     filename = "corsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat"
-    determine_delimiter(filename)
+    determine_format(filename)
     # print read_datadict_paraenformat_real(filename)
     filename = "/home/bfahy/r2/pruning/special/atrestpions/correlators_myformat/corsnk-pionp000SD0A1um1_src-pionp000SD0A1um1.dat"
     #determine_delimiter(filename)
