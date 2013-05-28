@@ -14,10 +14,10 @@ def matching_operators(directory, pattern):
     print regex_grouped
 
     reobj = re.compile(regex_grouped)
-    ops = []
+    ops = set()
     for f in os.listdir(directory):
         try:
-            ops.append(reobj.match(f).group(1))
+            ops.add(reobj.match(f).group(1))
         except AttributeError:
             logging.info("file {} did not match pattern".format(f))
     return ops
