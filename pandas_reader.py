@@ -61,7 +61,48 @@ def read_datadict_paraenformat_real(filename, real=True):
     # for row in df.iterrows():
     #     print row
 
+def read_datadict_commacomplex(filename, real=True):
+
+    f = open(filename)
+    df = pd.read_csv(f, delimiter=',', names=["time", "correlator", "correlator_imag"] )
+
+    if(real):
+        del df["correlator_imag"]
+    else:
+        df.correlator = df.correlator+(df.correlator_imag*complex(0,1))
+
+    vc = df.time.value_counts()
+    times = vc.index
+    time_counts = vc.values
+    df["config"] = pd.Series(map(lambda x: x/len(times), df.index))
+    vcc = df.config.value_counts()
+    cfgs = vcc.index
+    cfgs_counts = vcc.values
+
+    df = df.set_index("config")
+    df = df.set_index("time", append=True)
+
+    logging.info("Read file, got {} configs and {} times".format(time_counts[0], cfgs_counts[0]))
+
+    logging.debug("checking consistancy")
+    assert all(time_counts[0] == count for count in time_counts), "Inconsistant time counts!"
+    assert all(cfgs_counts[0] == count for count in cfgs_counts), "Inconsistant cfgs counts!"
+
+    data_dict = {}
+    for c in cfgs:
+        # data_dict[c] = {}
+        tmp_dict = {}
+        for t in times:
+            tmp_dict[t] = df.ix[(c, t)][0]
+
+        data_dict[c] = tmp_dict
+
+    return data_dict
+
+
 
 if __name__ == "__main__":
-    filename = "corsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat"
-    print read_datadict_paraenformat_real(filename)
+    # filename = "corsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat"
+    # print read_datadict_paraenformat_real(filename)
+    filename = "/home/bfahy/r2/pruning/special/atrestpions/correlators_myformat/corsnk-pionp000SD0A1um1_src-pionp000SD0A1um1.dat"
+    print read_datadict_commacomplex(filename)
