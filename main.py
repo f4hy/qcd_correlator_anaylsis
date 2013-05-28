@@ -49,7 +49,7 @@ if not args.operators:
     print ops
     if not ops:
         print "Error: no operators found"
-        parser.pring_help()
+        parser.print_help()
         parser.exit()
     args.operators = ops
 
