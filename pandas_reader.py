@@ -99,10 +99,28 @@ def read_datadict_commacomplex(filename, real=True):
 
     return data_dict
 
+def read_datadict_ambiguouscomplex(filename, real=True):
+    if determine_format(filename) == "complex pairs":
+        return read_datadict_paraenformat_real(filename, real)
+    else:
+        return read_datadict_commacomplex(filename, real)
+
+
+def determine_format(filename):
+    f = open(filename)
+    for linenum, l in enumerate(f):
+        if any([pair.match(x) for x in l.split()]):
+            return "complex pairs"
+        if linenum > 5:
+            break
+    else:
+        return "comma columns"
 
 
 if __name__ == "__main__":
-    # filename = "corsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat"
+    filename = "corsnk-etap000DDL7Egp1_src-etap000DDL7Egp1.dat"
+    determine_delimiter(filename)
     # print read_datadict_paraenformat_real(filename)
     filename = "/home/bfahy/r2/pruning/special/atrestpions/correlators_myformat/corsnk-pionp000SD0A1um1_src-pionp000SD0A1um1.dat"
-    print read_datadict_commacomplex(filename)
+    #determine_delimiter(filename)
+    #print read_datadict_commacomplex(filename)
