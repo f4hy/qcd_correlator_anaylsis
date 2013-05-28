@@ -9,7 +9,7 @@ from itertools import product
 
 def corr_and_vev_from_files(corrfile, srcvevfile=None, snkvevfile=None, cfgs=None, ts=None):
 
-    corrdata = read.read_config_time_data_real(corrfile, configs=cfgs, times=ts).data
+    corrdata = pr.read_datadict_commacomplex(corrfile)
     if(srcvevfile):
         vevdata_src = read.read_config_vev(srcvevfile)
     else:
