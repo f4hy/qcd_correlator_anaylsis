@@ -5,6 +5,7 @@ import build_corr
 import logging
 import argparse
 import os
+import determine_operators
 
 parser = argparse.ArgumentParser(description="compute and plot effective masses")
 parser.add_argument("-i", "--input-dir", type=str, required=True,
@@ -13,7 +14,7 @@ parser.add_argument("-o", "--output-dir", type=str, required=True,
                     help="directory to write plots to")
 parser.add_argument("-ob", "--output-bins", type=str, required=False,
                     help="directory to write binned data to")
-parser.add_argument("-r", "--operators", action='append', required=True,
+parser.add_argument("-r", "--operators", action='append', required=False,
                     help="operator to make \n\n e.g. -r a1pp_0_optype0_op1")
 parser.add_argument("-b", "--bins", type=int, default=1, help="number of bins")
 parser.add_argument("-m", "--make-from-operators",
@@ -41,6 +42,16 @@ parser.add_argument("-t", "--times", required=False, type=int, help="specify the
 
 
 args = parser.parse_args()
+
+if not args.operators:
+    print "Operators not specified, attempting to automagically determine"
+    ops = determine_operators.matching_operators(args.input_dir, args.format)
+    print ops
+    if not ops:
+        print "Error: no operators found"
+        parser.pring_help()
+        parser.exit()
+    args.operators = ops
 
 cor_template = args.format
 if (not args.make_from_operators) and (not args.format_vev and not args.no_vev):
