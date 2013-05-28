@@ -18,6 +18,7 @@ def matching_operators(directory, pattern):
     for f in os.listdir(directory):
         try:
             ops.add(reobj.match(f).group(1))
+            ops.add(reobj.match(f).group(2))
         except AttributeError:
             logging.info("file {} did not match pattern".format(f))
     return ops
