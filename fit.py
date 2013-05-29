@@ -18,6 +18,7 @@ from scipy.optimize import leastsq
 from scipy.optimize import fmin
 # from scipy.optimize import minimize
 OUTPUT = 25
+logging.addLevelName(OUTPUT, "OUTPUT")
 
 Nt = 128
 NBOOTSTRAPS = 100
@@ -291,7 +292,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    logging.addLevelName(OUTPUT, "OUTPUT")
     funct = functions[args.function](Nt=args.period)
 
     corrfile = args.inputfile
@@ -300,10 +300,13 @@ if __name__ == "__main__":
     if args.vev2:
         vev2 = args.vev2
 
+    if args.output_stub:
+        args.output_stub = os.path.splitext(args.output_stub)[0]
 
-    args.output_stub = os.path.splitext(args.output_stub)[0]
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     if args.plot:
-        plot_fit(funct, cor, args.time_start, args.time_end, filestub=args.output_stub, bootstraps=args.bootstraps)
+        plot_fit(funct, cor, args.time_start, args.time_end,
+                 filestub=args.output_stub, bootstraps=args.bootstraps)
     else:
-        fit(funct, cor, args.time_start, args.time_end, filestub=args.output_stub, bootstraps=args.bootstraps)
+        fit(funct, cor, args.time_start, args.time_end,
+            filestub=args.output_stub, bootstraps=args.bootstraps)
