@@ -23,7 +23,7 @@ def tmin_plot(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     fitted_errors = []
     qualities = []
     for t in range(tmin, tmax-1):
-        params, errors, qual = fit.fit(fn, cor, t, tmax, bootstraps, return_quality=True)
+        params, errors, qual = fit.fit(fn, cor, t, tmax, bootstraps=bootstraps, return_quality=True)
         fitted_params.append(params[index])
         fitted_errors.append(errors[index])
         qualities.append(qual)

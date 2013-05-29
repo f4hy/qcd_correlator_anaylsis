@@ -6,6 +6,7 @@ import correlator
 import build_corr
 import pylab
 import argparse
+import os
 
 from fitfunctions import *  # noqa
 import inspect
@@ -22,9 +23,10 @@ Nt = 128
 NBOOTSTRAPS = 100
 
 
-def fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS, return_quality=False):
+def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False):
     results = logging.getLogger("results")
-    if filename:
+    if filestub:
+        filename = filestub+".log"
         filehandler = logging.FileHandler(filename)
         results.addHandler(filehandler)
         results.info("Writing output to file {}".format(filename))
@@ -115,16 +117,15 @@ def quality_of_fit(degrees_of_freedom, chi_sqr):
     return gammaincc(dof/2.0, chi_sqr / 2.0)
 
 
-def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
+def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     emass_dt = 3
 
     X = np.linspace(tmin, tmax, 200 * 5)
     massX = np.linspace(tmin, tmax-emass_dt, 200 * 5)
-    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, bootstraps=bootstraps)
+    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps)
 
     plt.figure()
     corplot = plt.subplot(211)
-    print cor.jackknifed_errors()
     cordata = corplot.errorbar(cor.times, cor.average_sub_vev().values(),
                                yerr=cor.jackknifed_errors().values(), fmt='o')
     corfit, = corplot.plot(X, fn.formula(fitted_params, X))
@@ -141,8 +142,9 @@ def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
     plt.legend([dataplt, fitplt], ["data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
     plt.ylim([0, max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
-    if(filename):
-        plt.savefig(filename)
+    if(filestub):
+        logging.info("Saving plot to {}".format(filestub+".png"))
+        plt.savefig(filestub+".png")
     else:
         plt.show()
 
@@ -261,7 +263,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--inputfile", type=str, required=True,
                         help="Correlator file to read from")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
-                        help="name of file to write output")
+                        help="stub of name to write output to")
     parser.add_argument("-v1", "--vev", type=str, required=False,
                         help="vev file to read from")
     parser.add_argument("-v2", "--vev2", type=str, required=False,
@@ -298,8 +300,10 @@ if __name__ == "__main__":
     if args.vev2:
         vev2 = args.vev2
 
+
+    args.output_stub = os.path.splitext(args.output_stub)[0]
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     if args.plot:
-        plot_fit(funct, cor, args.time_start, args.time_end, filename=args.output_stub, bootstraps=args.bootstraps)
+        plot_fit(funct, cor, args.time_start, args.time_end, filestub=args.output_stub, bootstraps=args.bootstraps)
     else:
-        fit(funct, cor, args.time_start, args.time_end, filename=args.output_stub, bootstraps=args.bootstraps)
+        fit(funct, cor, args.time_start, args.time_end, filestub=args.output_stub, bootstraps=args.bootstraps)
