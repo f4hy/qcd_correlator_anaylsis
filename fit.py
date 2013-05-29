@@ -20,7 +20,7 @@ Nt = 128
 NBOOTSTRAPS = 100
 
 
-def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
+def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS, return_quality=False):
     logging.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
@@ -95,8 +95,10 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     print u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}'.format(
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr))
 
-    return boot_averages, boot_std
-
+    if return_quality:
+        return boot_averages, boot_std, quality_of_fit(dof, chi_sqr)
+    else:
+        return boot_averages, boot_std
 
 def quality_of_fit(degrees_of_freedom, chi_sqr):
     dof = degrees_of_freedom
