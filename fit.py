@@ -91,7 +91,7 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS):
     chi_sqr = np.sum(((ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn.formula(v, tp))
                       for t in range(tmin, tmax) for tp in range(tmin, tmax)))
 
-    dof = len(x) - 2
+    dof = len(x) - len(fn.starting_guess)
     print u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}'.format(
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr))
 
