@@ -16,12 +16,20 @@ from scipy.special import gammaincc
 from scipy.optimize import leastsq
 from scipy.optimize import fmin
 # from scipy.optimize import minimize
+OUTPUT = 25
+
 Nt = 128
 NBOOTSTRAPS = 100
 
 
-def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS, return_quality=False):
-    logging.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
+def fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS, return_quality=False):
+    results = logging.getLogger("results")
+    if filename:
+        filehandler = logging.FileHandler(filename)
+        results.addHandler(filehandler)
+        results.info("Writing output to file {}".format(filename))
+
+    results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
     tmax = tmax+1  # I use ranges, so this needs to be offset by one
@@ -75,15 +83,16 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS, return_quality=False):
 
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
-    print ''
-    print 'Uncorelated total fit: ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)}
-    print 'Correlated total fit:  ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)}
+    results.log(OUTPUT, '')
+    results.log(OUTPUT, 'Uncorelated total fit: ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
+    results.log(OUTPUT, 'Correlated total fit:  ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
-    print "\nBootstrap fitted parameters----------------------"
+    results.log(OUTPUT, "")
+    results.log(OUTPUT, "Bootstrap fitted parameters----------------------")
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
-        print u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std)
-    print "--------------------------------------------------"
+        results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
+    results.log(OUTPUT, "--------------------------------------------------")
 
     v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
@@ -92,13 +101,14 @@ def fit(fn, cor, tmin, tmax, bootstraps=NBOOTSTRAPS, return_quality=False):
                       for t in range(tmin, tmax) for tp in range(tmin, tmax)))
 
     dof = len(x) - len(fn.starting_guess)
-    print u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}'.format(
-        chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr))
+    results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
+        chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr)))
 
     if return_quality:
         return boot_averages, boot_std, quality_of_fit(dof, chi_sqr)
     else:
         return boot_averages, boot_std
+
 
 def quality_of_fit(degrees_of_freedom, chi_sqr):
     dof = degrees_of_freedom
@@ -110,8 +120,7 @@ def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
 
     X = np.linspace(tmin, tmax, 200 * 5)
     massX = np.linspace(tmin, tmax-emass_dt, 200 * 5)
-    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, bootstraps)
-
+    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, bootstraps=bootstraps)
 
     plt.figure()
     corplot = plt.subplot(211)
@@ -251,6 +260,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="compute fits")
     parser.add_argument("-i", "--inputfile", type=str, required=True,
                         help="Correlator file to read from")
+    parser.add_argument("-o", "--output_stub", type=str, required=False,
+                        help="name of file to write output")
     parser.add_argument("-v1", "--vev", type=str, required=False,
                         help="vev file to read from")
     parser.add_argument("-v2", "--vev2", type=str, required=False,
@@ -278,6 +289,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
+    logging.addLevelName(OUTPUT, "OUTPUT")
     funct = functions[args.function](Nt=args.period)
 
     corrfile = args.inputfile
@@ -288,6 +300,6 @@ if __name__ == "__main__":
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     if args.plot:
-        plot_fit(funct, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+        plot_fit(funct, cor, args.time_start, args.time_end, filename=args.output_stub, bootstraps=args.bootstraps)
     else:
-        fit(funct, cor, args.time_start, args.time_end, bootstraps=args.bootstraps)
+        fit(funct, cor, args.time_start, args.time_end, filename=args.output_stub, bootstraps=args.bootstraps)
