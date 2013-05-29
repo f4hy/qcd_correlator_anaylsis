@@ -38,6 +38,7 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     cmap = mpl.cm.cool
 
     tmin_plot = plt.scatter(range(tmin, tmax-1), fitted_params, c=qualities, s=50, cmap=cmap)
+    plt.clim(0,1)
     tmin_error = plt.errorbar(range(tmin, tmax-1), fitted_params, yerr=fitted_errors, fmt=None, zorder=0)
 
     for i in flatten(emass_plot):
