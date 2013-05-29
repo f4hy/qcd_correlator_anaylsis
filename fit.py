@@ -113,9 +113,9 @@ def plot_fit(fn, cor, tmin, tmax, filename=None, bootstraps=NBOOTSTRAPS):
 
     plt.figure()
     corplot = plt.subplot(211)
-
+    print cor.jackknifed_errors()
     cordata = corplot.errorbar(cor.times, cor.average_sub_vev().values(),
-                               yerr=cor.jackknifed_errors(), fmt='o')
+                               yerr=cor.jackknifed_errors().values(), fmt='o')
     corfit, = corplot.plot(X, fn.formula(fitted_params, X))
     corplot.legend([cordata, corfit], ["data", fn.template.format(*fitted_params)])
     plt.ylim([0, max(cor.average_sub_vev().values())])
