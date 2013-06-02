@@ -65,7 +65,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
         guess = uncorrelated_fit_values
         #would like to use minimize, but seems to be not installed
-        results = fmin(cov_fun, guess, ftol=1.E-7, maxfun=1000000, maxiter=100000,
+        results = fmin(cov_fun, guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000,
                        full_output=1, disp=0, retall=0)
         covariant_fit, fit_info, flag = results[0], results[1:-1], results[-1]
         # covariant_fit = minimize(cov_fun, initial_guess)
