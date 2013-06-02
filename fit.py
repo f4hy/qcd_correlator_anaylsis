@@ -87,8 +87,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
     results.log(OUTPUT, '')
-    results.log(OUTPUT, 'Uncorelated total fit: ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
-    results.log(OUTPUT, 'Correlated total fit:  ', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
+    results.log(OUTPUT, 'Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
+    results.log(OUTPUT, 'Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
     results.log(OUTPUT, "")
@@ -235,6 +235,8 @@ def bestInverse(M):
         chol = linalg.cholesky(M, check_finite=False)
     except np.linalg.linalg.LinAlgError:
         logging.error("Not positive definite!")
+        logging.exception("Could not invert Not positive definite!")
+        raise
 
     else:
         chol_inv = CholeskyInverse(chol)
