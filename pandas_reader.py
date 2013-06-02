@@ -112,10 +112,12 @@ def determine_format(filename):
     f = open(filename)
     for linenum, l in enumerate(f):
         if any([pair.match(x) for x in l.split()]):
+            logging.debug("filetype complex pairs")
             return "complex pairs"
         if linenum > 5:
             break
     else:
+        logging.debug("filetype comma columns")
         return "comma columns"
 
 
