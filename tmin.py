@@ -44,7 +44,8 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     for i in flatten(emass_plot):
         i.set_visible(False)
 
-    fig.colorbar(tmin_plot)
+    cb = fig.colorbar(tmin_plot)
+    cb.set_label("Fit Quality")
 
     plt.ylim([0, max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
