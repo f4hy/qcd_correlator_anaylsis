@@ -55,9 +55,9 @@ if not args.operators:
 
 cor_template = args.format
 if (not args.make_from_operators) and (not args.format_vev and not args.no_vev):
-    print "Error: must specify vev format"
+    print "Error: must specify vev format or no-vev (-nv)"
     parser.print_help()
-    print "\nError: must specify vev format"
+    print "\nError: must specify vev format or no-vev (-nv)"
     parser.exit()
 vev_template = args.format_vev
 
