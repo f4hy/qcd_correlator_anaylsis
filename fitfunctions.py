@@ -2,7 +2,7 @@ import numpy as np
 
 class cosh:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.1, 10]
+        self.starting_guess = [0.5, 1000.0]
         self.parameter_names = ["mass", "amp"]
         self.description = "cosh"
         self.Nt = Nt
@@ -19,7 +19,7 @@ class cosh:
 
 class single_exp:
     def __init__(self, **kargs):
-        self.starting_guess = [0.1, 10]
+        self.starting_guess = [0.5, 10.0]
         self.parameter_names = ["mass", "amp"]
         self.description = "exp"
         self.template = "{1: f}exp(-{0: f}*t)"
@@ -30,16 +30,16 @@ class single_exp:
 
 class periodic_exp:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.1, 10]
+        self.starting_guess = [1.0, 1000.0]
         self.parameter_names = ["mass", "amp"]
         self.description = "fwd-back-exp"
-        self.Nt
-        while not Nt:
+        self.Nt = Nt
+        while not self.Nt:
             try:
                 self.Nt=int(raw_input('Time period not specified, please enter Nt:'))
             except ValueError:
                 print "Not a valid number"
-        self.template = "{1: f}(exp(-{0: f}*(t-%d)exp(-{0: f}*(t-%d))"%self.Nt
+        self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d))"%self.Nt
 
     def formula(self, v ,x):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)) )))
