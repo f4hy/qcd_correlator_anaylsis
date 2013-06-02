@@ -44,16 +44,16 @@ def read_file(f):
     #     print e
     #     print parse_pair(e)
     #     exit()
-    # df = pd.read_csv(f, delimiter=' ', comment="#", names=["time", "correlator", "error"],
-    #                  converters={1: parse_pair, 2: parse_pair})
+    df = pd.read_csv(f, delimiter=' ', comment="#", names=["time", "correlator", "error"],
+                     converters={1: parse_pair, 2: parse_pair}, header=1)
 
-    df = pd.read_csv(f, delimiter=' ', comment="#", names=["time", "correlator", "error"])
+    # df = pd.read_csv(f, delimiter=' ', comment="#", names=["time", "correlator", "error"])
     # df = pd.read_csv(f, delimiter=',', comment="#", names=["time", "correlator", "error"])
 
-    print df.head(20)
-    print np.real(df.correlator[1])
-    print parse_pair(df.correlator[1])
-    exit()
+    # print df.head(20)
+    # print np.real(df.correlator[1])
+    # print parse_pair(df.correlator[1])
+    # exit()
     return df
 
 
