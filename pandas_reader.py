@@ -3,6 +3,7 @@ import logging
 import pandas as pd
 import re
 import numpy as np
+from cStringIO import StringIO
 
 import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -23,8 +24,17 @@ def complex_converter(txt):
     return complex(txt)
 
 
+def lines_without_comments(filename, comment="#"):
+    s = StringIO()
+    with open(filename) as f:
+        for line in f:
+            if not line.startswith(comment):
+                s.write(line)
+    s.seek(0)
+    return s
+
 def read_datadict_paraenformat_real(filename, real=True):
-    f = open(filename)
+    f = lines_without_comments(filename)
     df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
                      converters={1: parse_pair})
 
@@ -64,8 +74,8 @@ def read_datadict_paraenformat_real(filename, real=True):
 
 def read_datadict_commacomplex(filename, real=True):
 
-    f = open(filename)
-    df = pd.read_csv(f, delimiter=',', names=["time", "correlator", "correlator_imag"])
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=',', comment="#", names=["time", "correlator", "correlator_imag"])
 
     if(real):
         del df["correlator_imag"]
