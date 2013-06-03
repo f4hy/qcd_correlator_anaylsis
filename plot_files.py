@@ -1,19 +1,14 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
 from matplotlib import mpl
-import pandas_reader
 import logging
-import build_corr
 import argparse
-import fit
 from matplotlib.widgets import CheckButtons
 from compiler.ast import flatten
 import os
 import pandas as pd
 
 from fitfunctions import *  # noqa
-import inspect
-import sys
 from cStringIO import StringIO
 
 import re
@@ -26,6 +21,7 @@ def parse_pair(s):
         return complex(*map(float, pair.match(s).groups()))
     else:
         return ""
+
 
 def lines_without_comments(filename, comment="#"):
     s = StringIO()
@@ -49,77 +45,56 @@ def determine_type(txt):
 def read_file(filename):
     txt = lines_without_comments(filename)
     filetype = determine_type(txt)
-    # txt = f.read()
-    # df = pd.read_csv(f, delimiter=' ',  names=["correlator", "error"], index_col=0, converters={1: parse_pair, 2: parse_pair})
-
-    # for line in f:
-    #     print line
-    #     if line[0] == "#":
-    #         continue
-    #     print line.split(" ")
-    #     t,c,e = line.split(" ")
-    #     print c
-    #     print parse_pair(c)
-    #     print e
-    #     print parse_pair(e)
-    #     exit()
     if filetype == "paren_complex":
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"],
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
         df = pd.read_csv(txt, delimiter=',', names=["time", "correlator", "error", "quality"])
-    if filetype == "space":
+    if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"])
 
-    # df = pd.read_csv(f, delimiter=' ', comment="#", names=["time", "correlator", "error"])
-    # df = pd.read_csv(f, delimiter=',', comment="#", names=["time", "correlator", "error"])
-
-    print df.head(20)
-    print df["quality"].isnull()
-    print df["quality"].notnull()
-    print any(df["quality"].notnull())
-    # exit()
-    # print np.real(df.correlator[1])
-    # print parse_pair(df.correlator[1])
-    # exit()
     return df
 
 
 def plot_files(files):
-    markers = ['o', "D" , "^", "<", ">", "v", "x", "p", "8"]
+    markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
-    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c!='w']
+    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w']
     print files
     plots = {}
     tmin_plot = {}
     has_colorbar = False
-    for index,filename in enumerate(files):
-
+    for index, filename in enumerate(files):
         label = os.path.basename(filename)
+        mark = markers[index % len(markers)]
+        color = colors[index % len(colors)]
         df = read_file(filename)
+        time_offset = df.time.values+(index*0.1)
         print df.head(20)
         print df.time.values, df.correlator.values, df.error.values
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
             cmap = mpl.cm.cool
-            plots[label] = plt.errorbar(df.time.values+(index*0.1), df.correlator.values, yerr=df.error.values, linestyle="none", c=colors[index%len(colors)], marker=markers[index%len(markers)], fmt=None , zorder=0, label=label)
-            tmin_plot[label] = plt.scatter(df.time.values+(index*0.1), df.correlator.values,
-                                    c=df.quality.values, s=50, cmap=cmap, marker=markers[index%len(markers)])
-            plt.clim(0,1)
+            plots[label] = plt.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
+                                        linestyle="none", c=color, marker=mark, label=label,
+                                        fmt=None, zorder=0)
+            tmin_plot[label] = plt.scatter(time_offset, df.correlator.values, c=df.quality.values,
+                                           s=50, cmap=cmap, marker=mark)
+            plt.clim(0, 1)
             if not has_colorbar:
                 cb = plt.colorbar(tmin_plot[label])
                 has_colorbar = True
         else:
-            plots[label] = plt.errorbar(df.time.values+(index*0.1), df.correlator.values, yerr=df.error.values, linestyle="none", c=colors[index%len(colors)], marker=markers[index%len(markers)], label=label)
+            plots[label] = plt.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
+                                        linestyle="none", c=color, marker=mark, label=label)
 
     print len(colors), len(markers)
-    leg = plt.legend(loc='upper left', fancybox=True, shadow=True)
+    leg = plt.legend(fancybox=True, shadow=True)
 
     def toggle_errorbar_vis(ebarplot):
         for i in flatten(ebarplot):
             if i:
                 i.set_visible(not i.get_visible())
-
 
     def func(label):
         toggle_errorbar_vis(plots[label])
