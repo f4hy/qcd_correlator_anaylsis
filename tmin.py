@@ -69,8 +69,8 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
         plt.savefig(filestub)
         logging.info("Saving tmin data to {}".format(filestub+".tmin.out"))
         with open(filestub+".tmin.out", "w") as f:
-            for t, data, error in zip(range(tmin, tmax-1), fitted_params, fitted_errors):
-                f.write("{}, {}, {}\n".format(t, data, error))
+            for t, data, error, q in zip(range(tmin, tmax-1), fitted_params, fitted_errors, qualities):
+                f.write("{}, {}, {}, {}\n".format(t, data, error, q))
     else:
         rax = plt.axes([0.85, 0.8, 0.1, 0.15])
         check = CheckButtons(rax, ('tminplot', 'emass'), (True, False))
