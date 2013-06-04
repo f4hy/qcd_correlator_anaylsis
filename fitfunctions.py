@@ -47,7 +47,7 @@ class periodic_exp:
 
 class two_exp:
     def __init__(self, **kargs):
-        self.starting_guess = [0.1, 10, 0.1, 10]
+        self.starting_guess = [0.5, 100, 1.0, 10]
         self.parameter_names = ["mass", "amp", "mass2", "amp2"]
         self.description = "two_exp"
         self.template = "{1: f}exp(-{0: f}*t)+{3: f}exp(-{2: f}*t)"
