@@ -60,7 +60,6 @@ def plot_files(files):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
     colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w']
-    print files
     plots = {}
     tmin_plot = {}
     has_colorbar = False
@@ -70,8 +69,7 @@ def plot_files(files):
         color = colors[index % len(colors)]
         df = read_file(filename)
         time_offset = df.time.values+(index*0.1)
-        print df.head(20)
-        print df.time.values, df.correlator.values, df.error.values
+        logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
             cmap = mpl.cm.cool
@@ -88,7 +86,6 @@ def plot_files(files):
             plots[label] = plt.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
                                         linestyle="none", c=color, marker=mark, label=label)
 
-    print len(colors), len(markers)
     leg = plt.legend(fancybox=True, shadow=True)
 
     def toggle_errorbar_vis(ebarplot):
@@ -102,14 +99,12 @@ def plot_files(files):
             tmin_plot[label].set_visible(not tmin_plot[label].get_visible())
         plt.draw()
 
-
     rax = plt.axes([0.85, 0.8, 0.1, 0.15])
-    print [os.path.basename(f) for f in args.files]
     check = CheckButtons(rax, [os.path.basename(f) for f in args.files], [True]*len(plots))
     check.on_clicked(func)
 
+    leg.draggable()
     plt.show()
-
 
 
 if __name__ == "__main__":
