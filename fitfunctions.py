@@ -66,7 +66,7 @@ class cosh_const:
                 self.Nt=int(raw_input('Time period not specified, please enter Nt:'))
             except ValueError:
                 print "Not a valid number"
-                self.template = "{1: f}Cosh(-{0: f}*(t-%d/2))+{2: f}"%self.Nt
+        self.template = "{1: f}Cosh(-{0: f}*(t-%d/2))+{2: f}"%self.Nt
 
     def formula(self, v ,x):
         return (v[1] * np.cosh((-1.0)* v[0]*((x-(self.Nt/2.0)))))+v[2]
