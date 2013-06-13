@@ -111,6 +111,23 @@ def read_datadict_commacomplex(filename, real=True):
     return data_dict
 
 
+def read_vev_parenformat(filename, real=True):
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=' ', names=["garbage", "vev"],
+                     converters={1: parse_pair})
+
+    if(real):
+        df = df.apply(np.real)  # Take the real part
+
+
+    cfgs = df.index
+    datadict = {}
+    for c in cfgs:
+        datadict[c] = df.vev[c]
+    return datadict
+
+
+
 def read_datadict_ambiguouscomplex(filename, real=True):
     if determine_format(filename) == "complex pairs":
         return read_datadict_paraenformat_real(filename, real)

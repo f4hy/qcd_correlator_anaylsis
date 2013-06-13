@@ -25,13 +25,13 @@ def corr_and_vev_from_files_pandas(corrfile, srcvevfile=None, snkvevfile=None, c
 
     corrdata = pr.read_datadict_paraenformat_real(corrfile)
     if(srcvevfile):
-        raise NotImplementedError("Vev currently unsupported in this read mode")
-        vevdata_src = read.read_config_vev(srcvevfile)
+        # raise NotImplementedError("Vev currently unsupported in this read mode")
+        vevdata_src = pr.read_vev_parenformat(srcvevfile)
     else:
         vevdata_src = {cfg: 0.0 for cfg in corrdata}
     if(snkvevfile):
-        raise NotImplementedError("Vev currently unsupported in this read mode")
-        vevdata_snk = read.read_config_vev(snkvevfile)
+        # raise NotImplementedError("Vev currently unsupported in this read mode")
+        vevdata_snk = pr.read_vev_parenformat(snkvevfile)
     else:
         vevdata_snk = {cfg: 0.0 for cfg in corrdata}
     return correlator.Correlator.fromDataDicts(corrdata, vevdata_src, vevdata_snk)
