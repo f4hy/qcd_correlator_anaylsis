@@ -128,7 +128,7 @@ def plot_files(files):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="compute fits")
+    parser = argparse.ArgumentParser(description="plot a set of data files")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
