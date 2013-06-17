@@ -75,7 +75,7 @@ def label_names_from_filelist(filelist):
 def plot_files(files):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
-    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w']
+    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"]
     plots = {}
     tmin_plot = {}
     has_colorbar = False
