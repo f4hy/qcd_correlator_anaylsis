@@ -72,6 +72,7 @@ def label_names_from_filelist(filelist):
         names = [n[:-len(postfix)] for n in names]
     return names
 
+
 def plot_files(files):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
@@ -97,7 +98,7 @@ def plot_files(files):
                                            s=50, cmap=cmap, marker=mark)
             plt.clim(0, 1)
             if not has_colorbar:
-                cb = plt.colorbar(tmin_plot[label])
+                cb = plt.colorbar(tmin_plot[label])  # noqa
                 has_colorbar = True
         else:
             plots[label] = plt.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
