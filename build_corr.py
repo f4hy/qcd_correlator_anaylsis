@@ -94,3 +94,14 @@ def matrix_from_cor_and_vev(directory, cortemplate, vevtemplate, operator_list):
         matrix[(index1, index2)] = corr_and_vev_from_files(corfile, srcvevfile, snkvevfile)
 
     return matrix
+
+def matrix_from_cor(directory, cortemplate, operator_list):
+    logging.debug("building matrix of correlators using %s", str(operator_list))
+    matrix = {}
+    for e1, e2 in product(enumerate(operator_list, start=1), repeat=2):
+        index1, op1 = e1
+        index2, op2 = e2
+        corfile = (directory + cortemplate).format(op1, op2)
+        matrix[(index1, index2)] = corr_and_vev_from_files(corfile, None, None)
+
+    return matrix
