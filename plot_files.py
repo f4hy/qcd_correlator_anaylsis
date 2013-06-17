@@ -56,6 +56,22 @@ def read_file(filename):
     return df
 
 
+def label_names_from_filelist(filelist):
+    names = filelist
+    basenames = [os.path.basename(filename) for filename in names]
+    names = basenames
+    if any(basenames.count(x) > 1 for x in basenames):
+        logging.debug("two files with same basename, cant use basenames")
+        names = filelist
+
+    prefix = os.path.commonprefix(names)
+    if len(prefix) > 1:
+        names = [n[len(prefix):] for n in names]
+    postfix = os.path.commonprefix([n[::-1] for n in names])
+    if len(postfix) > 1:
+        names = [n[:-len(postfix)] for n in names]
+    return names
+
 def plot_files(files):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
@@ -63,8 +79,9 @@ def plot_files(files):
     plots = {}
     tmin_plot = {}
     has_colorbar = False
-    for index, filename in enumerate(files):
-        label = os.path.basename(filename)
+    labels = label_names_from_filelist(files)
+    for index, label, filename in zip(range(len(files)), labels, files):
+    # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
         df = read_file(filename)
@@ -100,7 +117,7 @@ def plot_files(files):
         plt.draw()
 
     rax = plt.axes([0.85, 0.8, 0.1, 0.15])
-    check = CheckButtons(rax, [os.path.basename(f) for f in args.files], [True]*len(plots))
+    check = CheckButtons(rax, labels, [True]*len(plots))
     check.on_clicked(func)
 
     leg.draggable()
