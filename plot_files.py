@@ -64,6 +64,8 @@ def label_names_from_filelist(filelist):
         logging.debug("two files with same basename, cant use basenames")
         names = filelist
 
+    if len(names) < 2:
+        return names
     prefix = os.path.commonprefix(names)
     if len(prefix) > 1:
         names = [n[len(prefix):] for n in names]
