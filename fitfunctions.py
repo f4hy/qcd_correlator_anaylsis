@@ -55,6 +55,17 @@ class two_exp:
     def formula(self, v ,x):
         return (v[1] * np.exp((-1.0) * v[0] * x))+(v[3] * np.exp((-1.0) * v[2] * x))
 
+class jlab:
+    def __init__(self, **kargs):
+        self.starting_guess = [0.5, 100, 1.0, 10]
+        self.parameter_names = ["mass", "amp", "mass2"]
+        self.description = "jlab"
+        self.template = "{1: f}exp(-{0: f}*t)+{1: f}exp(-{2: f}*t)"
+
+    def formula(self, v ,x):
+        return ((1- v[1]) * np.exp((-1.0) * v[0] * x))+(v[1] * np.exp((-1.0) * v[2] * x))
+
+
 class cosh_const:
     def __init__(self, Nt=None):
         self.starting_guess = [0.1, 10, 0.0]
