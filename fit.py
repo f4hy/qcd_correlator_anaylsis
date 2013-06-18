@@ -26,11 +26,12 @@ NBOOTSTRAPS = 100
 
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False):
     results = logging.getLogger("results")
-    if filestub:
+    if filestub and not results.handlers:
         filename = filestub+".log"
         filehandler = logging.FileHandler(filename)
+        filehandler.level = OUTPUT
         results.addHandler(filehandler)
-        results.info("Writing output to file {}".format(filename))
+        logging.info("Writing output to file {}".format(filename))
 
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
@@ -86,16 +87,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
-    results.log(OUTPUT, '')
-    results.log(OUTPUT, 'Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
-    results.log(OUTPUT, 'Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
+    results.info('')
+    results.info('Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
+    results.info('Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
-    results.log(OUTPUT, "")
-    results.log(OUTPUT, "Bootstrap fitted parameters----------------------")
+    results.info("")
+    results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------",tmin,tmax)
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
         results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
-    results.log(OUTPUT, "--------------------------------------------------")
+    results.log(OUTPUT, "--------------------------------------------------------")
 
     v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
