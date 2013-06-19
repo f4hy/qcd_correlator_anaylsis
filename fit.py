@@ -272,10 +272,10 @@ if __name__ == "__main__":
                         help="vev file to read from")
     parser.add_argument("-v2", "--vev2", type=str, required=False,
                         help="vev2 file to read from")
-    parser.add_argument("-ts", "--time-start", type=int, required=True,
-                        help="first time slice to start a fit")
-    parser.add_argument("-te", "--time-end", type=int, required=True,
-                        help="last time slice to fit")
+    parser.add_argument("-ts", "--time-start", type=int, nargs="+", required=True,
+                        help="first time slice to start a fit, can be a list of times")
+    parser.add_argument("-te", "--time-end", type=int, nargs="+", required=True,
+                        help="last time slice to fit, can be a list of times")
     parser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
                         help="Number of straps")
     parser.add_argument("-p", "--plot", action="store_true", required=False,
@@ -308,8 +308,12 @@ if __name__ == "__main__":
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     if args.plot:
-        plot_fit(funct, cor, args.time_start, args.time_end,
+        if len(args.time_end) + len(args.time_start)  > 2:
+            parser.exit("Error: can't fit a range of times if plotting, please specify just a single time")
+        plot_fit(funct, cor, args.time_start[0], args.time_end[0],
                  filestub=args.output_stub, bootstraps=args.bootstraps)
     else:
-        fit(funct, cor, args.time_start, args.time_end,
-            filestub=args.output_stub, bootstraps=args.bootstraps)
+        for ts in args.time_start:
+            for te in [t for t in args.time_end if t > ts]:
+                fit(funct, cor, ts, te,
+                    filestub=args.output_stub, bootstraps=args.bootstraps)
