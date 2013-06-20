@@ -25,6 +25,9 @@ NBOOTSTRAPS = 100
 
 
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False):
+    if(tmax-tmin < len(fn.parameter_names)):
+        raise ValueError("Can not fit to less points than parameters")
+
     results = logging.getLogger("results")
     if filestub and not results.handlers:
         filename = filestub+".log"
