@@ -26,11 +26,12 @@ NBOOTSTRAPS = 100
 
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False):
     results = logging.getLogger("results")
-    if filestub:
+    if filestub and not results.handlers:
         filename = filestub+".log"
         filehandler = logging.FileHandler(filename)
+        filehandler.level = OUTPUT
         results.addHandler(filehandler)
-        results.info("Writing output to file {}".format(filename))
+        logging.info("Writing output to file {}".format(filename))
 
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
@@ -86,16 +87,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
-    results.log(OUTPUT, '')
-    results.log(OUTPUT, 'Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
-    results.log(OUTPUT, 'Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
+    results.info('')
+    results.info('Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
+    results.info('Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
-    results.log(OUTPUT, "")
-    results.log(OUTPUT, "Bootstrap fitted parameters----------------------")
+    results.info("")
+    results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------",tmin,tmax)
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
         results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
-    results.log(OUTPUT, "--------------------------------------------------")
+    results.log(OUTPUT, "--------------------------------------------------------")
 
     v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
@@ -271,10 +272,10 @@ if __name__ == "__main__":
                         help="vev file to read from")
     parser.add_argument("-v2", "--vev2", type=str, required=False,
                         help="vev2 file to read from")
-    parser.add_argument("-ts", "--time-start", type=int, required=True,
-                        help="first time slice to start a fit")
-    parser.add_argument("-te", "--time-end", type=int, required=True,
-                        help="last time slice to fit")
+    parser.add_argument("-ts", "--time-start", type=int, nargs="+", required=True,
+                        help="first time slice to start a fit, can be a list of times")
+    parser.add_argument("-te", "--time-end", type=int, nargs="+", required=True,
+                        help="last time slice to fit, can be a list of times")
     parser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
                         help="Number of straps")
     parser.add_argument("-p", "--plot", action="store_true", required=False,
@@ -307,8 +308,12 @@ if __name__ == "__main__":
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     if args.plot:
-        plot_fit(funct, cor, args.time_start, args.time_end,
+        if len(args.time_end) + len(args.time_start)  > 2:
+            parser.exit("Error: can't fit a range of times if plotting, please specify just a single time")
+        plot_fit(funct, cor, args.time_start[0], args.time_end[0],
                  filestub=args.output_stub, bootstraps=args.bootstraps)
     else:
-        fit(funct, cor, args.time_start, args.time_end,
-            filestub=args.output_stub, bootstraps=args.bootstraps)
+        for ts in args.time_start:
+            for te in [t for t in args.time_end if t > ts]:
+                fit(funct, cor, ts, te,
+                    filestub=args.output_stub, bootstraps=args.bootstraps)
