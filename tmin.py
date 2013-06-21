@@ -23,7 +23,8 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     fitted_params = []
     fitted_errors = []
     qualities = []
-    for t in range(tmin, tmax-(len(fn.parameter_names)-1) ):
+    Tpoints = range(tmin, tmax-(len(fn.parameter_names)+1) )
+    for t in Tpoints:
         params, errors, qual = fit.fit(fn, cor, t, tmax,
                                        filestub=filestub, bootstraps=bootstraps, return_quality=True)
         fitted_params.append(params[index])
@@ -37,9 +38,9 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     emass_plot = plt.errorbar(np.array(emass.keys())+0.2, emass.values(), yerr=emass_errors, fmt='g^', zorder=0)
     cmap = mpl.cm.cool
 
-    tmin_plot = plt.scatter(range(tmin, tmax-1), fitted_params, c=qualities, s=50, cmap=cmap)
+    tmin_plot = plt.scatter(Tpoints, fitted_params, c=qualities, s=50, cmap=cmap)
     plt.clim(0,1)
-    tmin_error = plt.errorbar(range(tmin, tmax-1), fitted_params, yerr=fitted_errors, fmt=None, zorder=0)
+    tmin_error = plt.errorbar(Tpoints, fitted_params, yerr=fitted_errors, fmt=None, zorder=0)
 
     for i in flatten(emass_plot):
         i.set_visible(False)
@@ -69,7 +70,7 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
         plt.savefig(filestub)
         logging.info("Saving tmin data to {}".format(filestub+".tmin.out"))
         with open(filestub+".tmin.out", "w") as f:
-            for t, data, error, q in zip(range(tmin, tmax-1), fitted_params, fitted_errors, qualities):
+            for t, data, error, q in zip(Tpoints, fitted_params, fitted_errors, qualities):
                 f.write("{}, {}, {}, {}\n".format(t, data, error, q))
     else:
         rax = plt.axes([0.85, 0.8, 0.1, 0.15])
