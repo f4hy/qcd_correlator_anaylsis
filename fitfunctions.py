@@ -2,7 +2,7 @@ import numpy as np
 
 class cosh:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.5, 1000.0]
+        self.starting_guess = [0.5, 50.0]
         self.parameter_names = ["mass", "amp"]
         self.description = "cosh"
         self.Nt = Nt
