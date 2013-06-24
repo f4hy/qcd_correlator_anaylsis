@@ -56,5 +56,10 @@ if __name__ == "__main__":
                         help="increase output verbosity")
 
     args = parser.parse_args()
+    if args.verbose:
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        logging.debug("Verbose debuging mode activated")
+    else:
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     make_bar_plot(args.inputfile, args.columns, args.output_stub)
