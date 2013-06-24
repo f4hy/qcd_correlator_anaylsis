@@ -26,6 +26,7 @@ def make_bar_plot(inputfile, cols, output_stub):
     ops = range(1, N+1)
 
     plots = {}
+    plt.figure(figsize=(10, 6))
     for op1 in ops:
         i = (op1-1)/cols
         j = (op1-1) % cols
@@ -36,9 +37,12 @@ def make_bar_plot(inputfile, cols, output_stub):
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         plots[(i, j)] = ax.bar(ops, values)
         plt.ylim([0, 1])
+
+    plt.tight_layout()
     if(output_stub):
+        plt.rcParams.update({'font.size': 5})
         logging.info("Saving plot to {}".format(output_stub+".png"))
-        plt.savefig(output_stub+".png")
+        plt.savefig(output_stub+".png", dpi=200)
     else:
         plt.show()
 
