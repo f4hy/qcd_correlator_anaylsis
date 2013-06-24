@@ -32,7 +32,7 @@ def read_file(filename):
     return df
 
 
-def make_bar_plot(inputfile, cols):
+def make_bar_plot(inputfile, cols, output_stub):
     df = read_file(inputfile).apply(np.absolute)
 
     N = int(np.sqrt(len(df)))
@@ -48,9 +48,12 @@ def make_bar_plot(inputfile, cols):
         ax = plt.subplot2grid((N/cols+1, cols), (i, j))
         #plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         plots[(i, j)] = ax.bar(ops, values)
-        plt.ylim([0,1])
-    plt.show()
-
+        plt.ylim([0, 1])
+    if(output_stub):
+        logging.info("Saving plot to {}".format(output_stub+".png"))
+        plt.savefig(output_stub+".png")
+    else:
+        plt.show()
 
 
 if __name__ == "__main__":
@@ -67,4 +70,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    make_bar_plot(args.inputfile, args.columns)
+    make_bar_plot(args.inputfile, args.columns, args.output_stub)
