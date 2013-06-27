@@ -57,22 +57,22 @@ def read_emasses(filewild, N, t):
 
 def normalize_Zs(Zs):
     A = np.array(Zs.values())
-    maximums = np.array([max(A[:,i]) for i in range(len(Zs.values()))])
-    normed = {k: values/maximums for k,values in Zs.iteritems()}
+    maximums = np.array([max(np.abs(A[:,i])) for i in range(len(Zs.values()))])
+    normed = {k: np.abs(values)/maximums for k,values in Zs.iteritems()}
     return normed
 
-def compute_zfactor(corwild, rotfile, emasswild, ops, to, t, outputstub):
+def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub):
     raw_v = read_coeffs_file(rotfile)
     N = len(ops)
     v = np.matrix(raw_v.identities.values.reshape((N,N))).T
-    cormat = build_cor_mat(corwild, ops, to)
+    cormat = build_cor_mat(corwild, ops, t0)
     check_ident(v, cormat)
 
     emasses = read_emasses(emasswild, len(ops), t)
     Zs = {}
     for level in range(len(ops)):
         v_n = v[:,level]
-        Zs[level] = [np.abs(cormat[j]*(v_n)*np.exp(emasses[level] * to * 0.5)).flat[0] for j in range(len(ops)) ]
+        Zs[level] = [(cormat[j]*(v_n)*np.exp(emasses[level] * t0 * 0.5)).flat[0] for j in range(len(ops)) ]
     for level in range(len(ops)):
         logging.info("Z_j for level{}: {}".format(level,repr(Zs[level])))
 
@@ -86,6 +86,15 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, to, t, outputstub):
             for level in range(len(ops)):
                 for j in range(len(ops)):
                     outfile.write("{:d}{:03d} {}\n".format(j+1, level+1, normalized_Zs[level][j]))
+
+    check_sum(Zs, emasses, t)
+
+def check_sum(Zs, emasses, t):
+    logging.info("Checking sum")
+    for i in range(len(Zs[0])):
+        for j in range(len(Zs[0])):
+            C = sum((Zs[level][i]*Zs[level][j])*np.exp(-1.0*emasses[level]*t) for level in Zs.keys())
+            print "C_{}{}({}) = {}?".format(i, j, t, C)
 
 if __name__ == "__main__":
 
