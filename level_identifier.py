@@ -23,10 +23,14 @@ def read_file(filename):
 def make_bar_plot(inputfile, cols, output_stub, mode, ns):
     df = read_file(inputfile).apply(np.absolute)
 
+    levels = list(set([i/1000 for i in df.index]))
+    ops = list(set([i % 1000 for i in df.index]))
+
     N = int(np.sqrt(len(df)))
-    ops = range(1, N+1)
-    levels = range(1, N+1)
-    plots = range(1, N+1)
+
+    plots = ops
+    if mode == "levels":
+        plots = levels
 
     plot = {}
     plt.figure(figsize=(10, 6))
