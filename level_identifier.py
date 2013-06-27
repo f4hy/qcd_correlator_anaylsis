@@ -25,30 +25,32 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns):
 
     N = int(np.sqrt(len(df)))
     ops = range(1, N+1)
+    levels = range(1, N+1)
+    plots = range(1, N+1)
 
-    plots = {}
+    plot = {}
     plt.figure(figsize=(10, 6))
-    for op1 in ops:
-        i = (op1-1)/cols
-        j = (op1-1) % cols
+    for plot_index in plots:
+        i = (plot_index-1)/cols
+        j = (plot_index-1) % cols
 
         ax = plt.subplot2grid((N/cols+1, cols), (i, j))
-        indexes = [op1+op2*1000 for op2 in ops]
+        indexes = [plot_index+op*1000 for op in ops]
         plt.xlabel("operator")
         if mode == "ops":
-            indexes = [op1*1000+op2 for op2 in ops]
+            indexes = [plot_index*1000+level for level in levels]
             plt.xlabel("levels")
         values = df.ix[indexes].identities.values
         # errors = df.ix[indexes].error.values
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         if mode == "level":
-            plots[(i, j)] = ax.bar(ops[:ns], values[:ns], color="g")
-            plots[(i, j)] = ax.bar(ops[ns:], values[ns:], color="b")
+            plot[(i, j)] = ax.bar(ops[:ns], values[:ns], color="g")
+            plot[(i, j)] = ax.bar(ops[ns:], values[ns:], color="b")
         else:
             color = "b"
-            if op1 <= ns:
+            if plot_index <= ns:
                 color = "g"
-            plots[(i, j)] = ax.bar(ops, values, color=color)
+            plot[(i, j)] = ax.bar(levels, values, color=color)
 
 
         plt.ylim([0, 1])
