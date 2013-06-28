@@ -57,33 +57,38 @@ def read_emasses(filewild, N, t):
 
 def normalize_Zs(Zs):
     A = np.array(Zs.values())
-    maximums = np.array([max(np.abs(A[:,i])) for i in range(len(Zs.values()))])
+    maximums = np.array([max(np.abs(A[:,i])) for i in range(len(Zs[0]))])
     normed = {k: np.abs(values)/maximums for k,values in Zs.iteritems()}
     return normed
 
-def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub):
+def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxlevels):
     raw_v = read_coeffs_file(rotfile)
     N = len(ops)
     v = np.matrix(raw_v.identities.values.reshape((N,N))).T
     cormat = build_cor_mat(corwild, ops, t0)
     check_ident(v, cormat)
 
+    levels_to_make = range(min(len(ops),maxlevels))
+
     emasses = read_emasses(emasswild, len(ops), t)
     Zs = {}
-    for level in range(len(ops)):
+    for level in levels_to_make:
         v_n = v[:,level]
         Zs[level] = [(cormat[j]*(v_n)*np.exp(emasses[level] * t0 * 0.5)).flat[0] for j in range(len(ops)) ]
-    for level in range(len(ops)):
+        print len(Zs[level])
+    for level in levels_to_make:
         logging.info("Z_j for level{}: {}".format(level,repr(Zs[level])))
 
+    print Zs.keys()
+    print len(Zs[0])
     normalized_Zs = normalize_Zs(Zs)
-    for level in range(len(ops)):
+    for level in levels_to_make:
         logging.info("normed Z_j for level{}: {}".format(level,str(normalized_Zs[level])))
 
     if(outputstub):
         with open(outputstub+".out", 'w') as outfile:
             outfile.write("# normalized Zfactors\n")
-            for level in range(len(ops)):
+            for level in levels_to_make:
                 for j in range(len(ops)):
                     outfile.write("{:d}{:03d} {}\n".format(j+1, level+1, normalized_Zs[level][j]))
 
@@ -113,6 +118,8 @@ if __name__ == "__main__":
                         help="operator strings, order matters!")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("-n", "--number", type=int, required=False,
+                        help="restrict to a number of levels", default=1000)
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
@@ -123,4 +130,4 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass, args.operators, args.tnaught, args.time, args.output_stub)
+    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass, args.operators, args.tnaught, args.time, args.output_stub, args.number)
