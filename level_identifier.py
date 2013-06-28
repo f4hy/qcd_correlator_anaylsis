@@ -23,43 +23,59 @@ def read_file(filename):
 def make_bar_plot(inputfile, cols, output_stub, mode, ns):
     df = read_file(inputfile).apply(np.absolute)
 
-    levels = list(set([i/1000 for i in df.index]))
-    ops = list(set([i % 1000 for i in df.index]))
+    ops = list(set([i/1000 for i in df.index]))
+    levels = list(set([i % 1000 for i in df.index]))
 
     N = int(np.sqrt(len(df)))
 
     plots = ops
-    if mode == "levels":
+    if mode == "level":
         plots = levels
 
+    print "levels", levels
+    print "ops", ops
+    print "plots", plots
     plot = {}
     plt.figure(figsize=(10, 6))
+    plt.suptitle("Zfactors by {}".format(mode))
     for plot_index in plots:
+        print "making plot {}".format(plot_index)
         i = (plot_index-1)/cols
         j = (plot_index-1) % cols
 
-        ax = plt.subplot2grid((N/cols+1, cols), (i, j))
+        ax = plt.subplot2grid((len(plots)/cols+1, cols), (i, j))
         indexes = [plot_index+op*1000 for op in ops]
+        if j > 0:
+            ax.set_yticks([])
+        else:
+            plt.ylabel("zfactor")
         plt.xlabel("operator")
         if mode == "ops":
             indexes = [plot_index*1000+level for level in levels]
-            plt.xlabel("levels")
+            plt.xlabel("level")
+            plt.title("operator {}".format(plot_index))
         values = df.ix[indexes].identities.values
         # errors = df.ix[indexes].error.values
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         if mode == "level":
-            plot[(i, j)] = ax.bar(ops[:ns], values[:ns], color="g")
-            plot[(i, j)] = ax.bar(ops[ns:], values[ns:], color="b")
+            plot[(i, j)] = ax.bar(ops[:ns], values[:ns], 1, color="g")
+            plot[(i, j)] = ax.bar(ops[ns:], values[ns:], 1, color="b")
+            ax.set_xticks(np.array(ops)+0.5)
+            ax.set_xticklabels(ops)
+            plt.title("level {}".format(plot_index))
         else:
             color = "b"
             if plot_index <= ns:
                 color = "g"
-            plot[(i, j)] = ax.bar(levels, values, color=color)
-
-
+            plot[(i, j)] = ax.bar(levels, values, 1, color=color)
+            ax.set_xticks(np.array(levels)+0.5)
+            ax.set_xticklabels(levels)
         plt.ylim([0, 1])
+        plt.xlim(xmin=1)
+    # end plot loop
 
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.2, hspace=0.5)
     if(output_stub):
         plt.rcParams.update({'font.size': 5})
         logging.info("Saving plot to {}".format(output_stub+".png"))
