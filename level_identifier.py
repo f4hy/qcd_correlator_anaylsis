@@ -27,6 +27,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns):
     levels = list(set([i % 1000 for i in df.index]))
 
     N = int(np.sqrt(len(df)))
+    largest_zfactor = max(df.identities)
 
     plots = ops
     if mode == "level":
@@ -70,7 +71,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns):
             plot[(i, j)] = ax.bar(levels, values, 1, color=color)
             ax.set_xticks(np.array(levels)+0.5)
             ax.set_xticklabels(levels)
-        plt.ylim([0, 1])
+        plt.ylim([0, np.ceil(largest_zfactor)])
         plt.xlim(xmin=1)
     # end plot loop
 
