@@ -48,11 +48,17 @@ def check_ident(v, cormat):
         logging.info(u"v^\u2020 C v is different from identity by max {}".format(error))
 
 
-def read_emasses(filewild, N, t):
+def read_emasses(filewild, N, t, levels_to_make):
     emasses = np.empty(N)
-    for level in range(N):
+    for level in levels_to_make:
         df = plot_files.read_file(filewild.format(level))
-        emasses[level] = np.array(np.real(df.ix[df["time"] == t, "correlator"]))
+        logging.debug("reading level %d", level)
+        try:
+            emasses[level] = np.array(np.real(df.ix[df["time"] == t, "correlator"]))
+        except ValueError:
+            logging.critical("Failed to read effective mass for level {}. ".format(level))
+            logging.error("Try restricting number of levels to make with -n")
+            exit(level)
     return emasses
 
 def normalize_Zs(Zs):
@@ -70,7 +76,7 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxleve
 
     levels_to_make = range(min(len(ops),maxlevels))
 
-    emasses = read_emasses(emasswild, len(ops), t)
+    emasses = read_emasses(emasswild, len(ops), t, levels_to_make)
     Zs = {}
     for level in levels_to_make:
         v_n = v[:,level]
