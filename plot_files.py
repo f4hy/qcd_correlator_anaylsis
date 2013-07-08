@@ -35,6 +35,7 @@ def lines_without_comments(filename, comment="#"):
 
 def determine_type(txt):
     firstline = txt.readline()
+    txt.seek(0)
     if "(" in firstline and ")" in firstline:
         return "paren_complex"
     if "," in firstline:
