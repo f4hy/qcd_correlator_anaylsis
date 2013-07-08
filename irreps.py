@@ -117,7 +117,7 @@ def translate_name_to_irrep(name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Determine lattice irreps from particle names")
-    parser.add_argument('name', metavar='n', type=str, help='files to plot')
+    parser.add_argument('name', metavar='expected_level', type=str, help='expected level to determine irreps from')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
