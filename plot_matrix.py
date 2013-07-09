@@ -4,19 +4,24 @@ import logging
 import argparse
 from plot_files import read_file
 import determine_operators
+import numpy as np
 
 
 def plot_matrix(input_directory, fileformat, operators):
     N = len(operators)
-    plots = {}
+    plotsreal = {}
+    plotsimag = {}
     for i, row in enumerate(operators):
         for j, col in enumerate(operators):
             print fileformat.format(row, col)
             filename = fileformat.format(row, col)
             ax = plt.subplot2grid((N, N), (i, j))
             df = read_file(input_directory+filename)
-            plots[(i, j)] = ax.errorbar(df.time.values, df.correlator.values, yerr=df.error.values,
-                                        linestyle="none", marker="o", label="{}_{}".format(row, col))
+            plotsreal[(i, j)] = ax.errorbar(df.time.values, np.real(df.correlator.values), yerr=np.real(df.error.values),
+                                            linestyle="none", marker="o", label="{}_{}".format(row, col))
+            plotsimag[(i, j)] = ax.errorbar(df.time.values, np.imag(df.correlator.values), yerr=np.imag(df.error.values),
+                                            linestyle="none", marker="^", label="{}_{}".format(row, col))
+            ax.axhline(0, color="r")
             # ax.legend(fancybox=True, shadow=True)
             if i == 0:
                 ax.set_title(col)
