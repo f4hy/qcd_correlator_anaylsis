@@ -2,6 +2,7 @@
 import logging
 import argparse
 from collections import namedtuple
+import particle_operators
 
 properties = namedtuple('particleproperties', ['I', 'P', 'G', "spin"])
 
@@ -102,17 +103,29 @@ def translate_name_to_irrep(name):
     logging.info("particle1 %s atrest irreps: %s", particle1, " ".join(irrep_rest_particle(p1)))
     logging.info("particle2 %s atrest irreps: %s", particle2, " ".join(irrep_rest_particle(p2)))
 
+    operators = particle_operators.particleDatabase()
+
+    irreps1 = irrep_moving_particle(p1, momentum1)
+    irreps2 = irrep_moving_particle(p2, momentum2)
     if mom1 > 0:
         logging.info("particle1 %s moving irreps: %s", particle1,
-                     " ".join(irrep_moving_particle(p1, momentum1)))
+                     " ".join(irreps1))
 
     if mom2 > 0:
         logging.info("particle2 %s moving irreps: %s", particle2,
-                     " ".join(irrep_moving_particle(p2, momentum2)))
+                     " ".join(irreps2))
 
-    for i in irrep_moving_particle(p1, momentum1):
-        for j in irrep_moving_particle(p2, momentum2):
+    for i in irreps1:
+        for j in irreps2:
             logging.info("operatorfile: {}_{}_{}_{}".format(momentums[mom1], i, momentums[mom2], j))
+
+    for irrep in irreps1:
+        op = operators.read_op(particle1, irrep, mom1)
+        logging.info("particle1 %s in %s, should use operator %s", particle1, irrep, op)
+
+    for irrep in irreps2:
+        op = operators.read_op(particle2, irrep, mom2)
+        logging.info("particle2 %s in %s, should use operator %s", particle2, irrep, op)
 
 
 if __name__ == "__main__":
