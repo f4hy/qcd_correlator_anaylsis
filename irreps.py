@@ -8,20 +8,27 @@ properties = namedtuple('particleproperties', ['I', 'P', 'G', "spin"])
 
 names = {}
 names["pi"]       = properties(1, -1, -1, 0)
+names["pi1"]      = properties(1, -1, -1, 1)
 names["a0"]       = properties(1, 1, -1, 0)
 names["a1"]       = properties(1, 1, -1, 1)
+names["a2"]       = properties(1, 1, -1, 2)
 names["rho"]      = properties(1, -1, 1, 1)
+names["rho3"]      = properties(1, -1, 1, 3)
 names["b1"]       = properties(1, 1, 1, 1)
 names["h1"]       = properties(0, 1, -1, 1)
 names["omega"]    = properties(0, -1, -1, 1)
+names["f0"]       = properties(0, 1, 1, 0)
 names["f1"]       = properties(0, 1, 1, 1)
 names["f2"]       = properties(0, 1, 1, 2)
 names["eta"]      = properties(0, -1, 1, 0)
 names["etaprime"] = properties(0, -1, 1, 0)
+names["phi"]      = properties(0, -1, -1, 1)
 names["K"]        = properties("1/2", -1, None, 0)
 names["KB"]       = properties("1/2", -1, None, 0)
 names["Kstar"]    = properties("1/2", -1, None, 1)
+names["KBstar"]    = properties("1/2", -1, None, 1)
 names["K1"]    = properties("1/2", 1, None, 1)
+names["KB1"]    = properties("1/2", 1, None, 1)
 
 meson_reps = {"A1": (0, 4), "A2": (3, 6), "E": (2, 4, 5, 6), "T1": (1, 3, 4), "T2": (2, 3, 4, 5)}
 reps_meson = {0: ["A1"], 4: ["A1"], 1: ["T1"], 2: ["E", "T2"], 3: ["T1", "T2", "A2"],
@@ -30,7 +37,7 @@ baryon_reps = {"G1": ("1/2", "7/2"), "G2": ("5/2", "7/2"), "H": ("3/2", "5/2", "
 
 parity = {-1: "u", 1: "g"}
 gparity = {-1: "m", 1: "p"}
-momentums = {0: "AR", 1: "OA", 2: "PD", 3: "CD"}
+momentums = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA"}
 
 subductions = {}
 subductions[("A1", "g", 1)] = ["A1"]
@@ -65,6 +72,17 @@ subductions[("T1", "g", 3)] = ["A2", "E"]
 subductions[("T1", "u", 3)] = ["A1", "E"]
 subductions[("T2", "g", 3)] = ["A1", "E"]
 subductions[("T2", "u", 3)] = ["A2", "E"]
+
+subductions[("A1", "g", 4)] = ["A1"]
+subductions[("A1", "u", 4)] = ["A2"]
+subductions[("A2", "g", 4)] = ["B1"]
+subductions[("A2", "u", 4)] = ["B2"]
+subductions[("E", "g", 4)] = ["A1", "B1"]
+subductions[("E", "u", 4)] = ["A2", "B2"]
+subductions[("T1", "g", 4)] = ["A2", "E"]
+subductions[("T1", "u", 4)] = ["A1", "E"]
+subductions[("T2", "g", 4)] = ["B2", "E"]
+subductions[("T2", "u", 4)] = ["B1", "E"]
 
 
 def irrep_rest_particle(p):
