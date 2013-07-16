@@ -3,16 +3,14 @@ import argparse
 import ConfigParser
 import logging
 import readinput
-import irreps
 
-momentum_map = {0 : "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA"}
+momentum_map = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA"}
 
 
 class particleDatabase():
 
-
     def __init__(self, datafile="particles.ini"):
-        self.datafile=datafile
+        self.datafile = datafile
         logging.debug("initializing particleDatabase object")
         self.config = ConfigParser.SafeConfigParser()
         self.config.read("particles.ini")
@@ -24,7 +22,7 @@ class particleDatabase():
             return self.config.get(key, irrep)
         except ConfigParser.NoOptionError:
             logging.warn("No operator found for {} {}".format(key, irrep))
-            sucsess =self.add_op_entry(key, irrep)
+            sucsess = self.add_op_entry(key, irrep)
             if sucsess:
                 logging.warn("Should have updated database, Re-trying")
                 return self.read_op(particle, irrep, momentum)
@@ -41,19 +39,15 @@ class particleDatabase():
                 return None
 
     def add_op_entry(self, key, irrep):
-        logging.info("please enter operator choice for {} {}".format(key,irrep))
-        op = readinput.askoperator("{} {}".format(key,irrep))
+        logging.info("please enter operator choice for {} {}".format(key, irrep))
+        op = readinput.askoperator("{} {}".format(key, irrep))
         print "user input operator", op
         if op:
             self.config.set(key, irrep, op)
-            with open(self.datafile,"wb") as configfile:
+            with open(self.datafile, "wb") as configfile:
                 self.config.write(configfile)
             return True
         return False
-
-# def setup():
-#     logging.info("Making sure partcle data file is in working order")
-
 
 
 if __name__ == "__main__":
