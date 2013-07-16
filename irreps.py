@@ -113,6 +113,12 @@ def particle_name(name):
 def translate_name_to_irrep(name):
     logging.info("Translateing {}".format(name))
 
+    if "_" not in name:
+        logging.info("Is a single hadron?")
+        p1 = particle_name(name)
+        logging.info("particle %s atrest irreps: %s", name, " ".join(irrep_rest_particle(p1)))
+        return
+
     particle1, momentum1, particle2, momentum2, _, _ = name.split("_")
     mom1 = int(momentum1[-1])
     mom2 = int(momentum2[-1])
