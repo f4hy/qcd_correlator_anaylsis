@@ -3,17 +3,20 @@ import argparse
 import ConfigParser
 import logging
 import readinput
+import sys
 
 momentum_map = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA"}
+default_file = sys.path[0]+"/particles.ini"
 
 
 class particleDatabase():
 
-    def __init__(self, datafile="particles.ini"):
+    def __init__(self, datafile=default_file):
         self.datafile = datafile
         logging.debug("initializing particleDatabase object")
         self.config = ConfigParser.SafeConfigParser()
-        self.config.read("particles.ini")
+        logging.debug("Reading database from {}".format(self.datafile))
+        self.config.read(self.datafile)
 
     def read_op(self, particle, irrep, momentum):
         logging.debug("reading {}_{} from database".format(particle, momentum))
