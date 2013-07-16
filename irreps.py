@@ -111,12 +111,12 @@ def particle_name(name):
 
 
 def translate_name_to_irrep(name):
-    logging.info("Translateing {}".format(name))
+    logging.info("Translating {}".format(name))
 
     if "_" not in name:
         logging.info("Is a single hadron?")
         p1 = particle_name(name)
-        logging.info("particle %s atrest irreps: %s", name, " ".join(irrep_rest_particle(p1)))
+        logging.info("particle %s at rest irreps: %s", name, " ".join(irrep_rest_particle(p1)))
         return
 
     particle1, momentum1, particle2, momentum2, _, _ = name.split("_")
@@ -124,8 +124,8 @@ def translate_name_to_irrep(name):
     mom2 = int(momentum2[-1])
     p1 = particle_name(particle1)
     p2 = particle_name(particle2)
-    logging.info("particle1 %s atrest irreps: %s", particle1, " ".join(irrep_rest_particle(p1)))
-    logging.info("particle2 %s atrest irreps: %s", particle2, " ".join(irrep_rest_particle(p2)))
+    logging.info("particle1 %s at rest irreps: %s", particle1, " ".join(irrep_rest_particle(p1)))
+    logging.info("particle2 %s at rest irreps: %s", particle2, " ".join(irrep_rest_particle(p2)))
 
     operators = particle_operators.particleDatabase()
 
@@ -141,15 +141,15 @@ def translate_name_to_irrep(name):
 
     for i in irreps1:
         for j in irreps2:
-            logging.info("operatorfile: {}_{}_{}_{}".format(momentums[mom1], i, momentums[mom2], j))
+            logging.info("operator file: {}_{}_{}_{}".format(momentums[mom1], i, momentums[mom2], j))
 
     for irrep in irreps1:
         op = operators.read_op(particle1, irrep, mom1)
-        logging.info("particle1 %s in %s, should use operator %s", particle1, irrep, op)
+        logging.info("particle1 %s in %s, primary operator is %s", particle1, irrep, op)
 
     for irrep in irreps2:
         op = operators.read_op(particle2, irrep, mom2)
-        logging.info("particle2 %s in %s, should use operator %s", particle2, irrep, op)
+        logging.info("particle2 %s in %s, primary operator is %s", particle2, irrep, op)
 
 
 if __name__ == "__main__":
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-        logging.debug("Verbose debuging mode activated")
+        logging.debug("Verbose debugging mode activated")
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
