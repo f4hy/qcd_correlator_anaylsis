@@ -24,23 +24,32 @@ class particleDatabase():
             return self.config.get(key, irrep)
         except ConfigParser.NoOptionError:
             logging.warn("No operator found for {} {}".format(key, irrep))
-            self.add_op_entry(key, irrep)
-            logging.warn("Should have updated database, Re-trying")
-            return self.read_op(particle, irrep, momentum)
+            sucsess =self.add_op_entry(key, irrep)
+            if sucsess:
+                logging.warn("Should have updated database, Re-trying")
+                return self.read_op(particle, irrep, momentum)
+            else:
+                return None
         except ConfigParser.NoSectionError:
             logging.warn("No particle found for {}".format(key))
             self.config.add_section(key)
-            self.add_op_entry(key, irrep)
-            logging.warn("Should have updated database, Re-trying")
-            return self.read_op(particle, irrep, momentum)
+            sucsess = self.add_op_entry(key, irrep)
+            if sucsess:
+                logging.warn("Should have updated database, Re-trying")
+                return self.read_op(particle, irrep, momentum)
+            else:
+                return None
 
     def add_op_entry(self, key, irrep):
         logging.info("please enter operator choice for {} {}".format(key,irrep))
         op = readinput.askoperator("{} {}".format(key,irrep))
         print "user input operator", op
-        self.config.set(key, irrep, op)
-        with open(self.datafile,"wb") as configfile:
-            self.config.write(configfile)
+        if op:
+            self.config.set(key, irrep, op)
+            with open(self.datafile,"wb") as configfile:
+                self.config.write(configfile)
+            return True
+        return False
 
 # def setup():
 #     logging.info("Making sure partcle data file is in working order")
