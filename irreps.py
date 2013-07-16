@@ -119,6 +119,10 @@ def translate_name_to_irrep(name):
         logging.info("particle %s at rest irreps: %s", name, " ".join(irrep_rest_particle(p1)))
         return
 
+    if name.count("_") > 5:
+        logging.info("Is a three or four hadron state?")
+        return
+
     particle1, momentum1, particle2, momentum2, _, _ = name.split("_")
     mom1 = int(momentum1[-1])
     mom2 = int(momentum2[-1])
