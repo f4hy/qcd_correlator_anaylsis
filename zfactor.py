@@ -61,13 +61,15 @@ def read_emasses(filewild, N, t, levels_to_make):
             exit(level)
     return emasses
 
-def normalize_Zs(Zs):
+def normalize_Zs(Zs, normalize):
     A = np.array(Zs.values())
     maximums = np.array([max(np.abs(A[:,i])) for i in range(len(Zs[0]))])
-    normed = {k: np.abs(values)/maximums for k,values in Zs.iteritems()}
-    return normed
+    if normalize:
+        return {k: np.abs(values)/maximums for k,values in Zs.iteritems()}
+    else:
+        return {k: np.abs(values) for k,values in Zs.iteritems()}
 
-def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxlevels):
+def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxlevels, normalize):
     raw_v = read_coeffs_file(rotfile)
     N = len(ops)
     v = np.matrix(raw_v.identities.values.reshape((N,N))).T
@@ -87,7 +89,7 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxleve
 
     print Zs.keys()
     print len(Zs[0])
-    normalized_Zs = normalize_Zs(Zs)
+    normalized_Zs = normalize_Zs(Zs, normalize)
     for level in levels_to_make:
         logging.info("normed Z_j for level{}: {}".format(level,str(normalized_Zs[level])))
 
@@ -126,6 +128,8 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     parser.add_argument("-n", "--number", type=int, required=False,
                         help="restrict to a number of levels", default=1000)
+    parser.add_argument("-norm", "--normalize", action="store_true", required=False,
+                        help="normalized the zfactors")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
@@ -136,4 +140,4 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass, args.operators, args.tnaught, args.time, args.output_stub, args.number)
+    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass, args.operators, args.tnaught, args.time, args.output_stub, args.number, args.normalize)
