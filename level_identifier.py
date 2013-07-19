@@ -20,7 +20,7 @@ def read_file(filename):
 
 
 
-def make_bar_plot(inputfile, cols, output_stub, mode, ns):
+def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     df = read_file(inputfile).apply(np.absolute)
 
     ops = list(set([i/1000 for i in df.index]))
@@ -29,6 +29,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns):
     N = int(np.sqrt(len(df)))
     largest_zfactor = max(df.identities)
 
+    opnames = ["".join(n.split("-")[1:]) if n.startswith("iso") else n for n in opnames ]
     plots = ops
     if mode == "level":
         plots = levels
@@ -54,7 +55,10 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns):
         if mode == "ops":
             indexes = [plot_index*1000+level for level in levels]
             plt.xlabel("level")
-            plt.title("operator {}".format(plot_index))
+            if opnames:
+                plt.title("{}".format(opnames[plot_index-1]))
+            else:
+                plt.title("operator {}".format(plot_index))
         values = df.ix[indexes].identities.values
         # errors = df.ix[indexes].error.values
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
@@ -62,7 +66,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns):
             plot[(i, j)] = ax.bar(ops[:ns], values[:ns], 1, color="g")
             plot[(i, j)] = ax.bar(ops[ns:], values[ns:], 1, color="b")
             ax.set_xticks(np.array(ops)+0.5)
-            ax.set_xticklabels(ops)
+            ax.set_xticklabels([o if o % 5 == 0 else "" for o in ops])
             plt.title("level {}".format(plot_index))
         else:
             color = "b"
@@ -70,7 +74,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns):
                 color = "g"
             plot[(i, j)] = ax.bar(levels, values, 1, color=color)
             ax.set_xticks(np.array(levels)+0.5)
-            ax.set_xticklabels(levels)
+            ax.set_xticklabels([n if n % 5 == 0 else "" for n in levels])
         plt.ylim([0, np.ceil(largest_zfactor)])
         plt.xlim(xmin=1)
     # end plot loop
@@ -98,6 +102,8 @@ if __name__ == "__main__":
                         help="select the mode of how to plot the levels", default="level")
     parser.add_argument("-ns", "--number-singlehadrons", type=int, required=False, default=0,
                         help="Number of single hadrons to distinguish")
+    parser.add_argument("-n", "--names", type=str, required=False,
+                        help="operator names file")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
@@ -108,4 +114,10 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    make_bar_plot(args.inputfile, args.columns, args.output_stub, args.mode, args.number_singlehadrons)
+    names = None
+    if args.names:
+        with open(args.names) as namefile:
+            names = namefile.readline().split()
+        print names
+
+    make_bar_plot(args.inputfile, args.columns, args.output_stub, args.mode, args.number_singlehadrons, names)
