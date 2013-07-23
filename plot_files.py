@@ -7,6 +7,7 @@ from matplotlib.widgets import CheckButtons
 from compiler.ast import flatten
 import os
 import pandas as pd
+from operator_tranlator import translate
 
 from fitfunctions import *  # noqa
 from cStringIO import StringIO
@@ -84,7 +85,7 @@ def plot_files(files, yrange=None, cols=-1):
     tmin_plot = {}
     has_colorbar = False
     labels = label_names_from_filelist(files)
-
+    labels = [translate(l) for l in labels]
     seperate = cols > 0
     if seperate:
         plt.figure(figsize=(10, 6))
