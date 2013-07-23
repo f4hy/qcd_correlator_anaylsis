@@ -76,7 +76,7 @@ def label_names_from_filelist(filelist):
     return names
 
 
-def plot_files(files):
+def plot_files(files, yrange=None, cols=-1):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
     colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"]
@@ -84,8 +84,17 @@ def plot_files(files):
     tmin_plot = {}
     has_colorbar = False
     labels = label_names_from_filelist(files)
+
+    seperate = cols > 0
+    if seperate:
+        plt.figure(figsize=(10, 6))
+
+
     for index, label, filename in zip(range(len(files)), labels, files):
-    # for index, label in enumerate(labels):
+        i = (index)/cols
+        j = (index) % cols
+
+        # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
         df = read_file(filename)
@@ -104,10 +113,20 @@ def plot_files(files):
                 cb = plt.colorbar(tmin_plot[label])  # noqa
                 has_colorbar = True
         else:
-            plots[label] = plt.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                        linestyle="none", c=color, marker=mark, label=label)
+            if seperate:
+                logging.info("plotting {}  {}, {}".format(label,i,j))
+                ax = plt.subplot2grid((len(labels)/cols+1, cols), (i, j))
+                ax.set_title(label)
+            else:
+                ax = plt
+            plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
+                                       linestyle="none", c=color, marker=mark, label=label)
+            if yrange:
+                plt.ylim(yrange)
 
-    leg = plt.legend(fancybox=True, shadow=True)
+
+    if not seperate:
+        leg = plt.legend(fancybox=True, shadow=True)
 
     def toggle_errorbar_vis(ebarplot):
         for i in flatten(ebarplot):
@@ -120,11 +139,12 @@ def plot_files(files):
             tmin_plot[label].set_visible(not tmin_plot[label].get_visible())
         plt.draw()
 
-    rax = plt.axes([0.85, 0.8, 0.1, 0.15])
-    check = CheckButtons(rax, labels, [True]*len(plots))
-    check.on_clicked(func)
+    if not seperate:
+        rax = plt.axes([0.85, 0.8, 0.1, 0.15])
+        check = CheckButtons(rax, labels, [True]*len(plots))
+        check.on_clicked(func)
+        leg.draggable()
 
-    leg.draggable()
     plt.show()
 
 
@@ -132,6 +152,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="plot a set of data files")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("-c", "--columns", type=int, required=False,
+                        help="number of columns to make the plot", default=None)
+    parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
+                        help="set the yrange of the plot", default=None)
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
@@ -144,4 +168,8 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    plot_files(args.files)
+    if args.columns:
+        logging.info("Plotting each file as a seperate plot")
+        plot_files(args.files, cols=args.columns, yrange=args.yrange)
+    else:
+        plot_files(args.files, yrange=args.yrange)
