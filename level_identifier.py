@@ -50,11 +50,13 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
         if j > 0:
             ax.set_yticks([])
         else:
-            plt.ylabel("zfactor")
+            plt.ylabel("Z", fontweight='bold', rotation='horizontal')
+            ax.set_yticks([0,1])
+
         plt.xlabel("operator")
         if mode == "ops":
             indexes = [plot_index*1000+level for level in levels]
-            plt.xlabel("level")
+            plt.xlabel("                  level", fontweight='bold')
             if opnames:
                 plt.title("{}".format(opnames[plot_index-1]))
             else:
@@ -72,7 +74,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
             color = "b"
             if plot_index <= ns:
                 color = "g"
-            plot[(i, j)] = ax.bar(levels, values, 1, color=color)
+            plot[(i, j)] = ax.bar(levels, values, 1, color=color, lw=2)
             ax.set_xticks(np.array(levels)+0.5)
             ax.set_xticklabels([n if n % 5 == 0 else "" for n in levels])
         plt.ylim([0, np.ceil(largest_zfactor)])
@@ -80,12 +82,13 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     # end plot loop
 
     plt.tight_layout()
-    plt.subplots_adjust(wspace=0.2, hspace=0.5)
+    plt.subplots_adjust(wspace=0.2, hspace=1.0)
     if(output_stub):
-        plt.rcParams.update({'font.size': 5})
+        plt.rcParams.update({'font.size': 12})
         logging.info("Saving plot to {}".format(output_stub+".png"))
-        plt.savefig(output_stub+".png", dpi=200)
+        plt.savefig(output_stub+".png", dpi=300)
     else:
+        plt.rcParams.update({'font.size': 14})
         plt.show()
 
 
