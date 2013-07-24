@@ -5,6 +5,7 @@ import logging
 import argparse
 import plot_files
 import pandas as pd
+from operator_tranlator import translate
 
 OUTPUT = 25
 logging.addLevelName(OUTPUT, "OUTPUT")
@@ -29,7 +30,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     N = int(np.sqrt(len(df)))
     largest_zfactor = max(df.identities)
 
-    opnames = ["".join(n.split("-")[1:]) if n.startswith("iso") else n for n in opnames ]
+    opnames = [translate(l) for l in opnames]
     plots = ops
     if mode == "level":
         plots = levels
