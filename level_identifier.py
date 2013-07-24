@@ -6,6 +6,7 @@ import argparse
 import plot_files
 import pandas as pd
 from operator_tranlator import translate
+import math
 
 OUTPUT = 25
 logging.addLevelName(OUTPUT, "OUTPUT")
@@ -35,41 +36,45 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     if mode == "level":
         plots = levels
 
-    print "levels", levels
-    print "ops", ops
-    print "plots", plots
     plot = {}
-    plt.figure(figsize=(10, 6))
-    plt.suptitle("Zfactors by {}".format(mode))
+    # plt.figure(figsize=(10, 6))
+    plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+
+    rows = int(math.ceil(float(len(plots))/cols))
+    f, layout = plt.subplots(nrows=rows, ncols=cols)
+    f.set_size_inches(19.2,12.0)
+    f.set_dpi(100)
     for plot_index in plots:
-        print "making plot {}".format(plot_index)
         i = (plot_index-1)/cols
         j = (plot_index-1) % cols
+        logging.info("making plot {} {} {}".format(plot_index, i, j))
 
-        ax = plt.subplot2grid((len(plots)/cols+1, cols), (i, j))
+        ax = layout[i][j]
         indexes = [plot_index+op*1000 for op in ops]
         if j > 0:
             ax.set_yticks([])
         else:
-            plt.ylabel("Z", fontweight='bold', rotation='horizontal')
+            ax.set_ylabel("Z", fontweight='bold', rotation='horizontal')
             ax.set_yticks([0,1])
 
         if mode == "ops":
             indexes = [plot_index*1000+level for level in levels]
             ticklabelpad = plt.rcParams['xtick.major.pad']
-            ax.annotate('Level', xy=(1,0), xytext=(-10, -ticklabelpad), ha='left', va='top',
+            ax.annotate('Level', xy=(1,0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
                         xycoords='axes fraction', textcoords='offset points')
-            # plt.xlabel("level", ha='left', va = 'top')
             if opnames:
-                plt.title("{}".format(opnames[plot_index-1]))
+                ax.set_title("{}".format(opnames[plot_index-1]))
             else:
-                plt.title("operator {}".format(plot_index))
+                ax.set_title("operator {}".format(plot_index))
         else:
             ticklabelpad = plt.rcParams['xtick.major.pad']
-            ax.annotate('Operator', xy=(1,0), xytext=(-10, -ticklabelpad), ha='left', va='top',
+            ax.annotate('Operator', xy=(1,0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
                         xycoords='axes fraction', textcoords='offset points')
 
         values = df.ix[indexes].identities.values
+        if plot_index == 56:
+            print opnames[plot_index-1]
+            print values
         # errors = df.ix[indexes].error.values
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         if mode == "level":
@@ -82,20 +87,21 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
             color = "b"
             if plot_index <= ns:
                 color = "g"
-            plot[(i, j)] = ax.bar(levels, values, 1, color=color, lw=2)
-            ax.set_xticks(np.array(levels)+0.5)
-            ax.set_xticklabels([n if n % 5 == 0 else "" for n in levels])
-        plt.ylim([0, np.ceil(largest_zfactor)])
-        plt.xlim(xmin=1)
+            print levels, values
+            plot[(i, j)] = ax.bar(levels, values, 1, color=color)
+        ax.set_ylim([0, np.ceil(largest_zfactor)])
+        ax.set_xlim(xmin=1)
     # end plot loop
 
-    plt.tight_layout()
-    plt.subplots_adjust(wspace=0.2, hspace=1.0)
     if(output_stub):
-        plt.rcParams.update({'font.size': 12})
+        plt.rcParams.update({'font.size': 8})
+        plt.tight_layout(pad=0.1, h_pad=1.0, w_pad=0.0)
         logging.info("Saving plot to {}".format(output_stub+".png"))
-        plt.savefig(output_stub+".png", dpi=300)
+        plt.savefig(output_stub+".png")
+        logging.info("Saving plot to {}".format(output_stub+".eps"))
+        plt.savefig(output_stub+".eps")
     else:
+        plt.tight_layout()
         plt.show()
 
 
