@@ -54,14 +54,21 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
             plt.ylabel("Z", fontweight='bold', rotation='horizontal')
             ax.set_yticks([0,1])
 
-        plt.xlabel("operator")
         if mode == "ops":
             indexes = [plot_index*1000+level for level in levels]
-            plt.xlabel("                  level", fontweight='bold')
+            ticklabelpad = plt.rcParams['xtick.major.pad']
+            ax.annotate('Level', xy=(1,0), xytext=(-10, -ticklabelpad), ha='left', va='top',
+                        xycoords='axes fraction', textcoords='offset points')
+            # plt.xlabel("level", ha='left', va = 'top')
             if opnames:
                 plt.title("{}".format(opnames[plot_index-1]))
             else:
                 plt.title("operator {}".format(plot_index))
+        else:
+            ticklabelpad = plt.rcParams['xtick.major.pad']
+            ax.annotate('Operator', xy=(1,0), xytext=(-10, -ticklabelpad), ha='left', va='top',
+                        xycoords='axes fraction', textcoords='offset points')
+
         values = df.ix[indexes].identities.values
         # errors = df.ix[indexes].error.values
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
@@ -89,7 +96,6 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
         logging.info("Saving plot to {}".format(output_stub+".png"))
         plt.savefig(output_stub+".png", dpi=300)
     else:
-        plt.rcParams.update({'font.size': 14})
         plt.show()
 
 
