@@ -67,7 +67,7 @@ def translate_irrep(name):
     return new
 
 def prune_isotriplet(name):
-    isomatch = "isotriplet.*?\-"
+    isomatch = "iso.*?\-"
     return re.sub(isomatch, "", name)
 
 if __name__ == "__main__":
