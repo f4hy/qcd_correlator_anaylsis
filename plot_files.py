@@ -8,6 +8,7 @@ from compiler.ast import flatten
 import os
 import pandas as pd
 from operator_tranlator import translate
+import math
 
 from fitfunctions import *  # noqa
 from cStringIO import StringIO
@@ -87,10 +88,9 @@ def plot_files(files, yrange=None, cols=-1):
     labels = label_names_from_filelist(files)
     labels = [translate(l) for l in labels]
     seperate = cols > 0
+    layout = None
     if seperate:
-        plt.figure(figsize=(10, 6))
-
-
+        f, layout = plt.subplots(nrows=int(math.ceil(float(len(labels))/cols)), ncols=cols, sharey=True)
     for index, label, filename in zip(range(len(files)), labels, files):
         i = (index)/cols
         j = (index) % cols
@@ -116,7 +116,7 @@ def plot_files(files, yrange=None, cols=-1):
         else:
             if seperate:
                 logging.info("plotting {}  {}, {}".format(label,i,j))
-                ax = plt.subplot2grid((len(labels)/cols+1, cols), (i, j))
+                ax = layout[i][j]
                 ax.set_title(label)
             else:
                 ax = plt
@@ -128,6 +128,9 @@ def plot_files(files, yrange=None, cols=-1):
 
     if not seperate:
         leg = plt.legend(fancybox=True, shadow=True)
+    else:
+        plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
+
 
     def toggle_errorbar_vis(ebarplot):
         for i in flatten(ebarplot):
