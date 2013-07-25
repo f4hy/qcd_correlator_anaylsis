@@ -28,14 +28,14 @@ def read_coeffs_file(filename):
 
 def build_cor_mat(corwild, ops, to):
     N = len(ops)
-    cormat = np.matrix(np.zeros((N,N)))
-    for i,src in enumerate(ops):
-        for j,snk in enumerate(ops):
+    cormat = np.matrix(np.zeros((N,N)), dtype=np.complex128)
+    for col,src in enumerate(ops):
+        for row,snk in enumerate(ops):
             logging.info("Reading snk:{}, src:{}".format(snk,src))
             raw_c = plot_files.read_file(corwild.format(snk,src))
             df = raw_c
             Cij = df.ix[df['time'] == to, 'correlator']
-            cormat[i,j] = np.array(Cij)[0]
+            cormat[row,col] = np.array(Cij)[0]
     return cormat
 
 def check_ident(v, cormat):
