@@ -26,8 +26,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     df = read_file(inputfile).apply(np.absolute)
 
     ops = list(set([i/1000 for i in df.index]))
-    levels = list(set([i % 1000 for i in df.index]))
-
+    levels = list(set([(i % 1000)-1 for i in df.index]))
     N = int(np.sqrt(len(df)))
     largest_zfactor = max(df.identities)
 
@@ -39,6 +38,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     plot = {}
     # plt.figure(figsize=(10, 6))
     plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+    plt.rcParams['xtick.major.size'] = 0
 
     rows = int(math.ceil(float(len(plots))/cols))
     f, layout = plt.subplots(nrows=rows, ncols=cols)
@@ -54,12 +54,14 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
         if j > 0:
             ax.set_yticks([])
         else:
-            ax.set_ylabel("Z", fontweight='bold', rotation='horizontal')
+            ax.set_ylabel("|Z|", fontweight='bold', rotation='horizontal')
             ax.set_yticks([0,1])
 
         if mode == "ops":
             indexes = [plot_index*1000+level for level in levels]
             ticklabelpad = plt.rcParams['xtick.major.pad']
+            ax.set_xticks(np.array(levels)+1.5)
+            ax.set_xticklabels([n if n % 5 == 0 else "" for n in levels])
             ax.annotate('Level', xy=(1,0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
                         xycoords='axes fraction', textcoords='offset points')
             if opnames:
@@ -72,9 +74,6 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
                         xycoords='axes fraction', textcoords='offset points')
 
         values = df.ix[indexes].identities.values
-        if plot_index == 56:
-            print opnames[plot_index-1]
-            print values
         # errors = df.ix[indexes].error.values
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         if mode == "level":
@@ -87,7 +86,6 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
             color = "b"
             if plot_index <= ns:
                 color = "g"
-            print levels, values
             plot[(i, j)] = ax.bar(levels, values, 1, color=color)
         ax.set_ylim([0, np.ceil(largest_zfactor)])
         ax.set_xlim(xmin=1)
@@ -95,7 +93,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
 
     if(output_stub):
         plt.rcParams.update({'font.size': 8})
-        plt.tight_layout(pad=0.1, h_pad=1.0, w_pad=0.0)
+        plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         logging.info("Saving plot to {}".format(output_stub+".png"))
         plt.savefig(output_stub+".png")
         logging.info("Saving plot to {}".format(output_stub+".eps"))
