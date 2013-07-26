@@ -22,7 +22,7 @@ def read_file(filename):
 
 
 
-def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
+def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots=1000):
     df = read_file(inputfile).apply(np.absolute)
 
     ops = list(set([i/1000 for i in df.index]))
@@ -40,11 +40,11 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     plt.rcParams['xtick.major.size'] = 0
 
-    rows = int(math.ceil(float(len(plots))/cols))
+    rows = min(int(math.ceil(float(len(plots))/cols)), int(math.ceil(float(maxplots)/cols)))
     f, layout = plt.subplots(nrows=rows, ncols=cols)
     f.set_size_inches(19.2,12.0)
     f.set_dpi(100)
-    for plot_index in plots:
+    for plot_index in plots[:maxplots]:
         i = (plot_index-1)/cols
         j = (plot_index-1) % cols
         logging.info("making plot {} {} {}".format(plot_index, i, j))
@@ -116,6 +116,8 @@ if __name__ == "__main__":
                         help="select the mode of how to plot the levels", default="level")
     parser.add_argument("-ns", "--number-singlehadrons", type=int, required=False, default=0,
                         help="Number of single hadrons to distinguish")
+    parser.add_argument("-mx", "--max-plots", type=int, required=False, default=100,
+                        help="Maximum number of plots")
     parser.add_argument("-n", "--names", type=str, required=False,
                         help="operator names file")
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -134,4 +136,4 @@ if __name__ == "__main__":
             names = namefile.readline().split()
         print names
 
-    make_bar_plot(args.inputfile, args.columns, args.output_stub, args.mode, args.number_singlehadrons, names)
+    make_bar_plot(args.inputfile, args.columns, args.output_stub, args.mode, args.number_singlehadrons, names, maxplots=args.max_plots)
