@@ -30,7 +30,8 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
     N = int(np.sqrt(len(df)))
     largest_zfactor = max(df.identities)
 
-    opnames = [translate(l) for l in opnames]
+    if opnames:
+        opnames = [translate(l) for l in opnames]
     plots = ops
     if mode == "level":
         plots = levels
