@@ -26,7 +26,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None):
     df = read_file(inputfile).apply(np.absolute)
 
     ops = list(set([i/1000 for i in df.index]))
-    levels = list(set([(i % 1000)-1 for i in df.index]))
+    levels = list(set([(i % 1000) for i in df.index]))
     N = int(np.sqrt(len(df)))
     largest_zfactor = max(df.identities)
 
