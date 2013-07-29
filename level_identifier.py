@@ -70,6 +70,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
             else:
                 ax.set_title("operator {}".format(plot_index))
         else:
+            ax.set_title("level {}".format(plot_index-1))
             ticklabelpad = plt.rcParams['xtick.major.pad']
             ax.annotate('Operator', xy=(1,0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
                         xycoords='axes fraction', textcoords='offset points')
