@@ -120,8 +120,17 @@ def plot_files(files, yrange=None, cols=-1):
                 ax.set_title(label)
             else:
                 ax = plt
-            plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                       linestyle="none", c=color, marker=mark, label=label)
+            if np.iscomplexobj(df.correlator.values):
+                plots[label] = ax.errorbar(time_offset, np.real(df.correlator.values),
+                                           yerr=np.real(df.error.values),
+                                           linestyle="none", c=color, marker=mark, label=label)
+                plots["imag"+label] = ax.errorbar(time_offset, np.imag(df.correlator.values),
+                                           yerr=np.imag(df.error.values), markerfacecolor='none',
+                                                  linestyle="none", c=color, marker=mark, label=None)
+            else:
+                plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
+                                           linestyle="none", c=color, marker=mark, label=label)
+
             if yrange:
                 plt.ylim(yrange)
 
@@ -145,7 +154,7 @@ def plot_files(files, yrange=None, cols=-1):
 
     if not seperate:
         rax = plt.axes([0.85, 0.8, 0.1, 0.15])
-        check = CheckButtons(rax, labels, [True]*len(plots))
+        check = CheckButtons(rax, plots.keys(), [True]*len(plots))
         check.on_clicked(func)
         leg.draggable()
 
