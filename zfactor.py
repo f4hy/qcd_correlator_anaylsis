@@ -31,7 +31,7 @@ def build_cor_mat(corwild, ops, to):
     cormat = np.matrix(np.zeros((N,N)), dtype=np.complex128)
     for col,src in enumerate(ops):
         for row,snk in enumerate(ops):
-            logging.info("Reading snk:{}, src:{}".format(snk,src))
+            logging.debug("Reading snk:{}, src:{}".format(snk,src))
             raw_c = plot_files.read_file(corwild.format(snk,src))
             df = raw_c
             Cij = df.ix[df['time'] == to, 'correlator']
@@ -69,7 +69,7 @@ def normalize_Zs(Zs, normalize):
     else:
         return {k: np.abs(values) for k,values in Zs.iteritems()}
 
-def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxlevels, normalize):
+def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxlevels, normalize, reconstruct_stub):
     raw_v = read_coeffs_file(rotfile)
     N = len(ops)
     v = np.matrix(raw_v.identities.values.reshape((N,N))).T
@@ -83,15 +83,9 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxleve
     for level in levels_to_make:
         v_n = v[:,level]
         Zs[level] = [(cormat[j]*(v_n)*np.exp(emasses[level] * t0 * 0.5)).flat[0] for j in range(len(ops)) ]
-        print len(Zs[level])
-    for level in levels_to_make:
-        logging.info("Z_j for level{}: {}".format(level,repr(Zs[level])))
-
-    print Zs.keys()
-    print len(Zs[0])
     normalized_Zs = normalize_Zs(Zs, normalize)
     for level in levels_to_make:
-        logging.info("normed Z_j for level{}: {}".format(level,str(normalized_Zs[level])))
+        logging.debug("normed Z_j for level{}: {}".format(level,str(normalized_Zs[level])))
 
     if(outputstub):
         with open(outputstub+".out", 'w') as outfile:
@@ -100,14 +94,38 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxleve
                 for j in range(len(ops)):
                     outfile.write("{:d}{:03d} {}\n".format(j+1, level+1, normalized_Zs[level][j]))
 
-    check_sum(Zs, emasses, t)
+    check_sum(Zs, emasses, t0, cormat)
+    if reconstruct_stub:
+        logging.info("reconstructing correlators from zfactors")
+        reconstructed_correaltors(Zs, emasses, ops, reconstruct_stub)
 
-def check_sum(Zs, emasses, t):
+def check_sum(Zs, emasses, t, cormat):
     logging.info("Checking sum")
+    biggest_error = 0.0
     for i in range(len(Zs[0])):
         for j in range(len(Zs[0])):
-            C = sum((Zs[level][i]*Zs[level][j])*np.exp(-1.0*emasses[level]*t) for level in Zs.keys())
-            print "C_{}{}({}) = {}?".format(i, j, t, C)
+            C = sum((Zs[level][i]*np.conj(Zs[level][j]))*np.exp(-1.0*emasses[level]*t) for level in Zs.keys())
+            difference = abs(C - cormat[i,j])
+            percent_difference = difference/abs(cormat[i,j])
+            if percent_difference > biggest_error:
+                biggest_error = percent_difference
+                print "recomputed C_{},{}({}) = {}?".format(i, j, t, C)
+                print "actual     C_{},{}({}) = {}".format(i, j, t, cormat[i,j])
+                print "difference = {}".format(difference)
+                print "percent difference = {}".format(percent_difference)
+
+    print biggest_error
+
+
+def reconstructed_correaltors(Zs, emasses, ops, stub):
+
+    for i in range(len(Zs[0])):
+        for j in range(len(Zs[0])):
+            with open("{}.{}.{}.cor".format(stub,ops[i],ops[j]),"w") as outfile:
+                for t in range(40):
+                    C = sum((Zs[level][i]*np.conj(Zs[level][j]))*np.exp(-1.0*emasses[level]*t) for level in Zs.keys())
+                    outfile.write("{} ({},{}) (0.0,0.0)\n".format(t, np.real(C), np.imag(C)))
+
 
 if __name__ == "__main__":
 
@@ -126,6 +144,8 @@ if __name__ == "__main__":
                         help="operator strings, order matters!")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("-r", "--reconstruct_stub", type=str, required=False,
+                        help="stub for reconstrcuting the correlators")
     parser.add_argument("-n", "--number", type=int, required=False,
                         help="restrict to a number of levels", default=1000)
     parser.add_argument("-norm", "--normalize", action="store_true", required=False,
@@ -140,4 +160,4 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass, args.operators, args.tnaught, args.time, args.output_stub, args.number, args.normalize)
+    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass, args.operators, args.tnaught, args.time, args.output_stub, args.number, args.normalize, args.reconstruct_stub)
