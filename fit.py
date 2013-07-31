@@ -18,7 +18,9 @@ from scipy.optimize import leastsq
 from scipy.optimize import fmin
 # from scipy.optimize import minimize
 OUTPUT = 25
+ALWAYSINFO = 26
 logging.addLevelName(OUTPUT, "OUTPUT")
+logging.addLevelName(ALWAYSINFO, "INFO")
 
 Nt = 128
 NBOOTSTRAPS = 100
@@ -188,7 +190,11 @@ def bootstrap(cor):
 
 
 def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
-    return [bootstrap(cor) for i in range(N)]
+    if N>1:
+        return [bootstrap(cor) for i in range(N)]
+    else:
+        logging.info("Not bootstraping!")
+        return [cor]
 
 
 def covariance_matrix(cor, tmin, tmax):
@@ -220,6 +226,29 @@ def CholeskyInverse(t):
         for i in reversed(range(j)):
             B[j][i] = B[i][j] = -np.sum([t[i][k] * B[k][j] for k in range(i + 1, nrows)]) / t[i][i]
     return B
+
+
+def best_fit_range(fn, cor):
+    logging.info("Finding best fit range")
+    logging.debug("Temporarily setting the logger to warnings only")
+    logger = logging.getLogger()
+    previous_loglevel = logger.level
+    logger.setLevel(ALWAYSINFO)
+    best = 0
+    best_range = None
+    for tmin in cor.times:
+        for tmax in range(tmin+3,max(cor.times)):
+            _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_quality=True)
+            if qual > best:
+                best = qual
+                best_range = (tmin, tmax)
+            if qual > 0.4:
+                logging.log(ALWAYSINFO,"Fit range ({},{})"
+                               " is good with quality {}".format( tmin, tmax, qual))
+    logger.setLevel(previous_loglevel)
+    logging.debug("Restored logging state to original")
+    logging.info("Best fit range is {} with quality {}".format(best_range, best))
+    return best_range
 
 
 class InversionError(Exception):
@@ -279,9 +308,9 @@ if __name__ == "__main__":
                         help="vev file to read from")
     parser.add_argument("-v2", "--vev2", type=str, required=False,
                         help="vev2 file to read from")
-    parser.add_argument("-ts", "--time-start", type=int, nargs="+", required=True,
+    parser.add_argument("-ts", "--time-start", type=int, required=False,
                         help="first time slice to start a fit, can be a list of times")
-    parser.add_argument("-te", "--time-end", type=int, nargs="+", required=True,
+    parser.add_argument("-te", "--time-end", type=int, required=False,
                         help="last time slice to fit, can be a list of times")
     parser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
                         help="Number of straps")
@@ -314,13 +343,12 @@ if __name__ == "__main__":
         args.output_stub = os.path.splitext(args.output_stub)[0]
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
+    tmin = args.time_start
+    tmax = args.time_end
+    if not args.time_start:
+        tmin, tmax = best_fit_range(funct, cor)
+        logging.info("Found best fit range to be {}, {}".format(tmin, tmax))
     if args.plot:
-        if len(args.time_end) + len(args.time_start)  > 2:
-            parser.exit("Error: can't fit a range of times if plotting, please specify just a single time")
-        plot_fit(funct, cor, args.time_start[0], args.time_end[0],
-                 filestub=args.output_stub, bootstraps=args.bootstraps)
+        plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
     else:
-        for ts in args.time_start:
-            for te in [t for t in args.time_end if t > ts]:
-                fit(funct, cor, ts, te,
-                    filestub=args.output_stub, bootstraps=args.bootstraps)
+        fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
