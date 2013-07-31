@@ -33,6 +33,14 @@ def lines_without_comments(filename, comment="#"):
     s.seek(0)
     return s
 
+def read_single_time_paraenformat(filename,t):
+    f = lines_without_comments(filename)
+    logging.info("reading time {} from file {}".format(t, filename))
+    df = pd.read_csv(f, delimiter=' ', names=["time", "data"],
+                     converters={1: parse_pair})
+    single_time = df.ix[df["time"] == t, "data"]
+    return single_time.values
+
 def read_datadict_paraenformat_real(filename, real=True):
     f = lines_without_comments(filename)
     df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
