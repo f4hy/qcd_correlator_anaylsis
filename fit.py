@@ -26,7 +26,7 @@ Nt = 128
 NBOOTSTRAPS = 100
 
 
-def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False):
+def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False):
     if(tmax-tmin < len(fn.parameter_names)):
         raise ValueError("Can not fit to less points than parameters")
 
@@ -101,6 +101,17 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info('Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
+    for name, boot, original in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit):
+        bias = abs(boot-original)/original
+        results.info('Bootstrap Bias in {:<10}: {:.3%}'.format( name, abs(boot-original)/original))
+        if bias > 0.01:
+            results.error("Bootstrap average does not agree with ensamble average!"
+                          "\nNot enough statistics for this for to be valid!!!\n")
+            if not unsafe:
+                results.critical("Exiting! Run with --unsafe to fit anyway")
+                exit(100)
+
+
     results.info("")
     results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------",tmin,tmax)
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
@@ -128,12 +139,12 @@ def quality_of_fit(degrees_of_freedom, chi_sqr):
     return gammaincc(dof/2.0, chi_sqr / 2.0)
 
 
-def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
+def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, unsafe=False):
     emass_dt = 3
 
     X = np.linspace(tmin, tmax, 200 * 5)
     massX = np.linspace(tmin, tmax-emass_dt, 200 * 5)
-    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps)
+    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps, unsafe=unsafe)
 
     plt.figure()
     corplot = plt.subplot(211)
@@ -320,6 +331,9 @@ if __name__ == "__main__":
                         help="Period in time direction (not required for all functions)")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("--unsafe", action="store_true",
+                        help="Code usually exits if something goes wrong "
+                        "This option will cause the code to fit anyway.")
     parser.add_argument("-f", "--function", choices=functions.keys(),
                         required=False, default="periodic_exp", help="function to fit to")
 
