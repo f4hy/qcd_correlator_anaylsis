@@ -72,6 +72,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000,
                        full_output=1, disp=0, retall=0)
         covariant_fit, fit_info, flag = results[0], results[1:-1], results[-1]
+        if covariant_fit[0] < 0.0:
+            logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
+            raise RuntimeError("Fitter sanity failed")
+
         # covariant_fit = minimize(cov_fun, initial_guess)
         logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))
         if flag:
