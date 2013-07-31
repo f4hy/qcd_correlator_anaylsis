@@ -321,7 +321,7 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
     parser.add_argument("-f", "--function", choices=functions.keys(),
-                        required=False, default="cosh", help="function to fit to")
+                        required=False, default="periodic_exp", help="function to fit to")
 
     args = parser.parse_args()
 
