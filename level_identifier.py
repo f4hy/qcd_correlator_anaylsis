@@ -115,7 +115,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--columns", type=int, required=False,
                         help="number of columns to make the plot", default=2)
     parser.add_argument("-m", "--mode", type=str, required=False, choices=["level", "ops"],
-                        help="select the mode of how to plot the levels", default="level")
+                        help="select the mode of how to plot the levels", default="ops")
     parser.add_argument("-ns", "--number-singlehadrons", type=int, required=False, default=0,
                         help="Number of single hadrons to distinguish")
     parser.add_argument("-mx", "--max-plots", type=int, required=False, default=100,
