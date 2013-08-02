@@ -249,13 +249,16 @@ def best_fit_range(fn, cor):
     best_range = None
     for tmin in cor.times:
         for tmax in range(tmin+3,max(cor.times)):
-            _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_quality=True)
-            if qual > best:
-                best = qual
-                best_range = (tmin, tmax)
-            if qual > 0.4:
-                logging.log(ALWAYSINFO,"Fit range ({},{})"
-                               " is good with quality {}".format( tmin, tmax, qual))
+            try:
+                _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_quality=True)
+                if qual > best:
+                    best = qual
+                    best_range = (tmin, tmax)
+                    if qual > 0.4:
+                        logging.log(ALWAYSINFO,"Fit range ({},{})"
+                                    " is good with quality {}".format( tmin, tmax, qual))
+            except RuntimeError:
+                logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
     logging.debug("Restored logging state to original")
     logging.info("Best fit range is {} with quality {}".format(best_range, best))
