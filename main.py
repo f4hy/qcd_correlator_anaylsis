@@ -4,8 +4,13 @@ import plot
 import build_corr
 import logging
 import argparse
-import os
+import os, sys
 import determine_operators
+import fit
+import inspect
+
+function_list = inspect.getmembers(sys.modules["fitfunctions"], inspect.isclass)
+functions = {name: f for name, f in function_list}
 
 parser = argparse.ArgumentParser(description="compute and plot effective masses")
 parser.add_argument("-i", "--input-dir", type=str, required=True,
@@ -37,11 +42,16 @@ parser.add_argument("-nv", "--no-vev", action="store_true", required=False,
                     help="Specify no vev so should be set to zeros\n")
 parser.add_argument("-dt", "--delta-t", nargs='+', required=False, default=[1, 3], type=int,
                     help="which delta-t's to compute for effective masses \n")
+parser.add_argument("--function", choices=functions.keys(),
+                    required=False, default="periodic_exp", help="function to fit to (if fitting)")
+parser.add_argument("--fit", action="store_true", help="Fit the correaltors, add fit value in the comments")
 parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
 parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
 
 
 args = parser.parse_args()
+
+funct = functions[args.function](Nt=None)
 
 if not args.operators:
     print "Operators not specified, attempting to automagically determine"
@@ -95,12 +105,16 @@ def main():
             else:
                 correlator = diagonal_file(args.input_dir, oper)
 
+            if args.fit:
+                tmin, tmax = fit.best_fit_range(funct, correlator)
+                fitparams = fit.fit(funct, correlator,
+                                              tmin, tmax, return_quality=True)
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
-                plot_corr(binedcor, args.output_dir, oper)
+                plot_corr(binedcor, args.output_dir, oper, (tmin,tmax) + fitparams)
                 binedcor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             else:
-                plot_corr(correlator, args.output_dir, oper)
+                plot_corr(correlator, args.output_dir, oper, (tmin,tmax) + fitparams)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
     else:
         for src_oper in args.operators:
@@ -124,7 +138,7 @@ def main():
                     continue
 
 
-def plot_corr(corr, out_folder, name):
+def plot_corr(corr, out_folder, name, fitparams=None):
 
     avgcorr = corr.average_sub_vev()
     corr_errors = corr.jackknifed_errors()
@@ -138,9 +152,12 @@ def plot_corr(corr, out_folder, name):
         emass = corr.effective_mass(dt)
         emass_errors = corr.effective_mass_errors(dt)
         plot_emass = {"%s emass dt=%d, \t error" % (name, dt): (emass, emass_errors)}
-
+        if fitparams:
+            fitcomment = "fit({},{}) m={} e={} qual:{}\n".format(fitparams[0],fitparams[1],
+                                                                  fitparams[2][0], fitparams[3][0],
+                                                                  fitparams[4])
         plot.plotwitherrorbarsnames("%semass%d.%s" % (out_folder, dt, name),  plot_emass,
-                                    emass.keys(), autoscale=True)
+                                    emass.keys(), autoscale=True, addcomment=fitcomment)
 
 
 def eigenvalue_24_balls(data_folder):

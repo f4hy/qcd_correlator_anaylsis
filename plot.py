@@ -8,14 +8,14 @@ imagetype = "png"
 #imagetype = "eps"
 
 
-def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
+def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True, addcomment=None):
     """ plots data with errorbars, data_errors must be a dict with the
     name given by the key and the values are a tuple with (data,errors)"""
 
     if not os.path.exists(os.path.dirname(basename)):
         os.makedirs(os.path.dirname(basename))
 
-    writedataerrorsfile(basename, data_errors, shifts)
+    writedataerrorsfile(basename, data_errors, shifts, addcomment)
     plotfile = open(basename + ".plt", "w")
 
     names = data_errors.keys()
@@ -64,12 +64,14 @@ def plotwitherrorbarsnames(basename, data_errors, shifts, autoscale=True):
         logging.info("plotted " + basename + ".plt" + " successfully")
 
 
-def writedataerrorsfile(basename, data_errors, shifts):
+def writedataerrorsfile(basename, data_errors, shifts, addcomment=None):
     """Write a data file so it may be plotted"""
     writefile = open(basename + ".out", "w")
 
     names = data_errors.keys()
     writefile.write("# time \t \"%s \" \n" % "\t".join(names))
+    if addcomment:
+        writefile.write("#{}".format(addcomment))
 
     for shift in sorted(shifts):
         writefile.write(str(shift))
