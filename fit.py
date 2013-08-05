@@ -23,7 +23,7 @@ logging.addLevelName(OUTPUT, "OUTPUT")
 logging.addLevelName(ALWAYSINFO, "INFO")
 
 Nt = 128
-NBOOTSTRAPS = 100
+NBOOTSTRAPS = 1000
 
 
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False):
