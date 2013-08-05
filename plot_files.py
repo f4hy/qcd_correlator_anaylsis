@@ -103,7 +103,7 @@ def add_fit_info(filename):
                                           , m=mass)
         # plt.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
         #              xytext=(tmax+1, mass+error))
-        return "{m}({e}) qual:{q}".format(m=formated_mass, e=formated_error, q=quality)
+        return "{m}({e}) qual:{q:.4}".format(m=formated_mass, e=formated_error, q=quality)
     except RuntimeError:
         logging.error("File {} had no fit into".format(filename))
 
