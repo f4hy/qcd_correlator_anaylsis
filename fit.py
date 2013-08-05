@@ -101,15 +101,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info('Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
-    for name, boot, original in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit):
-        bias = abs(boot-original)/original
-        results.info('Bootstrap Bias in {:<10}: {:.3%}'.format( name, abs(boot-original)/original))
-        if bias > 0.01:
-            results.error("Bootstrap average does not agree with ensamble average!"
-                          "\nNot enough statistics for this for to be valid!!!\n")
-            if not unsafe:
-                results.critical("Exiting! Run with --unsafe to fit anyway")
-                exit(100)
 
 
     results.info("")
@@ -117,6 +108,18 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
         results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
     results.log(OUTPUT, "--------------------------------------------------------")
+
+    for name, boot, original in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit):
+        bias = abs(boot-original)/original
+        results.info('Bootstrap Bias in {:<10}: {:.3%}'.format( name, abs(boot-original)/original))
+        if bias > 0.05:
+            results.error('Bootstrap Bias in {:<10}: {:.3%}'.format( name, abs(boot-original)/original))
+            results.error("Bootstrap average does not agree with ensamble average!"
+                          "\nNot enough statistics for this for to be valid!!!\n")
+            if not unsafe:
+                results.critical("Exiting! Run with --unsafe to fit anyway")
+                exit(100)
+
 
     v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
