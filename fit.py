@@ -248,7 +248,7 @@ def best_fit_range(fn, cor):
     best = 0
     best_range = None
     for tmin in cor.times:
-        for tmax in range(tmin+3,max(cor.times)):
+        for tmax in range(tmin+4,max(cor.times)):
             try:
                 _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_quality=True)
                 if qual > best:
