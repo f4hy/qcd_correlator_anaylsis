@@ -59,6 +59,19 @@ def read_file(filename):
     return df
 
 
+def get_fit(filename):
+    with open(filename) as f:
+        for line in f:
+            if "fit" in line:
+                logging.info("found fit info: {}".format(line))
+                fitrange = re.search("\(([0-9]+),([0-9]+)\)",line)
+                tmin,tmax = int(fitrange.group(1)),int(fitrange.group(2))
+                mass = float(re.search("m=(.*?) ",line).group(1))
+                error = float(re.search("e=(.*?) ",line ).group(1))
+                qual = re.search("qual:(.*)",line).group(1)
+                return (tmin, tmax, mass, error, qual)
+    raise RuntimeError("No fit info")
+
 def label_names_from_filelist(filelist):
     names = filelist
     basenames = [os.path.basename(filename) for filename in names]
@@ -78,7 +91,24 @@ def label_names_from_filelist(filelist):
     return names
 
 
-def plot_files(files, yrange=None, cols=-1):
+def add_fit_info(filename):
+    try:
+        tmin, tmax, mass, error, quality = get_fit(filename)
+        plt.plot(range(tmin,tmax+1), [mass]*len(range(tmin,tmax+1)))
+        plt.plot(range(tmin,tmax+1), [mass+error]*len(range(tmin,tmax+1)), ls="dashed", color="b")
+        plt.plot(range(tmin,tmax+1), [mass-error]*len(range(tmin,tmax+1)), ls="dashed", color="b")
+        digits = -1.0*round(math.log10(error))
+        formated_error = int(round(error*(10**(digits+1))))
+        formated_mass = "{m:.{d}}".format(d=int(digits)+1
+                                          , m=mass)
+        # plt.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
+        #              xytext=(tmax+1, mass+error))
+        return "{m}({e}) qual:{q}".format(m=formated_mass, e=formated_error, q=quality)
+    except RuntimeError:
+        logging.error("File {} had no fit into".format(filename))
+
+
+def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=False):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
     colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"]
@@ -94,6 +124,9 @@ def plot_files(files, yrange=None, cols=-1):
     for index, label, filename in zip(range(len(files)), labels, files):
         i = (index)/cols
         j = (index) % cols
+
+        if fit:
+            label += " " + add_fit_info(filename)
 
         # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
@@ -124,9 +157,11 @@ def plot_files(files, yrange=None, cols=-1):
                 plots[label] = ax.errorbar(time_offset, np.real(df.correlator.values),
                                            yerr=np.real(df.error.values),
                                            linestyle="none", c=color, marker=mark, label=label)
-                plots["imag"+label] = ax.errorbar(time_offset, np.imag(df.correlator.values),
-                                           yerr=np.imag(df.error.values), markerfacecolor='none',
-                                                  linestyle="none", c=color, marker=mark, label=None)
+                if not real:
+                    plots["imag"+label] = ax.errorbar(time_offset, np.imag(df.correlator.values),
+                                                      yerr=np.imag(df.error.values),
+                                                      markerfacecolor='none',
+                                                      linestyle="none", c=color, marker=mark, label=None)
             else:
                 plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
                                            linestyle="none", c=color, marker=mark, label=label)
@@ -140,6 +175,14 @@ def plot_files(files, yrange=None, cols=-1):
     else:
         plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
 
+    if(output_stub):
+        plt.rcParams.update({'font.size': 8})
+        plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
+        logging.info("Saving plot to {}".format(output_stub+".png"))
+        plt.savefig(output_stub+".png")
+        logging.info("Saving plot to {}".format(output_stub+".eps"))
+        plt.savefig(output_stub+".eps")
+        return
 
     def toggle_errorbar_vis(ebarplot):
         for i in flatten(ebarplot):
@@ -165,10 +208,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="plot a set of data files")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("-f", "--include-fit", action="store_true",
+                        help="check file for fit into, add it to plots")
+    parser.add_argument("-r", "--real", action="store_true",
+                        help="don't include the imgainry part'")
     parser.add_argument("-c", "--columns", type=int, required=False,
                         help="number of columns to make the plot", default=None)
     parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
                         help="set the yrange of the plot", default=None)
+    parser.add_argument("-o", "--output-stub", type=str, required=False,
+                        help="stub of name to write output to")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
@@ -183,6 +232,8 @@ if __name__ == "__main__":
 
     if args.columns:
         logging.info("Plotting each file as a seperate plot")
-        plot_files(args.files, cols=args.columns, yrange=args.yrange)
+        plot_files(args.files, output_stub=args.output_stub,
+                   cols=args.columns, yrange=args.yrange, fit=args.include_fit, real=args.real)
     else:
-        plot_files(args.files, yrange=args.yrange)
+        plot_files(args.files, output_stub=args.output_stub,
+                   yrange=args.yrange, fit=args.include_fit, real=args.real)
