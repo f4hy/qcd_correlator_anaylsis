@@ -51,7 +51,8 @@ parser.add_argument("-t", "--times", required=False, type=int, help="specify the
 
 args = parser.parse_args()
 
-funct = functions[args.function](Nt=None)
+if args.fit:
+    funct = functions[args.function](Nt=None)
 
 if not args.operators:
     print "Operators not specified, attempting to automagically determine"
@@ -111,10 +112,16 @@ def main():
                                               tmin, tmax, return_quality=True)
             if args.bins > 1:
                 binedcor = correlator.reduce_to_bins(args.bins)
-                plot_corr(binedcor, args.output_dir, oper, (tmin,tmax) + fitparams)
+                if args.fit:
+                    plot_corr(binedcor, args.output_dir, oper, (tmin,tmax) + fitparams)
+                else:
+                    plot_corr(binedcor, args.output_dir, oper)
                 binedcor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             else:
-                plot_corr(correlator, args.output_dir, oper, (tmin,tmax) + fitparams)
+                if args.fit:
+                    plot_corr(correlator, args.output_dir, oper, (tmin,tmax) + fitparams)
+                else:
+                    plot_corr(correlator, args.output_dir, oper)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
     else:
         for src_oper in args.operators:
@@ -154,8 +161,10 @@ def plot_corr(corr, out_folder, name, fitparams=None):
         plot_emass = {"%s emass dt=%d, \t error" % (name, dt): (emass, emass_errors)}
         if fitparams:
             fitcomment = "fit({},{}) m={} e={} qual:{}\n".format(fitparams[0],fitparams[1],
-                                                                  fitparams[2][0], fitparams[3][0],
-                                                                  fitparams[4])
+                                                                 fitparams[2][0], fitparams[3][0],
+                                                                 fitparams[4])
+        else:
+            fitcomment = None
         plot.plotwitherrorbarsnames("%semass%d.%s" % (out_folder, dt, name),  plot_emass,
                                     emass.keys(), autoscale=True, addcomment=fitcomment)
 

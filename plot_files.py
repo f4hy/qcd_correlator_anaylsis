@@ -126,7 +126,9 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
         j = (index) % cols
 
         if fit:
-            label += " " + add_fit_info(filename)
+            fitstring = add_fit_info(filename)
+            if fitstring:
+                label += " " + fitstring
 
         # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
