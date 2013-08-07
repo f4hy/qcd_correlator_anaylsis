@@ -43,7 +43,7 @@ parser.add_argument("-nv", "--no-vev", action="store_true", required=False,
 parser.add_argument("-dt", "--delta-t", nargs='+', required=False, default=[1, 3], type=int,
                     help="which delta-t's to compute for effective masses \n")
 parser.add_argument("--function", choices=functions.keys(),
-                    required=False, default="periodic_exp", help="function to fit to (if fitting)")
+                    required=False, default="single_exp", help="function to fit to (if fitting)")
 parser.add_argument("--fit", action="store_true", help="Fit the correaltors, add fit value in the comments")
 parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
 parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
@@ -107,21 +107,27 @@ def main():
                 correlator = diagonal_file(args.input_dir, oper)
 
             if args.fit:
-                tmin, tmax = fit.best_fit_range(funct, correlator)
-                fitparams = fit.fit(funct, correlator,
-                                              tmin, tmax, return_quality=True)
+                try:
+                    tmin, tmax = fit.best_fit_range(funct, correlator)
+                    fitparams = fit.fit(funct, correlator,
+                                        tmin, tmax, return_quality=True)
+                except RuntimeError:
+                    logging.error("could not fit, skipping fit")
+
             if args.bins > 1:
-                binedcor = correlator.reduce_to_bins(args.bins)
-                if args.fit:
-                    plot_corr(binedcor, args.output_dir, oper, (tmin,tmax) + fitparams)
-                else:
-                    plot_corr(binedcor, args.output_dir, oper)
-                binedcor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
-            else:
-                if args.fit:
+                correlator = correlator.reduce_to_bins(args.bins)
+                correaltor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
+            if args.fit:
+                try:
+                    tmin, tmax = fit.best_fit_range(funct, correlator)
+                    fitparams = fit.fit(funct, correlator,
+                                        tmin, tmax, return_quality=True)
                     plot_corr(correlator, args.output_dir, oper, (tmin,tmax) + fitparams)
-                else:
+                except RuntimeError:
+                    logging.error("could not fit, skipping fit")
                     plot_corr(correlator, args.output_dir, oper)
+            else:
+                plot_corr(correlator, args.output_dir, oper)
             logging.info("done with %s %s to %s\n---\n", oper, oper, args.output_dir)
     else:
         for src_oper in args.operators:
