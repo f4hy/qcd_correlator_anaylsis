@@ -269,6 +269,20 @@ def best_fit_range(fn, cor):
     return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges)]
 
 
+def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False):
+    fit_ranges = best_fit_range(funct, cor)
+    for tmin, tmax in fit_ranges:
+        logging.info("Trying fit range {}, {}".format(tmin, tmax))
+        try:
+            results = fit(funct, cor, tmin, tmax, filestub=filestub,
+                          bootstraps=bootstraps, unsafe=unsafe, return_quality=return_quality)
+            logging.info("Auto Fit sucessfully!")
+            return (tmin, tmax) + results # Need to return what fit range was done
+        except RuntimeError:
+            logging.warn("Fit range {} {} failed, trying next best".format(tmin, tmax))
+            continue
+
+
 class InversionError(Exception):
     def __init__(self, value):
         self.value = value
@@ -368,16 +382,13 @@ if __name__ == "__main__":
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]
     if not args.time_start:
-        fit_ranges = best_fit_range(funct, cor)
-        logging.info("Found best fit range to be {}, {}".format(*fit_ranges[0]))
-    for tmin, tmax in fit_ranges:
-        try:
-            if args.plot:
-                plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
-            else:
-                fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
-            logging.info("Fit sucessfully!")
-            exit(0)
-        except RuntimeError:
-            logging.warn("Fit range {} {} faild, trying next best".format(tmin, tmax))
-            continue
+        print args.output_stub
+        auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
+        exit()
+
+    if args.plot:
+        plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub,
+                 bootstraps=args.bootstraps, unsafe=args.unsafe)
+    else:
+        fit(funct, cor, tmin, tmax, filestub=args.output_stub,
+            bootstraps=args.bootstraps, unsafe=args.unsafe)

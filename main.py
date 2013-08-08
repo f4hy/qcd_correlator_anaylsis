@@ -108,9 +108,7 @@ def main():
 
             if args.fit:
                 try:
-                    tmin, tmax = fit.best_fit_range(funct, correlator)
-                    fitparams = fit.fit(funct, correlator,
-                                        tmin, tmax, return_quality=True)
+                    fitparams = fit.auto_fit(funct, correlator, return_quality=True)
                 except RuntimeError:
                     logging.error("could not fit, skipping fit")
 
@@ -119,10 +117,8 @@ def main():
                 correlator.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             if args.fit:
                 try:
-                    tmin, tmax = fit.best_fit_range(funct, correlator)
-                    fitparams = fit.fit(funct, correlator,
-                                        tmin, tmax, return_quality=True)
-                    plot_corr(correlator, args.output_dir, oper, (tmin, tmax) + fitparams)
+                    fitparams = fit.auto_fit(funct, correlator, return_quality=True)
+                    plot_corr(correlator, args.output_dir, oper, fitparams)
                 except RuntimeError:
                     logging.error("could not fit, skipping fit")
                     plot_corr(correlator, args.output_dir, oper)
