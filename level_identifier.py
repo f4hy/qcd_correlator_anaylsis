@@ -21,7 +21,6 @@ def read_file(filename):
     return df
 
 
-
 def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots=1000):
     df = read_file(inputfile).apply(np.absolute)
 
@@ -43,7 +42,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
 
     rows = min(int(math.ceil(float(len(plots))/cols)), int(math.ceil(float(maxplots)/cols)))
     f, layout = plt.subplots(nrows=rows, ncols=cols)
-    f.set_size_inches(19.2,12.0)
+    f.set_size_inches(19.2, 12.0)
     f.set_dpi(100)
     for plot_index in plots[:maxplots]:
         i = (plot_index-1)/cols
@@ -56,14 +55,14 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
             ax.set_yticks([])
         else:
             ax.set_ylabel("|Z|", fontweight='bold', rotation='horizontal')
-            ax.set_yticks([0,1])
+            ax.set_yticks([0, 1])
 
         if mode == "ops":
             indexes = [plot_index*1000+level for level in levels]
             ticklabelpad = plt.rcParams['xtick.major.pad']
             ax.set_xticks(np.array(levels)+1.5)
             ax.set_xticklabels([n if n % 5 == 0 else "" for n in levels])
-            ax.annotate('Level', xy=(1,0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
+            ax.annotate('Level', xy=(1, 0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
                         xycoords='axes fraction', textcoords='offset points')
             if opnames:
                 ax.set_title("{}".format(opnames[plot_index-1]))
@@ -72,11 +71,12 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
         else:
             ax.set_title("level {}".format(plot_index-1))
             ticklabelpad = plt.rcParams['xtick.major.pad']
-            ax.annotate('Operator', xy=(1,0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
+            ax.annotate('Operator', xy=(1, 0), xytext=(-10, -ticklabelpad*2.2), ha='left', va='top',
                         xycoords='axes fraction', textcoords='offset points')
 
         values = df.ix[indexes].identities.values
-        # errors = df.ix[indexes].error.values
+        errors = df.ix[indexes].error.values
+        errors = None
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         if mode == "level":
             plot[(i, j)] = ax.bar(ops[:ns], values[:ns], 1, color="g")
@@ -88,7 +88,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
             color = "b"
             if plot_index <= ns:
                 color = "g"
-            plot[(i, j)] = ax.bar(levels, values, 1, color=color)
+            plot[(i, j)] = ax.bar(levels, values, 1, color=color, yerr=errors, ecolor="r")
         ax.set_ylim([0, np.ceil(largest_zfactor)])
         ax.set_xlim(xmin=1)
     # end plot loop

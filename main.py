@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-
 import plot
 import build_corr
 import logging
 import argparse
-import os, sys
+import os
+import sys
 import determine_operators
 import fit
 import inspect
@@ -116,13 +116,13 @@ def main():
 
             if args.bins > 1:
                 correlator = correlator.reduce_to_bins(args.bins)
-                correaltor.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
+                correlator.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             if args.fit:
                 try:
                     tmin, tmax = fit.best_fit_range(funct, correlator)
                     fitparams = fit.fit(funct, correlator,
                                         tmin, tmax, return_quality=True)
-                    plot_corr(correlator, args.output_dir, oper, (tmin,tmax) + fitparams)
+                    plot_corr(correlator, args.output_dir, oper, (tmin, tmax) + fitparams)
                 except RuntimeError:
                     logging.error("could not fit, skipping fit")
                     plot_corr(correlator, args.output_dir, oper)
@@ -166,7 +166,7 @@ def plot_corr(corr, out_folder, name, fitparams=None):
         emass_errors = corr.effective_mass_errors(dt)
         plot_emass = {"%s emass dt=%d, \t error" % (name, dt): (emass, emass_errors)}
         if fitparams:
-            fitcomment = "fit({},{}) m={} e={} qual:{}\n".format(fitparams[0],fitparams[1],
+            fitcomment = "fit({},{}) m={} e={} qual:{}\n".format(fitparams[0], fitparams[1],
                                                                  fitparams[2][0], fitparams[3][0],
                                                                  fitparams[4])
         else:

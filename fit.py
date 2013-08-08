@@ -102,24 +102,22 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
 
-
     results.info("")
-    results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------",tmin,tmax)
+    results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------", tmin, tmax)
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
         results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
     results.log(OUTPUT, "--------------------------------------------------------")
 
     for name, boot, original in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit):
         bias = abs(boot-original)/original
-        results.info('Bootstrap Bias in {:<10}: {:.3%}'.format( name, abs(boot-original)/original))
+        results.info('Bootstrap Bias in {:<10}: {:.3%}'.format(name, bias))
         if bias > 0.05:
-            results.error('Bootstrap Bias in {:<10}: {:.3%}'.format( name, abs(boot-original)/original))
+            results.error('Bootstrap Bias in {:<10}: {:.3%}'.format(name, bias))
             results.error("Bootstrap average does not agree with ensamble average!"
                           "\nNot enough statistics for this for to be valid!!!\n")
             if not unsafe:
                 results.critical("Exiting! Run with --unsafe to fit anyway")
                 raise RuntimeError("Bootstrap average does not agree with ensamble average")
-
 
     v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
@@ -206,7 +204,7 @@ def bootstrap(cor):
 
 
 def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
-    if N>1:
+    if N > 1:
         return [bootstrap(cor) for i in range(N)]
     else:
         logging.info("Not bootstraping!")
@@ -253,7 +251,7 @@ def best_fit_range(fn, cor):
     best = 100
     best_ranges = []
     for tmin in cor.times:
-        for tmax in range(tmin+4,max(cor.times)):
+        for tmax in range(tmin + 4, max(cor.times)):
             try:
                 _, _, chi = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=True)
                 metric = abs(chi-1.0)
@@ -261,7 +259,7 @@ def best_fit_range(fn, cor):
                 best = metric
                 best_ranges.append((metric, tmin, tmax))
                 if best < 1.0:
-                    logging.log(ALWAYSINFO,"Fit range ({},{})"
+                    logging.log(ALWAYSINFO, "Fit range ({},{})"
                                 " is good with chi/dof {}".format(tmin, tmax, chi))
             except RuntimeError:
                 logging.warn("Fitter failed, skipping this tmin,tmax")

@@ -64,13 +64,14 @@ def get_fit(filename):
         for line in f:
             if "fit" in line:
                 logging.info("found fit info: {}".format(line))
-                fitrange = re.search("\(([0-9]+),([0-9]+)\)",line)
-                tmin,tmax = int(fitrange.group(1)),int(fitrange.group(2))
-                mass = float(re.search("m=(.*?) ",line).group(1))
-                error = float(re.search("e=(.*?) ",line ).group(1))
-                qual = re.search("qual:(.*)",line).group(1)
+                fitrange = re.search("\(([0-9]+),([0-9]+)\)", line)
+                tmin, tmax = int(fitrange.group(1)), int(fitrange.group(2))
+                mass = float(re.search("m=(.*?) ", line).group(1))
+                error = float(re.search("e=(.*?) ", line).group(1))
+                qual = re.search("qual:(.*)", line).group(1)
                 return (tmin, tmax, mass, error, qual)
     raise RuntimeError("No fit info")
+
 
 def label_names_from_filelist(filelist):
     names = filelist
@@ -94,13 +95,12 @@ def label_names_from_filelist(filelist):
 def add_fit_info(filename):
     try:
         tmin, tmax, mass, error, quality = get_fit(filename)
-        plt.plot(range(tmin,tmax+1), [mass]*len(range(tmin,tmax+1)))
-        plt.plot(range(tmin,tmax+1), [mass+error]*len(range(tmin,tmax+1)), ls="dashed", color="b")
-        plt.plot(range(tmin,tmax+1), [mass-error]*len(range(tmin,tmax+1)), ls="dashed", color="b")
+        plt.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)))
+        plt.plot(range(tmin, tmax+1), [mass+error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+        plt.plot(range(tmin, tmax+1), [mass-error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
         digits = -1.0*round(math.log10(error))
-        formated_error = int(round(error*(10**(digits+1))))
-        formated_mass = "{m:.{d}}".format(d=int(digits)+1
-                                          , m=mass)
+        formated_error = int(round(error * (10**(digits + 1))))
+        formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
         # plt.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
         #              xytext=(tmax+1, mass+error))
         return "{m}({e}) qual:{q:.4}".format(m=formated_mass, e=formated_error, q=quality)
@@ -150,7 +150,7 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
                 has_colorbar = True
         else:
             if seperate:
-                logging.info("plotting {}  {}, {}".format(label,i,j))
+                logging.info("plotting {}  {}, {}".format(label, i, j))
                 ax = layout[i][j]
                 ax.set_title(label)
             else:
@@ -170,7 +170,6 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
 
             if yrange:
                 plt.ylim(yrange)
-
 
     if not seperate:
         leg = plt.legend(fancybox=True, shadow=True)
