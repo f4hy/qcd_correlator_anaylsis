@@ -26,7 +26,7 @@ Nt = 128
 NBOOTSTRAPS = 1000
 
 
-def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False):
+def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False, return_chi=False):
     if(tmax-tmin < len(fn.parameter_names)):
         raise ValueError("Can not fit to less points than parameters")
 
@@ -48,7 +48,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     x = np.array(range(tmin, tmax))
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
-    original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=100000)
+    original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if not success:
         raise ValueError()
     initial_guess = original_ensamble_params
@@ -118,7 +118,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                           "\nNot enough statistics for this for to be valid!!!\n")
             if not unsafe:
                 results.critical("Exiting! Run with --unsafe to fit anyway")
-                exit(100)
+                raise RuntimeError("Bootstrap average does not agree with ensamble average")
 
 
     v = boot_averages
@@ -131,6 +131,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr)))
 
+    if return_chi:
+        return boot_averages, boot_std, chi_sqr/dof
     if return_quality:
         return boot_averages, boot_std, quality_of_fit(dof, chi_sqr)
     else:
@@ -248,24 +250,25 @@ def best_fit_range(fn, cor):
     logger = logging.getLogger()
     previous_loglevel = logger.level
     logger.setLevel(ALWAYSINFO)
-    best = 0
-    best_range = None
+    best = 100
+    best_ranges = []
     for tmin in cor.times:
         for tmax in range(tmin+4,max(cor.times)):
             try:
-                _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_quality=True)
-                if qual > best:
-                    best = qual
-                    best_range = (tmin, tmax)
-                    if qual > 0.4:
-                        logging.log(ALWAYSINFO,"Fit range ({},{})"
-                                    " is good with quality {}".format( tmin, tmax, qual))
+                _, _, chi = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=True)
+                metric = abs(chi-1.0)
+                # if metric < best:
+                best = metric
+                best_ranges.append((metric, tmin, tmax))
+                if best < 1.0:
+                    logging.log(ALWAYSINFO,"Fit range ({},{})"
+                                " is good with chi/dof {}".format(tmin, tmax, chi))
             except RuntimeError:
                 logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
     logging.debug("Restored logging state to original")
-    logging.info("Best fit range is {} with quality {}".format(best_range, best))
-    return best_range
+    logging.info("Best fit range is {} with quality {}".format(best_ranges, best))
+    return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges)]
 
 
 class InversionError(Exception):
@@ -365,10 +368,18 @@ if __name__ == "__main__":
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     tmin = args.time_start
     tmax = args.time_end
+    fit_ranges = [(tmin, tmax)]
     if not args.time_start:
-        tmin, tmax = best_fit_range(funct, cor)
-        logging.info("Found best fit range to be {}, {}".format(tmin, tmax))
-    if args.plot:
-        plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
-    else:
-        fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
+        fit_ranges = best_fit_range(funct, cor)
+        logging.info("Found best fit range to be {}, {}".format(*fit_ranges[0]))
+    for tmin, tmax in fit_ranges:
+        try:
+            if args.plot:
+                plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
+            else:
+                fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
+            logging.info("Fit sucessfully!")
+            exit(0)
+        except RuntimeError:
+            logging.warn("Fit range {} {} faild, trying next best".format(tmin, tmax))
+            continue
