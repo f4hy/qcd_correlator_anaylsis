@@ -25,11 +25,17 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     qualities = []
     Tpoints = range(tmin, tmax-(len(fn.parameter_names)+1) )
     for t in Tpoints:
-        params, errors, qual = fit.fit(fn, cor, t, tmax,
-                                       filestub=filestub, bootstraps=bootstraps, return_quality=True)
-        fitted_params.append(params[index])
-        fitted_errors.append(errors[index])
-        qualities.append(qual)
+        try:
+            params, errors, qual = fit.fit(fn, cor, t, tmax,
+                                           filestub=filestub, bootstraps=bootstraps, return_quality=True)
+            fitted_params.append(params[index])
+            fitted_errors.append(errors[index])
+            qualities.append(qual)
+        except RuntimeError:
+            fitted_params.append(np.nan)
+            fitted_errors.append(np.nan)
+            qualities.append(0.0)
+            continue
 
     fig = plt.figure()
 
