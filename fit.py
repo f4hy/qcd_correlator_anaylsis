@@ -102,11 +102,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
 
-    results.info("")
-    results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------", tmin, tmax)
-    for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
-        results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
-    results.log(OUTPUT, "--------------------------------------------------------")
 
     for name, boot, original in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit):
         bias = abs(boot-original)/original
@@ -118,6 +113,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             if not unsafe:
                 results.critical("Exiting! Run with --unsafe to fit anyway")
                 raise RuntimeError("Bootstrap average does not agree with ensamble average")
+
+    results.info("")
+    results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------", tmin, tmax)
+    for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
+        results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
+    results.log(OUTPUT, "--------------------------------------------------------")
+
 
     v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
