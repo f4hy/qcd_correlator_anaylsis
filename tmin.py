@@ -37,6 +37,8 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
             qualities.append(0.0)
             continue
 
+    if filestub:
+        plt.use('Agg')
     fig = plt.figure()
 
     emass = cor.effective_mass(emass_dt)
