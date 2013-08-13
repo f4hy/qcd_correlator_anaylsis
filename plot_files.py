@@ -52,10 +52,9 @@ def read_file(filename):
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"],
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
-        df = pd.read_csv(txt, delimiter=',', names=["time", "correlator", "error", "quality"])
+        df = pd.read_csv(txt, sep=",", names=["time", "correlator", "error", "quality"], skipinitialspace=True)
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"])
-
     return df
 
 
