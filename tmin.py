@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
 from matplotlib import mpl
-import matplotlib
 import logging
 import build_corr
 import argparse
@@ -38,8 +37,6 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
             qualities.append(0.0)
             continue
 
-    if filestub:
-        matplotlib.use('Agg')
     fig = plt.figure()
 
     emass = cor.effective_mass(emass_dt)
