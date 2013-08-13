@@ -91,16 +91,19 @@ def label_names_from_filelist(filelist):
     return names
 
 
-def add_fit_info(filename):
+def add_fit_info(filename, ax=None):
+    if not ax:
+        ax = plt
+
     try:
         tmin, tmax, mass, error, quality = get_fit(filename)
-        plt.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)))
-        plt.plot(range(tmin, tmax+1), [mass+error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-        plt.plot(range(tmin, tmax+1), [mass-error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+        ax.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)))
+        ax.plot(range(tmin, tmax+1), [mass+error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+        ax.plot(range(tmin, tmax+1), [mass-error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
         digits = -1.0*round(math.log10(error))
         formated_error = int(round(error * (10**(digits + 1))))
         formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
-        # plt.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
+        # ax.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
         #              xytext=(tmax+1, mass+error))
         return "{m}({e}) qual:{q:.4}".format(m=formated_mass, e=formated_error, q=quality)
     except RuntimeError:
@@ -125,7 +128,10 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
         j = (index) % cols
 
         if fit:
-            fitstring = add_fit_info(filename)
+            if seperate:
+                fitstring = add_fit_info(filename, ax=layout[i][j])
+            else:
+                fitstring = add_fit_info(filename)
             if fitstring:
                 label += " " + fitstring
 
@@ -138,15 +144,29 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
             cmap = mpl.cm.cool
-            plots[label] = plt.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
+            print df.correlator.values
+            if seperate:
+                logging.info("plotting {}  {}, {}".format(label, i, j))
+                ax = layout[i][j]
+                ax.set_title(label)
+                pass
+            else:
+                ax = plt
+            plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
                                         linestyle="none", c=color, marker=mark, label=label,
                                         fmt=None, zorder=0)
-            tmin_plot[label] = plt.scatter(time_offset, df.correlator.values, c=df.quality.values,
+            tmin_plot[label] = ax.scatter(time_offset, df.correlator.values, c=df.quality.values,
                                            s=50, cmap=cmap, marker=mark)
-            plt.clim(0, 1)
-            if not has_colorbar:
+            tmin_plot[label].set_clim(0,1)
+            if seperate:
+                has_colorbar = True
+            if not has_colorbar and not seperate:
                 cb = plt.colorbar(tmin_plot[label])  # noqa
                 has_colorbar = True
+            if yrange:
+                plt.ylim(yrange)
+
+
         else:
             if seperate:
                 logging.info("plotting {}  {}, {}".format(label, i, j))
@@ -174,6 +194,10 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
         leg = plt.legend(fancybox=True, shadow=True)
     else:
         plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
+        if has_colorbar:
+          f.subplots_adjust(right=0.95)
+          cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
+          f.colorbar(tmin_plot[label], cax=cbar_ax)
 
     if(output_stub):
         plt.rcParams.update({'font.size': 8})
