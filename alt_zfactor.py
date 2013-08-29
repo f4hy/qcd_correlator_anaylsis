@@ -31,42 +31,57 @@ def read_zrots(filename):
     df = pd.read_csv(txt, delimiter=',', names=["level", "amp", "error"], index_col=0)
     return df
 
+def read_level_fits(filename):
+    """
+    Read in fit values to the levels. Fits should be single exp
+    Should be in the format
+    # Level, Amp, Error(Amp), Mass, Error(Mass)
+    0, 1.74082463996023, 0.0154835440133309, 0.153284504901198, 0.000705009866455281
 
-def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub, maxlevels=None, normalize=False, reconstruct_stub=None):
-    zrots = read_zrots(zrotfile)
-    N = len(zrots)
+    final column chi^2 optional
+    """
+
+    txt = plot_files.lines_without_comments(filename)
+    df = pd.read_csv(txt, delimiter=',', names=["level", "amp", "amp_error", "mass", "mass_error", "chisqr"], index_col=0)
+    return df
+
+
+def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub,
+                maxlevels=None, normalize=False, reconstruct_stub=None, inputemass=None):
+    # zrots = read_zrots(zrotfile)
+    fit_values = read_level_fits(zrotfile)
+    N = len(fit_values)
     levels_to_make=levels_to_make = range(min(N,maxlevels))
     raw_v = zfactor.read_coeffs_file(rotfile)
-    print len(raw_v)
-    print N*N
     v = np.matrix(raw_v.identities.values.reshape((N,N))).T
     roterror = np.matrix(raw_v.error.values.reshape((N,N))).T
     cormat, errmat = build_cor_mat_error(corwild, ops, t0)
 
-    print zrots.amp[3]
-
     Zs = {}
     err = {}
     for level in levels_to_make:
-        zr = zrots.amp[level]
+        zr = fit_values.amp[level]
         #err[level] = zrots.error[level]*np.ones(N)
         for op in range(N):
             v_n = (v[:,level])
             ev_n = np.ravel(roterror[:,level])
             Zs[level] = [np.abs((cormat[j]*(v_n)).flat[0])*np.sqrt(zr) for j in range(len(ops)) ]
-            err[level] = [np.abs((cormat[j]*(v_n)).flat[0])*np.sqrt(zrots.error[level])+
+            err[level] = [np.abs((cormat[j]*(v_n)).flat[0])*np.sqrt(fit_values.amp_error[level])+
                           np.abs((errmat[j]*(v_n)).flat[0])*np.sqrt(zr)
                           for j in range(len(ops)) ]
-            #err[level] = np.sqrt(zrots.error[level])*np.abs(v_n)+np.sqrt(zr)*np.abs(ev_n)
+            #err[level] = np.sqrt(fit_values.amp_error[level])*np.abs(v_n)+np.sqrt(zr)*np.abs(ev_n)
     normalized_Zs = zfactor.normalize_Zs(Zs, normalize)
     A = np.array(Zs.values())
     maximums = np.array([max(np.abs(A[:,i])) for i in range(len(Zs[0]))])
     if normalize:
         normalized_Zs = {k: np.abs(values)/maximums for k,values in Zs.iteritems()}
         normalized_err = {k: np.abs(values)/maximums for k,values in err.iteritems()}
+    else:
+        normalized_Zs = Zs
+        normalized_err = err
 
-    print err
-    print normalized_err
+    # print err
+    # print normalized_err
 
     if(outputstub):
         with open(outputstub+".out", 'w') as outfile:
@@ -75,6 +90,24 @@ def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub, maxlevels=None,
                 for j in range(N):
                     outfile.write("{:d}{:03d} {} {}\n".format(j+1, level+1,
                                                               normalized_Zs[level][j], normalized_err[level][j]))
+
+    if(reconstruct_stub):
+        reconstructed_correaltors(Zs, err, fit_values, ops, reconstruct_stub)
+
+
+def reconstructed_correaltors(Zs, error, fit_values, ops, stub):
+    emasses = fit_values.mass
+    emasses_err = fit_values.mass_error
+    for i in range(len(Zs[0])):
+        for j in range(len(Zs[0])):
+            with open("{}.{}.{}.cor".format(stub,ops[i],ops[j]),"w") as outfile:
+                for t in range(40):
+                    C = sum((Zs[level][i]*np.conj(Zs[level][j]))*np.exp(-1.0*emasses[level]*t) for level in Zs.keys())
+                    Cerr = sum((error[level][i]*np.conj(Zs[level][j]))*np.exp(-1.0*emasses[level]*t)+
+                               (Zs[level][i]*np.conj(error[level][j]))*np.exp(-1.0*emasses[level]*t)+
+                               (Zs[level][i]*np.conj(Zs[level][j]))*np.exp(-1.0*emasses[level]*t)*(-1.0*emasses_err[level]*t)
+                               for level in Zs.keys())
+                    outfile.write("{} ({},{}) ({},{})\n".format(t, np.real(C), np.imag(C), np.real(Cerr), np.imag(Cerr)))
 
 
 
