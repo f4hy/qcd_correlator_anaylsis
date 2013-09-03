@@ -51,6 +51,7 @@ def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub,
     # zrots = read_zrots(zrotfile)
     fit_values = read_level_fits(zrotfile)
     N = len(fit_values)
+    N = len(ops)
     levels_to_make=levels_to_make = range(min(N,maxlevels))
     raw_v = zfactor.read_coeffs_file(rotfile)
     v = np.matrix(raw_v.identities.values.reshape((N,N))).T
