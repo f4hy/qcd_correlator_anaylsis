@@ -1,19 +1,11 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-from matplotlib import mpl
 import logging
 import argparse
-from matplotlib.widgets import CheckButtons
-from compiler.ast import flatten
-import os
-import pandas as pd
 import pandas_reader
-from operator_tranlator import translate
-import math
 
 from fitfunctions import *  # noqa
-from cStringIO import StringIO
 
 import re
 
@@ -24,7 +16,7 @@ def make_histogram(data, numbins=10, norm=False):
 
     print "norm", norm
 
-    fig = plt.figure()
+    fig = plt.figure()          # noqa
     if np.iscomplexobj(data):
         realplot = plt.subplot(211)
         realplot.set_title("real")
@@ -32,9 +24,8 @@ def make_histogram(data, numbins=10, norm=False):
         _, bins, _ = realplot.hist(realdata, numbins, normed=norm)
         if norm:
             bincenters = 0.5*(bins[1:]+bins[:-1])
-            y = mlab.normpdf( bincenters, np.mean(realdata), np.std(realdata))
+            y = mlab.normpdf(bincenters, np.mean(realdata), np.std(realdata))
             realplot.plot(bincenters, y, 'r--', linewidth=1)
-
 
         imagplot = plt.subplot(212)
         imagplot.set_title("imag")
@@ -42,13 +33,13 @@ def make_histogram(data, numbins=10, norm=False):
         _, bins, _ = imagplot.hist(np.imag(data), numbins, facecolor="green", normed=norm)
         if norm:
             bincenters = 0.5*(bins[1:]+bins[:-1])
-            y = mlab.normpdf( bincenters, np.mean(imagdata), np.std(imagdata))
+            y = mlab.normpdf(bincenters, np.mean(imagdata), np.std(imagdata))
             imagplot.plot(bincenters, y, 'r--', linewidth=1)
     else:
         plt.hist(data, bins)
         if norm:
             bincenters = 0.5*(bins[1:]+bins[:-1])
-            y = mlab.normpdf( bincenters, np.mean(data), np.std(data))
+            y = mlab.normpdf(bincenters, np.mean(data), np.std(data))
             plt.plot(bincenters, y, 'r--', linewidth=1)
 
     plt.show()
@@ -73,6 +64,5 @@ if __name__ == "__main__":
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     data = pandas_reader.read_single_time_paraenformat(args.datafile, args.time)
-
 
     make_histogram(data, args.bins, args.norm)

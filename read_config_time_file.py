@@ -28,7 +28,7 @@ def read_config_time_data_real_imag(filename, configs=None, times=None):
 
     rawdata = np.genfromtxt(f, delimiter=",", comments="#", autostrip=True, dtype='int,float,float')
     f.close()
-    if  configs and times:
+    if configs and times:
         logging.info("using configs: %d and times: %d", configs, times)
     else:
         logging.debug("dimensions not set will guess from data")
@@ -61,7 +61,7 @@ def read_config_time_data_real_dict(filename, configs=None, times=None):
                             autostrip=True, dtype='int,float', usecols=(0, 1))
     f.close()
 
-    if  configs and times:
+    if configs and times:
         logging.info("using configs: %d and times: %d", configs, times)
     else:
         logging.debug("dimensions not set will guess from data")
@@ -85,7 +85,7 @@ def read_correlator(filename, configs=None, times=None):
                             autostrip=True, dtype='int,float', usecols=(0, 1))
     f.close()
 
-    if  configs and times:
+    if configs and times:
         logging.info("using configs: %d and times: %d", configs, times)
     else:
         logging.debug("dimensions not set will guess from data")
@@ -105,7 +105,7 @@ def read_config_vev(filename, configs=None):
                             autostrip=True, dtype='float', usecols=0)
     f.close()
 
-    if  configs:
+    if configs:
         logging.info("using configs: %d", configs)
     else:
         logging.debug("vev dimensions not set will guess from data")

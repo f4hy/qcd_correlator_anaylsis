@@ -95,6 +95,7 @@ def matrix_from_cor_and_vev(directory, cortemplate, vevtemplate, operator_list):
 
     return matrix
 
+
 def matrix_from_cor(directory, cortemplate, operator_list):
     logging.debug("building matrix of correlators using %s", str(operator_list))
     matrix = {}

@@ -153,11 +153,11 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
             else:
                 ax = plt
             plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                        linestyle="none", c=color, marker=mark, label=label,
-                                        fmt=None, zorder=0)
+                                       linestyle="none", c=color, marker=mark, label=label,
+                                       fmt=None, zorder=0)
             tmin_plot[label] = ax.scatter(time_offset, df.correlator.values, c=df.quality.values,
-                                           s=50, cmap=cmap, marker=mark)
-            tmin_plot[label].set_clim(0,1)
+                                          s=50, cmap=cmap, marker=mark)
+            tmin_plot[label].set_clim(0, 1)
             if seperate:
                 has_colorbar = True
             if not has_colorbar and not seperate:
@@ -165,7 +165,6 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
                 has_colorbar = True
             if yrange:
                 plt.ylim(yrange)
-
 
         else:
             if seperate:
@@ -195,9 +194,9 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
     else:
         plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
         if has_colorbar:
-          f.subplots_adjust(right=0.95)
-          cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
-          f.colorbar(tmin_plot[label], cax=cbar_ax)
+            f.subplots_adjust(right=0.95)
+            cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
+            f.colorbar(tmin_plot[label], cax=cbar_ax)
 
     if(output_stub):
         plt.rcParams.update({'font.size': 8})

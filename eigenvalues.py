@@ -224,6 +224,7 @@ def reduce_to_trace(data):
 
     return newdata
 
+
 def reduce_to_weighted_trace(data):
     newdata = {}
     for config, values in data.iteritems():

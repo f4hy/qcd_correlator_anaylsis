@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class cosh:
     def __init__(self, Nt=None):
         self.starting_guess = [0.5, 50.0]
@@ -8,14 +9,15 @@ class cosh:
         self.Nt = Nt
         while not self.Nt:
             try:
-                self.Nt=int(raw_input('Time period not specified, please enter Nt:'))
+                self.Nt = int(raw_input('Time period not specified, please enter Nt:'))
             except ValueError:
                 print "Not a valid number"
-        self.template = "{1: f}Cosh(-{0: f}*(t-%d/2))"%self.Nt
+        self.template = "{1: f}Cosh(-{0: f}*(t-%d/2))" % self.Nt
 
-    def formula(self, v ,x):
+    def formula(self, v, x):
         #return ((2*v[1])/np.exp(v[0]*Nt/2.0) * np.cosh((-1.0)* v[0]*((x-(Nt/2.0)))))
-        return (v[1] * np.cosh((-1.0)* v[0]*((x-(self.Nt/2.0)))))
+        return (v[1] * np.cosh((-1.0)*v[0]*((x-(self.Nt/2.0)))))
+
 
 class single_exp:
     def __init__(self, **kargs):
@@ -24,7 +26,7 @@ class single_exp:
         self.description = "exp"
         self.template = "{1: f}exp(-{0: f}*t)"
 
-    def formula(self, v ,x):
+    def formula(self, v, x):
         return (v[1] * np.exp((-1.0) * v[0] * x))
 
 
@@ -36,13 +38,13 @@ class periodic_exp:
         self.Nt = Nt
         while not self.Nt:
             try:
-                self.Nt=int(raw_input('Time period not specified, please enter Nt:'))
+                self.Nt = int(raw_input('Time period not specified, please enter Nt:'))
             except ValueError:
                 print "Not a valid number"
-        self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d))"%self.Nt
+        self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d))" % self.Nt
 
-    def formula(self, v ,x):
-        return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)) )))
+    def formula(self, v, x):
+        return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
 
 
 class two_exp:
@@ -52,8 +54,9 @@ class two_exp:
         self.description = "two_exp"
         self.template = "{1: f}exp(-{0: f}*t)(1+{3: f}exp(-{2: f}^2*t)"
 
-    def formula(self, v ,x):
-        return (v[1] * np.exp((-1.0) * v[0] * x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x) ))
+    def formula(self, v, x):
+        return (v[1] * np.exp((-1.0) * v[0] * x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x)))
+
 
 class periodic_two_exp:
     def __init__(self, Nt=None):
@@ -64,13 +67,13 @@ class periodic_two_exp:
         self.Nt = Nt
         while not self.Nt:
             try:
-                self.Nt=int(raw_input('Time period not specified, please enter Nt:'))
+                self.Nt = int(raw_input('Time period not specified, please enter Nt:'))
             except ValueError:
                 print "Not a valid number"
 
-    def formula(self, v ,x):
-                return ((v[1] * np.exp((-1.0) * v[0] * x)*(1.0+ v[3]*np.exp((-1.0)*(v[2]**2)*x) ) )+
-                        (v[1] * np.exp(v[0] * (x-(self.Nt)))*(1.0+ v[3]*np.exp((v[2]**2)*(x-(self.Nt))) )) )
+    def formula(self, v, x):
+                return ((v[1]*np.exp((-1.0)*v[0]*x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x))) +
+                        (v[1]*np.exp(v[0]*(x-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(x-(self.Nt))))))
 
 
 class jlab:
@@ -80,8 +83,8 @@ class jlab:
         self.description = "jlab"
         self.template = "{1: f}exp(-{0: f}*t)+{1: f}exp(-{2: f}*t)"
 
-    def formula(self, v ,x):
-        return ((1- v[1]) * np.exp((-1.0) * v[0] * x))+(v[1] * np.exp((-1.0) * v[2] * x))
+    def formula(self, v, x):
+        return ((1 - v[1]) * np.exp((-1.0) * v[0] * x))+(v[1] * np.exp((-1.0) * v[2] * x))
 
 
 class cosh_const:
@@ -92,10 +95,10 @@ class cosh_const:
         self.Nt = Nt
         while not self.Nt:
             try:
-                self.Nt=int(raw_input('Time period not specified, please enter Nt:'))
+                self.Nt = int(raw_input('Time period not specified, please enter Nt:'))
             except ValueError:
                 print "Not a valid number"
-        self.template = "{1: f}Cosh(-{0: f}*(t-%d/2))+{2: f}"%self.Nt
+        self.template = "{1: f}Cosh(-{0: f}*(t-%d/2))+{2: f}" % self.Nt
 
-    def formula(self, v ,x):
-        return (v[1] * np.cosh((-1.0)* v[0]*((x-(self.Nt/2.0)))))+v[2]
+    def formula(self, v, x):
+        return (v[1] * np.cosh((-1.0)*v[0]*((x-(self.Nt/2.0)))))+v[2]

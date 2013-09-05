@@ -23,7 +23,7 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     fitted_params = []
     fitted_errors = []
     qualities = []
-    Tpoints = range(tmin, tmax-(len(fn.parameter_names)+1) )
+    Tpoints = range(tmin, tmax-(len(fn.parameter_names)+1))
     for t in Tpoints:
         try:
             params, errors, qual = fit.fit(fn, cor, t, tmax,
@@ -45,7 +45,7 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     cmap = mpl.cm.cool
 
     tmin_plot = plt.scatter(Tpoints, fitted_params, c=qualities, s=50, cmap=cmap)
-    plt.clim(0,1)
+    plt.clim(0, 1)
     tmin_error = plt.errorbar(Tpoints, fitted_params, yerr=fitted_errors, fmt=None, zorder=0)
 
     for i in flatten(emass_plot):
@@ -56,7 +56,6 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
 
     plt.ylim([0, max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
-
 
     def func(label):
         if label == 'tminplot':
@@ -69,7 +68,6 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
                 if i:
                     i.set_visible(not i.get_visible())
         plt.draw()
-
 
     if(filestub):
         logging.info("Saving plot to {}".format(filestub+".png"))

@@ -77,7 +77,7 @@ def askdir(description, default=os.getcwd()):
         userdir = raw_input()
         if userdir == "exit":
             raise Exception('exit')
-        elif  userdir == '' and os.path.isdir(default):
+        elif userdir == '' and os.path.isdir(default):
             return default
         elif os.path.isdir(default):
             return default
@@ -85,6 +85,7 @@ def askdir(description, default=os.getcwd()):
             return userdir
         else:
             sys.stdout.write("INVALID direcotry %s\n" % userdir)
+
 
 def askoperator(description, default=""):
     prompt = "Enter operator for %s \n (%s):" % (description, "operator, exit, or skip")
@@ -101,6 +102,7 @@ def askoperator(description, default=""):
             return userstring
         else:
             sys.stdout.write("INVALID entry %s\n" % userstring)
+
 
 def askstring(description, default=""):
     prompt = "Enter directory for %s \n (%s):" % (description, default)

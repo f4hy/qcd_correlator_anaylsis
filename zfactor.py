@@ -1,18 +1,16 @@
 #!/usr/bin/env python
-import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import argparse
 import plot_files
 import pandas as pd
-import level_identifier
-import pandas_reader
 import re
 
 OUTPUT = 25
 logging.addLevelName(OUTPUT, "OUTPUT")
 
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
+
 
 def parse_pair(s):
     return complex(*map(float, pair.match(s).groups()))
@@ -28,14 +26,14 @@ def read_coeffs_file(filename):
 
 def build_cor_mat(corwild, ops, to):
     N = len(ops)
-    cormat = np.matrix(np.zeros((N,N)), dtype=np.complex128)
-    for col,src in enumerate(ops):
-        for row,snk in enumerate(ops):
-            logging.debug("Reading snk:{}, src:{}".format(snk,src))
-            raw_c = plot_files.read_file(corwild.format(snk,src))
+    cormat = np.matrix(np.zeros((N, N)), dtype=np.complex128)
+    for col, src in enumerate(ops):
+        for row, snk in enumerate(ops):
+            logging.debug("Reading snk:{}, src:{}".format(snk, src))
+            raw_c = plot_files.read_file(corwild.format(snk, src))
             df = raw_c
             Cij = df.ix[df['time'] == to, 'correlator']
-            cormat[row,col] = np.array(Cij)[0]
+            cormat[row, col] = np.array(Cij)[0]
     return cormat
 
 def check_ident(v, cormat):
@@ -61,31 +59,33 @@ def read_emasses(filewild, N, t, levels_to_make):
             exit(level)
     return emasses
 
+
 def normalize_Zs(Zs, normalize):
     A = np.array(Zs.values())
-    maximums = np.array([max(np.abs(A[:,i])) for i in range(len(Zs[0]))])
+    maximums = np.array([max(np.abs(A[:, i])) for i in range(len(Zs[0]))])
     if normalize:
-        return {k: np.abs(values)/maximums for k,values in Zs.iteritems()}
+        return {k: np.abs(values)/maximums for k, values in Zs.iteritems()}
     else:
-        return {k: np.abs(values) for k,values in Zs.iteritems()}
+        return {k: np.abs(values) for k, values in Zs.iteritems()}
+
 
 def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxlevels, normalize, reconstruct_stub):
     raw_v = read_coeffs_file(rotfile)
     N = len(ops)
-    v = np.matrix(raw_v.identities.values.reshape((N,N))).T
+    v = np.matrix(raw_v.identities.values.reshape((N, N))).T
     cormat = build_cor_mat(corwild, ops, t0)
     check_ident(v, cormat)
 
-    levels_to_make = range(min(len(ops),maxlevels))
+    levels_to_make = range(min(len(ops), maxlevels))
 
     emasses = read_emasses(emasswild, len(ops), t, levels_to_make)
     Zs = {}
     for level in levels_to_make:
-        v_n = v[:,level]
-        Zs[level] = [(cormat[j]*(v_n)*np.exp(emasses[level] * t0 * 0.5)).flat[0] for j in range(len(ops)) ]
+        v_n = v[:, level]
+        Zs[level] = [(cormat[j]*(v_n)*np.exp(emasses[level] * t0 * 0.5)).flat[0] for j in range(len(ops))]
     normalized_Zs = normalize_Zs(Zs, normalize)
     for level in levels_to_make:
-        logging.debug("normed Z_j for level{}: {}".format(level,str(normalized_Zs[level])))
+        logging.debug("normed Z_j for level{}: {}".format(level, str(normalized_Zs[level])))
 
     if(outputstub):
         with open(outputstub+".out", 'w') as outfile:
@@ -99,18 +99,19 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxleve
         logging.info("reconstructing correlators from zfactors")
         reconstructed_correaltors(Zs, emasses, ops, reconstruct_stub)
 
+
 def check_sum(Zs, emasses, t, cormat):
     logging.info("Checking sum")
     biggest_error = 0.0
     for i in range(len(Zs[0])):
         for j in range(len(Zs[0])):
             C = sum((Zs[level][i]*np.conj(Zs[level][j]))*np.exp(-1.0*emasses[level]*t) for level in Zs.keys())
-            difference = abs(C - cormat[i,j])
-            percent_difference = difference/abs(cormat[i,j])
+            difference = abs(C - cormat[i, j])
+            percent_difference = difference/abs(cormat[i, j])
             if percent_difference > biggest_error:
                 biggest_error = percent_difference
                 print "recomputed C_{},{}({}) = {}?".format(i, j, t, C)
-                print "actual     C_{},{}({}) = {}".format(i, j, t, cormat[i,j])
+                print "actual     C_{},{}({}) = {}".format(i, j, t, cormat[i, j])
                 print "difference = {}".format(difference)
                 print "percent difference = {}".format(percent_difference)
 
@@ -121,7 +122,7 @@ def reconstructed_correaltors(Zs, emasses, ops, stub):
 
     for i in range(len(Zs[0])):
         for j in range(len(Zs[0])):
-            with open("{}.{}.{}.cor".format(stub,ops[i],ops[j]),"w") as outfile:
+            with open("{}.{}.{}.cor".format(stub, ops[i], ops[j]), "w") as outfile:
                 for t in range(40):
                     C = sum((Zs[level][i]*np.conj(Zs[level][j]))*np.exp(-1.0*emasses[level]*t) for level in Zs.keys())
                     outfile.write("{} ({},{}) (0.0,0.0)\n".format(t, np.real(C), np.imag(C)))
@@ -160,4 +161,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass, args.operators, args.tnaught, args.time, args.output_stub, args.number, args.normalize, args.reconstruct_stub)
+    compute_zfactor(args.inputcorrelatorformat, args.inputrotationcoeffs, args.inputemass,
+                    args.operators, args.tnaught, args.time, args.output_stub, args.number,
+                    args.normalize, args.reconstruct_stub)

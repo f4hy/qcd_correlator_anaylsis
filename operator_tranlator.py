@@ -2,6 +2,7 @@
 import re
 import logging
 
+
 def translate(name):
     logging.debug("Translating {}".format(name))
     new = translate_partclenames(name)
@@ -9,6 +10,7 @@ def translate(name):
     new = translate_irrep(new)
     new = prune_isotriplet(new)
     return new
+
 
 def translate_partclenames(name):
     new = name.replace("pion","$\pi$")
@@ -18,6 +20,7 @@ def translate_partclenames(name):
     new = new.replace("kaon","$K$")
     new = new.replace("kbar","${K}$")
     return new
+
 
 def translate_momentum(name):
     new = name.replace("p000","_AR_")
@@ -52,19 +55,21 @@ def translate_momentum(name):
     new = new.replace("p-2-2-2","_CD(2)_")
     return new
 
+
 def translate_irrep(name):
     new = name
     for rep in ["A1", "A2", "E", "T1", "T2", "B1", "B2"]:
         baserep = rep[0]
         subrep = rep[1] if len(rep) > 1 else ""
         for gparity in ["g", "u", ""]:
-            for p,newp in [("p","+"), ("m","-"), ("","")]:
-                if "{}{}{}".format(rep,gparity,p) == "E":
+            for p, newp in [("p", "+"), ("m", "-"), ("", "")]:
+                if "{}{}{}".format(rep, gparity, p) == "E":
                     continue
-                if "{}{}{}".format(rep,gparity,p) in new:
-                    new = new.replace("{}{}{}".format(rep,gparity,p), "${}_{{{}{}}}^{{{}}}$".format(baserep, subrep,gparity,newp) )
+                if "{}{}{}".format(rep, gparity, p) in new:
+                    new = new.replace("{}{}{}".format(rep, gparity, p), "${}_{{{}{}}}^{{{}}}$".format(baserep, subrep, gparity, newp))
 
     return new
+
 
 def prune_isotriplet(name):
     isomatch = "iso.*?\-"

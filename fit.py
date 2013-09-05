@@ -102,7 +102,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
 
-
     for name, boot, original in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit):
         bias = abs(boot-original)/original
         results.info('Bootstrap Bias in {:<10}: {:.3%}'.format(name, bias))
@@ -119,7 +118,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
         results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
     results.log(OUTPUT, "--------------------------------------------------------")
-
 
     v = boot_averages
     cov = covariance_matrix(cor, tmin, tmax)
@@ -279,7 +277,7 @@ def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=F
             results = fit(funct, cor, tmin, tmax, filestub=filestub,
                           bootstraps=bootstraps, unsafe=unsafe, return_quality=return_quality)
             logging.info("Auto Fit sucessfully!")
-            return (tmin, tmax) + results # Need to return what fit range was done
+            return (tmin, tmax) + results  # Need to return what fit range was done
         except RuntimeError:
             logging.warn("Fit range {} {} failed, trying next best".format(tmin, tmax))
             continue
