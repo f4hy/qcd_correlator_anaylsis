@@ -174,22 +174,6 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, unsafe=
         plt.show()
 
 
-def make_fake_cor():
-    cfgs = list(range(50))
-    times = list(range(16))
-    data = {}
-    vev = {}
-    for c in cfgs:
-        vev[c] = 0.0
-        tmp = {}
-        for t in times:
-            tmp[t] = 5.0 * np.exp((-0.5) * t) + 6.0 * np.exp((-1.5) * t)
-            tmp[t] += (pylab.rand() * 0.001) * tmp[t]
-        data[c] = tmp
-
-    return correlator.Correlator.fromDataDicts(data, vev, vev)
-
-
 def bootstrap_cfgs(cor):
     return np.random.choice(cor.configs, size=len(cor.configs))
 
