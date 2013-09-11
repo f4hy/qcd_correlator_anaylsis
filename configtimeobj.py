@@ -140,14 +140,22 @@ class Cfgtimeobj(object):
         return {cfg: (N * total - single) / Njk
                 for cfg, single in self.average_over_times().iteritems()}
 
-    def writefullfile(self, filename):
+    def writefullfile(self, filename, comp=False):
         outfile = open(filename, 'w')
         for cfg in self.configs:
             for t in self.times:
                 if self.datatype is type(np.array(1.0)):
-                    outfile.write("{!r},   {!r}\n".format(t, self.get(config=cfg, time=t)[0]))
+                    value = self.get(config=cfg, time=t)[0]
+                    if comp:
+                        outfile.write("{!r} ({},{})\n".format(t, np.real(value), np.imag(value)))
+                    else:
+                        outfile.write("{!r},   {!r}\n".format(t, value))
                 else:
-                    outfile.write("{!r},   {!r}\n".format(t, self.get(config=cfg, time=t)))
+                    value = self.get(config=cfg, time=t)
+                    if comp:
+                        outfile.write("{!r} ({},{})\n".format(t, np.real(value), np.imag(value)))
+                    else:
+                        outfile.write("{!r},   {!r}\n".format(t, value))
         outfile.close()
 
     def writeeachconfig(self, filename):

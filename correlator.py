@@ -73,12 +73,12 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
         super(Correlator, self).verify()
 
-    def writefullfile(self, filename):
+    def writefullfile(self, filename, comp=False):
         logging.debug("writting vevs to %s", filename + ".vev1,2")
         self.vev1.writefullfile(filename + ".vev1")
         self.vev2.writefullfile(filename + ".vev2")
         logging.debug("writting correlator to %s", filename + ".cor")
-        super(Correlator, self).writefullfile(filename + ".cor")
+        super(Correlator, self).writefullfile(filename + ".cor", comp=comp)
 
     def average_sub_vev(self):
         if not self.asv:
