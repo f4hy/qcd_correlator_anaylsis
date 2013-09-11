@@ -25,10 +25,10 @@ def format_fit_results(filewild):
         level += 1
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="plot a set of data files")
+    parser = argparse.ArgumentParser(description="combine fit results to many levels into a single file")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
-    parser.add_argument('filewild', metavar='f', type=str, help='files to plot')
+    parser.add_argument('filewild', metavar='f', type=str, help='wildcard for fit outputs')
     args = parser.parse_args()
 
     if args.verbose:
