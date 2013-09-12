@@ -16,7 +16,8 @@ import sys
 
 
 
-def make_fake_cor(cfgs, times, A, m1, B, m2):
+def make_fake_cor(cfgs, times, amps, masses):
+    assert(len(amps) == len(masses))
     cfgs = list(range(cfgs))
     times = list(range(times))
     data = {}
@@ -25,7 +26,7 @@ def make_fake_cor(cfgs, times, A, m1, B, m2):
         vev[c] = 0.0
         tmp = {}
         for t in times:
-            tmp[t] = A * np.exp((-1.0*m1) * t) + B * np.exp((-1.0*m2) * t)
+            tmp[t] = sum([amps[i] * np.exp((-1.0*masses[i]) * t) for i in range(len(amps))])
             tmp[t] += np.random.normal(0,0.01,1) * tmp[t]
             data[c] = tmp
 
@@ -41,10 +42,10 @@ if __name__ == "__main__":
                         help="number of configs to make")
     parser.add_argument("-t", "--times", type=int, required=False, default=20,
                         help="number of times")
-    parser.add_argument("-a", "--amp", type=float, required=False, default=5.0,
-                        help="amplitude for first exp")
-    parser.add_argument("-m", "--mass", type=float, required=False, default=0.5,
-                        help="mass for first exp")
+    parser.add_argument("-a", "--amps", type=float, nargs="+", required=True,
+                        help="amplitudes for each exp")
+    parser.add_argument("-m", "--masses", type=float, nargs="+", required=True,
+                        help="masses for each exp")
     parser.add_argument("-b", "--amp2", type=float, required=False, default=0.0,
                         help="amplitude for second exp")
     parser.add_argument("-m2", "--mass2", type=float, required=False, default=1.5,
@@ -60,5 +61,7 @@ if __name__ == "__main__":
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 
-    cor = make_fake_cor(args.configs, args.times, args.amp, args.mass, args.amp2, args.mass2)
+    print args.amps
+    print args.masses
+    cor = make_fake_cor(args.configs, args.times, args.amps, args.masses)
     cor.writefullfile(args.output_stub, comp=True)

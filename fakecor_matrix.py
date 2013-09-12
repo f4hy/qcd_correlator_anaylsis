@@ -43,6 +43,7 @@ if __name__ == "__main__":
     N = len(args.masses)
 
     raw_Zs = zfactor.read_coeffs_file(args.overlapsfile)
+    assert len(raw_Zs)==N*N, "Length missmatch in levels and coeffs"
     print raw_Zs
     Zs = np.matrix(raw_Zs.identities.values.reshape((N, N))).T
     print Zs
@@ -50,16 +51,9 @@ if __name__ == "__main__":
     for i in range(N):
         for j in range(N):
             print "Correlator_{}{}".format(i,j)
-            Ai = Zs[i,0]
-            Bi = Zs[i,1]
-            Aj = Zs[j,0]
-            Bj = Zs[j,1]
-            amp1 = Ai*np.conj(Aj)
-            amp2 = Bi*np.conj(Bj)
-            print Ai, Aj, Bi, Bj
-            # exit()
-            cor = fakecor.make_fake_cor(args.configs, args.times, amp1, args.masses[0],
-                                        amp2, args.masses[1])
+            amps = [Zs[i,level]*Zs[j,level] for level in range(N)]
+            print "newaps", amps
+            cor = fakecor.make_fake_cor(args.configs, args.times, amps, args.masses)
             cor.writefullfile(args.output_stub+"{}_{}".format(i,j), comp=True)
 
     logging.info("done")
