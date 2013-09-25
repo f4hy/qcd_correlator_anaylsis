@@ -42,7 +42,7 @@ def diagonalize(correlator_pannel, t0, td):
     # evecs = np.matrix(evecs)
     # V = np.matrix(Binvsqrt)*evecs
 
-    evals, evecs = LA.eigh(A, b=B)  # eigh works only if hermitian
+    evals, evecs = LA.eigh(A, b=B)  #gerenalized eig problem, eigh works only if hermitian
     evecs = np.matrix(evecs)
     logging.debug("eigen values are {}".format(evals))
     logging.debug("eigen vectors are {}".format(evecs))
@@ -58,6 +58,8 @@ def diagonalize(correlator_pannel, t0, td):
 
     diag = correlator_pannel.apply(rotate, "items")
 
+    # This method simultaniously diagaonlizes at t0 and td. Should be
+    # identity at t0 and the eigenvalues at td
     assert compare_matrix(np.reshape(diag.major_xs(t0).mean().values, (n, n)),
                           np.identity(n)), "Rotation error: is not ~identity at t0"
     assert compare_matrix(np.reshape(diag.major_xs(td).mean().values, (n, n)),
@@ -67,14 +69,17 @@ def diagonalize(correlator_pannel, t0, td):
 
 
 def parenformat(x):
+    """Format complex number into paren grouped format"""
     return "({},{})".format(np.real(x), np.imag(x))
 
 
 def parenformatn(x):
+    """Format list of complex numbers into paren grouped format"""
     return ["({},{})".format(np.real(i), np.imag(i)) for i in x]
 
 
 def write_cor_matrix(correlator_pannel, outputwild, ops, suffix=""):
+    """Write the correlator pannel to files """
     for snk in ops:
         for src in ops:
             filename = outputwild.format(snk, src)+suffix
