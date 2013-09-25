@@ -45,30 +45,19 @@ def read_configcols_paraenformat(filename):
     f = lines_without_comments(filename)
     df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
                      converters={1: parse_pair})
-    print df
-    print df.head(30)
-    print "grouping"
     grouped = df.groupby('time')
     joined = df.groupby('time').apply(
         lambda g: pd.Series(g['correlator'].values)
     ).rename(columns=lambda x: 'correlator%s' % x)
-
-    print joined
     return joined
 
 def read_full_paraenformat_multiindex(filename):
     f = lines_without_comments(filename)
     df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
                      converters={1: parse_pair})
-    print df
-    print df.head(30)
-    print "grouping"
     times = set(df.time)
-    print times
     df["config"] = pd.Series(map(lambda x: x/len(times), df.index))
-    print df.head(30)
     multiindexed = df.set_index(["config","time"])
-    print multiindexed.head(40)
     grouped = multiindexed.groupby(level=1)
     return grouped
 
