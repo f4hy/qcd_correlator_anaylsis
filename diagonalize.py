@@ -59,13 +59,16 @@ def write_cor_matrix(correlator_pannel, outputwild, ops, suffix=""):
         for src in ops:
             filename = outputwild.format(snk,src)+suffix
             first = True
+            if correlator_pannel[snk+src].ndim == 1:
+                correlator_pannel[snk+src].apply(parenformat).to_csv(filename,sep=" ", header=True, index_label="#time")
+                continue
             for n in correlator_pannel[snk+src]:
                 if first:
                     correlator_pannel[snk+src][n].apply(parenformat).to_csv(filename,sep=" ", header=True, index_label="#time")
                     first = False
                 else:
                     correlator_pannel[snk+src][n].apply(parenformat).to_csv(filename,sep=" ", header=False, mode="a")
-    logging.info("Wrote correlator matrix to {}".format(outputwild.format("SNK","SRC")))
+    logging.info("Wrote correlator matrix to {}{}".format(outputwild.format("SNK","SRC"),suffix))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Diagonalize correlator matrix")
