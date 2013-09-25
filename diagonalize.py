@@ -10,7 +10,7 @@ import determine_operators
 import argparse
 import pandas_reader
 
-DIAGTOL = 0.001
+DIAGTOL = 0.01
 
 def compare_matrix(A, B):
     logging.debug("comparing \n{a} to \n{b}".format(a=A, b=B))
@@ -19,13 +19,20 @@ def compare_matrix(A, B):
     return normed_diff
 
 def diagonalize(correlator_pannel, t0, ts):
-    length = p.shape[0]
+    length = correlator_pannel.shape[0]
     n = int(np.sqrt(length))
-    A = np.matrix(np.reshape(p.major_xs(3).values,(n,n)))
-    B = np.matrix(np.reshape(p.major_xs(5).values,(n,n)))
+    print n
+    print correlator_pannel.major_xs(3).values
+    # Here we access the pannel major_xs gives time(n), mean incase it
+    # was a multi correlator should have no effect on an already averaged one
+    A = np.matrix(np.reshape(correlator_pannel.major_xs(3).mean().values,(n,n)))
+    B = np.matrix(np.reshape(correlator_pannel.major_xs(5).mean().values,(n,n)))
+    logging.debug("A = {} \n B = {}".format(A,B))
 
     evals, evecs = LA.eigh(A, b=B)
     evecs = np.matrix(evecs)
+    logging.debug("eigen values are {}".format(evals))
+    logging.debug("eigen vectors are {}".format(evecs))
 
     def rotate(x):
         n = int(np.sqrt(len(x)))
@@ -35,13 +42,30 @@ def diagonalize(correlator_pannel, t0, ts):
         R = np.array(D).flatten()
         return R
 
-    diag = p.apply(rotate, "items")
+    diag = correlator_pannel.apply(rotate, "items")
 
-    assert (compare_matrix(np.reshape(diag.major_xs(ts).values,(n,n)), np.identity(n)) < DIAGTOL), "Rotation error: is not ~identity at t-star"
-    assert (compare_matrix(np.reshape(diag.major_xs(t0).values,(n,n)), np.diag(evals)) < DIAGTOL), "Rotation error: Is not ~Lambda at t0"
+    assert (compare_matrix(np.reshape(diag.major_xs(ts).mean().values,(n,n)), np.identity(n)) < DIAGTOL), "Rotation error: is not ~identity at t-star"
+    assert (compare_matrix(np.reshape(diag.major_xs(t0).mean().values,(n,n)), np.diag(evals)) < DIAGTOL), "Rotation error: Is not ~Lambda at t0"
 
     return diag
 
+def parenformat(x):
+    return "({},{})".format(np.real(x), np.imag(x))
+def parenformatn(x):
+    return ["({},{})".format(np.real(i), np.imag(i)) for i in x]
+
+def write_cor_matrix(correlator_pannel, outputwild, ops, suffix=""):
+    for snk in ops:
+        for src in ops:
+            filename = outputwild.format(snk,src)+suffix
+            first = True
+            for n in correlator_pannel[snk+src]:
+                if first:
+                    correlator_pannel[snk+src][n].apply(parenformat).to_csv(filename,sep=" ", header=True, index_label="#time")
+                    first = False
+                else:
+                    correlator_pannel[snk+src][n].apply(parenformat).to_csv(filename,sep=" ", header=False, mode="a")
+    logging.info("Wrote correlator matrix to {}".format(outputwild.format("SNK","SRC")))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Diagonalize correlator matrix")
@@ -54,6 +78,8 @@ if __name__ == "__main__":
                         help="operator to make e.g. -r etap000DDL7Egp1")
     parser.add_argument("-i", "--input-dir", type=str, required=True,
                         help="directory to read files from")
+    parser.add_argument("-o", "--outputformat", type=str, required=False,
+                        help="format to write output")
     args = parser.parse_args()
 
     if args.verbose:
@@ -73,50 +99,19 @@ if __name__ == "__main__":
             parser.exit()
         args.operators = ops
 
-
-    for snk in ops:
-        for src in ops:
+    cor_matrix = {}
+    cor_matrix_multi = {}
+    cor_matrix_ave = {}
+    for snk in args.operators:
+        for src in args.operators:
             filename = args.input_dir + args.filewild.format(snk,src)
             logging.info("reading {}".format(filename))
-            df = pandas_reader.read_configcols_paraenformat(filename)
+            cor_matrix[snk+src] = pandas_reader.read_configcols_paraenformat(filename)
 
-            exit()
-            pandas_reader.read_full_paraenformat_mean(filename)
-
-    exit()
-
-
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-    d00 = {1000: {3:  1.0, 4: 2.0}, 1001: {3: 3.0, 4: 4.0} , 1002: {3: 5.0, 4: 0.0}}
-    d01 = {1000: {3: -1.0, 4: 3.0}, 1001: {3: 3.0, 4: 4.0} , 1002: {3: 5.0, 4: 0.0}}
-    d10 = {1000: {3:  1.0, 4: 2.0}, 1001: {3: 3.0, 4: 4.0} , 1002: {3: 5.0, 4: 0.0}}
-    d11 = {1000: {3: -1.0, 4: 3.0}, 1001: {3: 3.0, 4: 4.0} , 1002: {3: 5.0, 4: 0.0}}
-
-    d00 = {1000: {3:  1.0, 4: 2.0}}
-    d01 = {1000: {3: -1.0, 4: 3.0}}
-    d10 = {1000: {3:  1.0, 4: 2.0}}
-    d11 = {1000: {3: -1.0, 4: 3.0}}
-
-    # moving pion data 0=ss0 1=ss1
-    d00 = {1000: {3:  np.complex(25.5398393366745,0.0119055782214339), 5: np.complex(15.0325100472387,0.0158512178206725)}}
-    d01 = {1000: {3:  np.complex(-12.2271307837365,-0.0103628313697365), 5: np.complex(-10.20183343045,-0.00381791576319435)}}
-    d10 = {1000: {3:  np.complex(-12.2625047443711,0.039971501444209), 5: np.complex(-10.2155376553752,0.0406523146607429)}}
-    d11 = {1000: {3:  np.complex(59.1440618668479,0.037089030400901), 5: np.complex(43.9093726008716,0.046347681872425)}}
-
-    # fake moving pion data 0=ss0 1=ss1 forced herm
-    d00 = {1000: {3:  np.complex(25.5398393366745,0.0119055782214339), 5: np.complex(15.0325100472387,0.0158512178206725)}}
-    d01 = {1000: {3:  np.complex(-12.2271307837365,-0.0103628313697365), 5: np.complex(-10.20183343045,-0.00381791576319435)}}
-    d10 = {1000: {3:  np.complex(-12.2271307837365,0.0103628313697365), 5: np.complex(-10.20183343045,0.00381791576319435)}}
-    d11 = {1000: {3:  np.complex(59.1440618668479,0.037089030400901), 5: np.complex(43.9093726008716,0.046347681872425)}}
-
-
-    df00 = pd.DataFrame(d00)
-    df01 = pd.DataFrame(d01)
-    df10 = pd.DataFrame(d10)
-    df11 = pd.DataFrame(d11)
-
-    p = pd.Panel({"00": df00, "01": df01, "10": df10, "11": df11})
-
+    p = pd.Panel(cor_matrix)
     diag = diagonalize(p, 3, 5)
-    print np.matrix(np.reshape(diag.major_xs(3).values,(2,2)))
-    exit()
+    diagave = diag.mean(2)
+
+    if args.outputformat:
+        write_cor_matrix(diag, args.outputformat, args.operators)
+        write_cor_matrix(diagave, args.outputformat, args.operators, suffix=".ave")
