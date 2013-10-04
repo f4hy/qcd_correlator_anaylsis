@@ -57,6 +57,7 @@ def diagonalize(correlator_pannel, t0, td):
         return R
 
     diag = correlator_pannel.apply(rotate, "items")
+    diag.items = itmes=["{}{}".format(i,j) for i in range(n) for j in range(n)]
 
     # This method simultaniously diagaonlizes at t0 and td. Should be
     # identity at t0 and the eigenvalues at td
@@ -80,6 +81,7 @@ def parenformatn(x):
 
 def write_cor_matrix(correlator_pannel, outputwild, ops, suffix=""):
     """Write the correlator pannel to files """
+    ops = map(str,ops)
     for snk in ops:
         for src in ops:
             filename = outputwild.format(snk, src)+suffix
@@ -145,5 +147,5 @@ if __name__ == "__main__":
     diagave = diag.mean(2)
 
     if args.outputformat:
-        write_cor_matrix(diag, args.outputformat, args.operators, suffix=".full")
-        write_cor_matrix(diagave, args.outputformat, args.operators, suffix=".ave")
+        write_cor_matrix(diag, args.outputformat, range(len(args.operators)), suffix=".full")
+        write_cor_matrix(diagave, args.outputformat, range(len(args.operators)), suffix=".ave")
