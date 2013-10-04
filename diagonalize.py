@@ -20,7 +20,7 @@ def hermitionize(M):
     return (M+M.H)/2.0
 
 
-def diagonalize(correlator_pannel, t0, td):
+def diagonalize(correlator_pannel, t0, td, generalized=False):
     length = correlator_pannel.shape[0]
     n = int(np.sqrt(length))
     # Here we access the pannel major_xs gives time(n), mean incase it
@@ -35,15 +35,20 @@ def diagonalize(correlator_pannel, t0, td):
     B = hermitionize(B)
     logging.debug("A = {} \n B = {}".format(A, B))
 
-    # Instead of using generalized eigen problem, we could solve a
-    # regular eigen problem involving Binvqrt
-    # Binvsqrt =  LA.inv(LA.sqrtm(B))
-    # evals, evecs = LA.eigh(Binvsqrt*A*Binvsqrt)
-    # evecs = np.matrix(evecs)
-    # V = np.matrix(Binvsqrt)*evecs
+    if generalized:
+        logging.info("running generalized eigensolver")
+        evals, evecs = LA.eigh(A, b=B)  #gerenalized eig problem, eigh works only if hermitian
+        evecs = np.matrix(evecs)
+        V = evecs
+    else:
+        # Instead of using generalized eigen problem, we could solve a
+        # regular eigen problem involving Binvqrt
+        Binvsqrt =  LA.inv(LA.sqrtm(B))
+        evals, evecs = LA.eigh(Binvsqrt*A*Binvsqrt)
+        evecs = np.matrix(evecs)
+        V = np.matrix(Binvsqrt)*evecs
 
-    evals, evecs = LA.eigh(A, b=B)  #gerenalized eig problem, eigh works only if hermitian
-    evecs = np.matrix(evecs)
+
     logging.debug("eigen values are {}".format(evals))
     logging.debug("eigen vectors are {}".format(evecs))
     n = len(evecs)
@@ -52,7 +57,7 @@ def diagonalize(correlator_pannel, t0, td):
     def rotate(x):
         M = np.matrix(np.resize(x, (n, n)))
         M = hermitionize(M)
-        D = evecs.H * M * evecs
+        D = V.H * M * V
         R = np.array(D).flatten()
         return R
 
@@ -102,6 +107,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Diagonalize correlator matrix")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("-g", "--generalized", action="store_true",
+                        help="used generalized eigen solver")
     parser.add_argument("-f", "--filewild", type=str, required=True,
                         help="fromat of the correlator files in the directory\n\n"
                         "e.g. cor-snk{}_src{}.dat where {} are replaced with operator strings")
@@ -143,7 +150,7 @@ if __name__ == "__main__":
             cor_matrix[snk+src] = pandas_reader.read_configcols_paraenformat(filename)
 
     p = pd.Panel(cor_matrix)
-    diag = diagonalize(p, args.tnaught, args.tstar)
+    diag = diagonalize(p, args.tnaught, args.tstar, generalized=args.generalized)
     diagave = diag.mean(2)
 
     if args.outputformat:
