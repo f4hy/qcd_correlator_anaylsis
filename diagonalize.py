@@ -51,7 +51,7 @@ def diagonalize(correlator_pannel, t0, td):
 
     def rotate(x):
         M = np.matrix(np.resize(x, (n, n)))
-        #M = hermitionize(M)
+        M = hermitionize(M)
         D = evecs.H * M * evecs
         R = np.array(D).flatten()
         return R
