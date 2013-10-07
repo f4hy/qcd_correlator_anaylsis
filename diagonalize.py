@@ -3,9 +3,11 @@ import logging
 import numpy as np
 import pandas as pd
 from scipy import linalg as LA
+from numpy.linalg import cond
 import determine_operators
 import argparse
 import pandas_reader
+import os.path
 
 DIAGTOL = 0.009
 
@@ -44,6 +46,7 @@ def diagonalize(correlator_pannel, t0, td, generalized=False):
         # Instead of using generalized eigen problem, we could solve a
         # regular eigen problem involving Binvqrt
         Binvsqrt =  LA.inv(LA.sqrtm(B))
+        logging.info("condition number: {}".format(cond(Binvsqrt*A*Binvsqrt)))
         evals, evecs = LA.eigh(Binvsqrt*A*Binvsqrt)
         evecs = np.matrix(evecs)
         V = np.matrix(Binvsqrt)*evecs
