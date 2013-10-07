@@ -90,6 +90,8 @@ def parenformatn(x):
 def write_cor_matrix(correlator_pannel, outputwild, ops, suffix=""):
     """Write the correlator pannel to files """
     ops = map(str,ops)
+    if not os.path.exists(os.path.dirname(outputwild)):
+        os.makedirs(os.path.dirname(outputwild))
     for snk in ops:
         for src in ops:
             filename = outputwild.format(snk, src)+suffix
@@ -112,6 +114,8 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-g", "--generalized", action="store_true",
                         help="used generalized eigen solver")
+    parser.add_argument("-a", "--analyize", type=str,
+                        help="run effective mass analysis code on results and store in folder")
     parser.add_argument("-f", "--filewild", type=str, required=True,
                         help="fromat of the correlator files in the directory\n\n"
                         "e.g. cor-snk{}_src{}.dat where {} are replaced with operator strings")
@@ -156,6 +160,17 @@ if __name__ == "__main__":
     diag = diagonalize(p, args.tnaught, args.tstar, generalized=args.generalized)
     diagave = diag.mean(2)
 
+    levels = range(len(args.operators))
     if args.outputformat:
-        write_cor_matrix(diag, args.outputformat, range(len(args.operators)), suffix=".full")
-        write_cor_matrix(diagave, args.outputformat, range(len(args.operators)), suffix=".ave")
+        write_cor_matrix(diag, args.outputformat, levels, suffix=".full")
+        write_cor_matrix(diagave, args.outputformat, levels, suffix=".ave")
+
+    if args.analyize:
+        exe_folder, _ = os.path.split(os.path.realpath(__file__))
+        output_dir, outputformat = os.path.split(args.outputformat)
+        outputformat += ".full"
+        opstring = "-r " + " -r ".join([str(l) for l in levels])
+        runstring = '{}/main.py -i {}/ -f {} -nv -o {}/ {}'.format(exe_folder, output_dir,
+                                                                   outputformat, args.analyize, opstring)
+        logging.info("executing {}".format(runstring))
+        os.system(runstring)
