@@ -65,7 +65,7 @@ def diagonalize(correlator_pannel, t0, td, generalized=False):
         return R
 
     diag = correlator_pannel.apply(rotate, "items")
-    diag.items = itmes=["{}{}".format(i,j) for i in range(n) for j in range(n)]
+    diag.items = ["{}{}".format(i,j) for i in reversed(range(n)) for j in reversed(range(n))]
 
     # This method simultaniously diagaonlizes at t0 and td. Should be
     # identity at t0 and the eigenvalues at td
