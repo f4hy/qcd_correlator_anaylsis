@@ -102,10 +102,11 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
 
-    for name, boot, original in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit):
-        bias = abs(boot-original)/original
-        results.info('Bootstrap Bias in {:<10}: {:.3%}'.format(name, bias))
-        if bias > 0.05:
+    for name, boot, original, err in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit, boot_std):
+        bias = abs(boot-original)
+        percent_bias = abs(boot-original)/original
+        results.info('Bootstrap Bias in {:<10}: {:.3%}'.format(name, percent_bias))
+        if bias > err*2:
             results.error('Bootstrap Bias in {:<10}: {:.3%}'.format(name, bias))
             results.error("Bootstrap average does not agree with ensamble average!"
                           "\nNot enough statistics for this for to be valid!!!\n")
