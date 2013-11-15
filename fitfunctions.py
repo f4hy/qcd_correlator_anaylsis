@@ -4,6 +4,7 @@ import numpy as np
 class cosh:
     def __init__(self, Nt=None):
         self.starting_guess = [0.5, 50.0]
+        self.bounds = [(0.0,2.0), (0.0,1.0e8)]
         self.parameter_names = ["mass", "amp"]
         self.description = "cosh"
         self.Nt = Nt
@@ -21,7 +22,8 @@ class cosh:
 
 class single_exp:
     def __init__(self, **kargs):
-        self.starting_guess = [0.5, 10.0]
+        self.starting_guess = [0.1, 10.0]
+        self.bounds = [(0.0,2.0), (0.0,1.0e8)]
         self.parameter_names = ["mass", "amp"]
         self.description = "exp"
         self.template = "{1: f}exp(-{0: f}*t)"
@@ -32,7 +34,8 @@ class single_exp:
 
 class periodic_exp:
     def __init__(self, Nt=None):
-        self.starting_guess = [1.0, 1000.0]
+        self.starting_guess = [0.05, 1.0]
+        self.bounds = [(0.0,2.0), (0.0,1.0e8)]
         self.parameter_names = ["mass", "amp"]
         self.description = "fwd-back-exp"
         self.Nt = Nt
@@ -46,6 +49,23 @@ class periodic_exp:
     def formula(self, v, x):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
 
+class periodic_exp_const:
+    def __init__(self, Nt=None):
+        self.starting_guess = [0.05, 1.0, 0.01]
+        self.bounds = [(0.0,2.0), (0.0,1.0e8), (0.0,100000.0)]
+        self.parameter_names = ["mass", "amp", "const"]
+        self.description = "fwd-back-exp_const"
+        self.Nt = Nt
+        while not self.Nt:
+            try:
+                self.Nt = int(raw_input('Time period not specified, please enter Nt:'))
+            except ValueError:
+                print "Not a valid number"
+        self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d))+{2: f}" % self.Nt
+
+    def formula(self, v, x):
+        return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))+v[2]
+        
 
 class two_exp:
     def __init__(self, **kargs):
@@ -89,7 +109,8 @@ class jlab:
 
 class cosh_const:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.1, 10, 0.0]
+        self.starting_guess = [0.1, 1.0, 0.5]
+        self.bounds = [(0.0,2.0), (0.0,1.0e8), (0.0,1000.0)]
         self.parameter_names = ["mass", "amp", "const"]
         self.description = "cosh+const"
         self.Nt = Nt
