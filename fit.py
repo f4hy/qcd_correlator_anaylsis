@@ -26,7 +26,7 @@ Nt = 128
 NBOOTSTRAPS = 1000
 
 
-def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False, return_chi=False):
+def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False, return_chi=False, write_each_boot=None):
     if(tmax-tmin < len(fn.parameter_names)):
         raise ValueError("Can not fit to less points than parameters")
 
@@ -129,6 +129,14 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr)))
 
+    if write_each_boot:
+        results.info("writing each bootstrap to {}.boot".format(write_each_boot))
+        with open(write_each_boot+".boot", 'w') as bootfile:
+            bootfile.write("#bootstrap, {}, \t ensamble mean: {}\n".format(", ".join(fn.parameter_names), ", ".join(original_ensamble_correlatedfit)))
+            for i, params in enumerate(boot_params):
+                strparams = ", ".join([str(p) for p in params])
+                bootfile.write("{}, {}\n".format(i, strparams))
+    
     if return_chi:
         return boot_averages, boot_std, chi_sqr/dof
     if return_quality:
@@ -253,13 +261,13 @@ def best_fit_range(fn, cor):
     return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges)]
 
 
-def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False):
+def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, unsafe=False, write_each_boot=None):
     fit_ranges = best_fit_range(funct, cor)
     for tmin, tmax in fit_ranges:
         logging.info("Trying fit range {}, {}".format(tmin, tmax))
         try:
             results = fit(funct, cor, tmin, tmax, filestub=filestub,
-                          bootstraps=bootstraps, unsafe=unsafe, return_quality=return_quality)
+                          bootstraps=bootstraps, unsafe=unsafe, return_quality=return_quality, write_each_boot=write_each_boot)
             logging.info("Auto Fit sucessfully!")
             return (tmin, tmax) + results  # Need to return what fit range was done
         except RuntimeError:
@@ -320,6 +328,8 @@ if __name__ == "__main__":
                         help="Correlator file to read from")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("-wb", "--write_boot", type=str, required=False,
+                        help="stub of name to write each bootstrap output to")
     parser.add_argument("-v1", "--vev", type=str, required=False,
                         help="vev file to read from")
     parser.add_argument("-v2", "--vev2", type=str, required=False,
@@ -367,7 +377,7 @@ if __name__ == "__main__":
     fit_ranges = [(tmin, tmax)]
     if not args.time_start:
         print args.output_stub
-        auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe)
+        auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, unsafe=args.unsafe, write_each_boot=args.write_boot)
         exit()
 
     if args.plot:
@@ -375,4 +385,5 @@ if __name__ == "__main__":
                  bootstraps=args.bootstraps, unsafe=args.unsafe)
     else:
         fit(funct, cor, tmin, tmax, filestub=args.output_stub,
-            bootstraps=args.bootstraps, unsafe=args.unsafe)
+            bootstraps=args.bootstraps, unsafe=args.unsafe,
+            write_each_boot=args.write_boot)
