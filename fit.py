@@ -16,6 +16,8 @@ from scipy import linalg
 from scipy.special import gammaincc
 from scipy.optimize import leastsq
 from scipy.optimize import fmin
+from scipy.optimize import fmin_slsqp
+from scipy.optimize import fmin_l_bfgs_b
 # from scipy.optimize import minimize
 OUTPUT = 25
 ALWAYSINFO = 26
@@ -70,18 +72,26 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             raise ValueError()
 
         guess = uncorrelated_fit_values
-        #would like to use minimize, but seems to be not installed
-        results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000,
-                       full_output=1, disp=0, retall=0)
-        covariant_fit, fit_info, flag = results[0], results[1:-1], results[-1]
+        #results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000, full_output=1, disp=0, retall=0)
+        def clamp(n, minn, maxn):
+                return max(min(maxn, n), minn)
+        bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
+        newresults = fmin_slsqp(cov_fun, bounded_guess, bounds=fn.bounds, full_output=1, disp=0, iter=10000)
+        # newresults = fmin_l_bfgs_b(cov_fun, fn.starting_guess, approx_grad=1, disp=1)
+        # print "bfgs"
+        # print newresults
+        results = newresults
+        covariant_fit, fit_info, flag = results[0], results[1:3], results[3]
         if covariant_fit[0] < 0.0:
             logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
             raise RuntimeError("Fitter sanity failed")
 
+        #would like to use minimize, but seems to be not installed
         # covariant_fit = minimize(cov_fun, initial_guess)
-        logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))
-        if flag:
-            logging.error("Fitter flag set to {}. Error!")
+        #logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))
+        logging.debug("Fit results: f() ={}, Iterations={}".format(*fit_info))
+        if flag != 0:
+            logging.error("Fitter flag set to {}. Error!".format(flag))
             raise RuntimeError("Fitter failed")
 
         logging.debug("Covariant fit {}, regular fit {}".format(repr(covariant_fit),
