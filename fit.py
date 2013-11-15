@@ -344,6 +344,8 @@ if __name__ == "__main__":
                         help="Plot the resulting fit")
     parser.add_argument("-Nt", "--period", type=int, required=False,
                         help="Period in time direction (not required for all functions)")
+    parser.add_argument("-r", "--random", type=int, required=False,
+                        help="set the random seed")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
     parser.add_argument("--unsafe", action="store_true",
@@ -362,6 +364,11 @@ if __name__ == "__main__":
 
     funct = functions[args.function](Nt=args.period)
 
+    if args.random:
+        logging.info("Setting random seed to %s", args.random)
+        np.random.seed(args.random)
+#    print np.random.get_state()
+    
     corrfile = args.inputfile
     vev1 = args.vev
     vev2 = vev1
