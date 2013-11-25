@@ -102,3 +102,20 @@ class cosh_const:
 
     def formula(self, v, x):
         return (v[1] * np.cosh((-1.0)*v[0]*((x-(self.Nt/2.0)))))+v[2]
+
+class pade:
+    """ exp( - E * t )  *    A /  ( 1 +   a1* t + a2 * t^2 ...  ) """
+    def __init__(self, Nt=None):
+        self.starting_guess = [0.05, 100, 1.0, 10]
+        self.parameter_names = ["mass", "amp", "B", "C"]
+        self.description = "Pade"
+        self.template = "{1: f}exp(-{0: f}*t)/(1+{3: f}t +{2: f}*t^2)"
+        self.Nt = Nt
+        # while not self.Nt:
+        #     try:
+        #         self.Nt = int(raw_input('Time period not specified, please enter Nt:'))
+        #     except ValueError:
+        #         print "Not a valid number"
+
+    def formula(self, v, x):
+        return (v[1]*np.exp((-1.0)*v[0]*x)) / (1.0 + v[2]*x+v[3]*x**2)
