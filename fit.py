@@ -73,13 +73,15 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
         guess = uncorrelated_fit_values
         #results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000, full_output=1, disp=0, retall=0)
+        if guess[0] < 0.0:
+            logging.warn("first pass fit value found mass to be negative {}, lets flip it".format(guess[0]))
+            guess[0] = -guess[0]
         def clamp(n, minn, maxn):
                 return max(min(maxn, n), minn)
         bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
+        logging.debug("guess {}, bounded guess {}".format(repr(guess),repr(bounded_guess)))
         newresults = fmin_slsqp(cov_fun, bounded_guess, bounds=fn.bounds, full_output=1, disp=0, iter=10000)
-        # newresults = fmin_l_bfgs_b(cov_fun, fn.starting_guess, approx_grad=1, disp=1)
-        # print "bfgs"
-        # print newresults
+        logging.debug("fit value {}".format(repr(newresults)))
         results = newresults
         covariant_fit, fit_info, flag = results[0], results[1:3], results[3]
         if covariant_fit[0] < 0.0:
