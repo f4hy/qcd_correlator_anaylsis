@@ -169,6 +169,17 @@ def plot_corr(corr, out_folder, name, fitparams=None):
             fitcomment = None
         plot.plotwitherrorbarsnames("%semass%d.%s" % (out_folder, dt, name),  plot_emass,
                                     emass.keys(), autoscale=True, addcomment=fitcomment)
+        # Do it all again with periodic
+        cosh_emass = corr.cosh_effective_mass(dt)
+        cosh_emass_errors = corr.cosh_effective_mass_errors(dt)
+        plot_cosh_emass = {"%s cosh_emass dt=%d, \t error" % (name, dt): (cosh_emass, cosh_emass_errors)}
+        plot.plotwitherrorbarsnames("%scosh_emass%d.%s" % (out_folder, dt, name),  plot_cosh_emass,
+                                    cosh_emass.keys(), autoscale=True)
+        cosh_const_emass = corr.cosh_const_effective_mass(dt)
+        cosh_const_emass_errors = corr.cosh_const_effective_mass_errors(dt)
+        plot_cosh_const_emass = {"%s cosh_emass dt=%d, \t error" % (name, dt): (cosh_const_emass, cosh_const_emass_errors)}
+        plot.plotwitherrorbarsnames("%scosh_const_emass%d.%s" % (out_folder, dt, name),  plot_cosh_const_emass,
+                                    cosh_const_emass.keys(), autoscale=True)
 
 
 def eigenvalue_24_balls(data_folder):

@@ -118,6 +118,34 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 logging.error("index out of range")
         return emass
 
+    def cosh_effective_mass(self, dt):
+        asv = self.average_sub_vev()
+        emass = {}
+        for t in self.times[dt:-dt]:
+            try:
+                emass[t] = (1.0 / float(dt))*math.acosh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
+            except ValueError:
+                logging.error("invalid argument to acosh, setting to zero")
+                emass[t] = 0.0
+            except KeyError:
+                logging.error("index out of range")
+        return emass
+
+    def cosh_const_effective_mass(self, dt):
+        asv = self.average_sub_vev()
+        asvt = {t: asv[t+dt]-asv[t] for t in self.times[:-dt] }
+        emass = {}
+        for t in self.times[dt:-(dt+dt)]:
+            try:
+                emass[t] = (1.0 / float(dt))*math.acosh((asvt[t+dt] + asvt[t-dt])/(2.0*asvt[t]))
+            except ValueError:
+                logging.error("invalid argument to acosh, setting to nan")
+                emass[t] = float('NaN')
+            except KeyError:
+                logging.error("index out of range")
+        return emass
+        
+        
     def effective_mass_errors(self, dt):
 
         jkasv = self.jackknife_average_sub_vev()
@@ -142,6 +170,56 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[:-dt]}
 
+    def cosh_effective_mass_errors(self, dt):
+
+        jkasv = self.jackknife_average_sub_vev()
+        jkemass = {}
+        for cfg in self.configs:
+            asvc = jkasv[cfg]
+            emass = {}
+            for t in self.times[dt:-dt]:
+                try:
+                    emass[t] = (1.0 / float(dt))*math.acosh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
+                except ValueError:
+                    #logging.debug("invalid argument to log, setting to zero")
+                    emass[t] = 0.0
+                except ZeroDivisionError:
+                    logging.debug("div by zero, setting to zero")
+                    emass[t] = 0.0
+                except KeyError:
+                    logging.error("index out of range")
+            jkemass[cfg] = emass
+        jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass)
+        effmass_dt = self.cosh_effective_mass(dt)
+        return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
+                for t in self.times[dt:-dt]}
+
+    def cosh_const_effective_mass_errors(self, dt):
+
+        jkasv = self.jackknife_average_sub_vev()
+        jkemass = {}
+        for cfg in self.configs:
+            asvc = jkasv[cfg]
+            emass = {}
+            asvct = {t: asvc[t+dt] - asvc[t] for t in self.times[:-dt]}
+            for t in self.times[dt:-(dt+1)]:
+                try:
+                    emass[t] = (1.0 / float(dt))*math.acosh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
+                except ValueError:
+                    #logging.debug("invalid argument to log, setting to zero")
+                    emass[t] = 0.0
+                except ZeroDivisionError:
+                    logging.debug("div by zero, setting to zero")
+                    emass[t] = 0.0
+                except KeyError:
+                    logging.error("index out of range")
+            jkemass[cfg] = emass
+        jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass)
+        effmass_dt = self.cosh_const_effective_mass(dt)
+        return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
+                for t in self.times[dt:-(dt+dt)]}
+                    
+                    
     def reduce_to_bins(self, n):
         reduced = {}
         binedvev1 = {}
