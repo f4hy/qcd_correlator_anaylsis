@@ -34,6 +34,40 @@ def lines_without_comments(filename, comment="#"):
     return s
 
 
+def read_full_paraenformat_mean(filename):
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
+                     converters={1: parse_pair})
+    return df.groupby('time').mean()
+
+
+def read_normal_paraenformat(filename):
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
+                     converters={1: parse_pair})
+    return df
+
+def read_configcols_paraenformat(filename):
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
+                     converters={1: parse_pair})
+    grouped = df.groupby('time')
+    joined = df.groupby('time').apply(
+        lambda g: pd.Series(g['correlator'].values)
+    ).rename(columns=lambda x: 'correlator%s' % x)
+    return joined
+
+def read_full_paraenformat_multiindex(filename):
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
+                     converters={1: parse_pair})
+    times = set(df.time)
+    df["config"] = pd.Series(map(lambda x: x/len(times), df.index))
+    multiindexed = df.set_index(["config","time"])
+    grouped = multiindexed.groupby(level=1)
+    return grouped
+
+
 def read_single_time_paraenformat(filename, t):
     f = lines_without_comments(filename)
     logging.info("reading time {} from file {}".format(t, filename))
