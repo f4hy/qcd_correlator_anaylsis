@@ -2,3 +2,5 @@
 *.pyo
 
 /testdata/*
+/fakecormatrix*
+/scratch/*
