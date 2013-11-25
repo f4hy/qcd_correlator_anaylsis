@@ -1,8 +1,8 @@
 import numpy as np
 
-mass_bounds = (0.001, 2.0)
+mass_bounds = (0.005, 2.0)
 amp_bounds = (0.0, 1.0e8)
-const_bounds = (-1.0, 1.0e8)
+const_bounds = (-5.0, 1.0e8)
 
 
 class cosh:
@@ -38,7 +38,7 @@ class single_exp:
 
 class periodic_exp:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.05, 1.0]
+        self.starting_guess = [0.1, 10.0]
         self.bounds = [mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp"]
         self.description = "fwd-back-exp"
@@ -55,7 +55,7 @@ class periodic_exp:
 
 class periodic_exp_const:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.05, 1.0, 0.01]
+        self.starting_guess = [0.05, 10.0, 0.01]
         self.bounds = [mass_bounds, amp_bounds, const_bounds]
         self.parameter_names = ["mass", "amp", "const"]
         self.description = "fwd-back-exp_const"
@@ -74,6 +74,7 @@ class periodic_exp_const:
 class two_exp:
     def __init__(self, **kargs):
         self.starting_guess = [0.05, 100, 1.0, 10]
+        self.bounds = [mass_bounds, amp_bounds, mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp", "mass2", "amp2"]
         self.description = "two_exp"
         self.template = "{1: f}exp(-{0: f}*t)(1+{3: f}exp(-{2: f}^2*t)"
@@ -113,7 +114,7 @@ class jlab:
 
 class cosh_const:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.1, 1.0, 0.5]
+        self.starting_guess = [0.1, 10.0, 0.5]
         self.bounds = [mass_bounds, amp_bounds, const_bounds]
         self.parameter_names = ["mass", "amp", "const"]
         self.description = "cosh+const"
