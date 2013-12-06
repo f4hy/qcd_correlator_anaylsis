@@ -13,6 +13,7 @@ def writeformat(x):
 
 def average_files(files, outfile):
     data = [plot_files.read_file(f) for f in files]
+    assert all_same([df.shape for df in data]), "They are not all the same size!"
     r = pandas_reader.read_normal_paraenformat
     data = [r(f) for f in files]
     ave = sum(data)/len(data)
