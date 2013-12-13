@@ -24,7 +24,7 @@ def matching_operators(directory, pattern):
             logging.info("file {} did not match pattern".format(f))
         except IndexError:
             logging.debug("doesn't have two wildcards")
-    return ops
+    return sorted(ops)
 
 
 def matching_files(directory, pattern):

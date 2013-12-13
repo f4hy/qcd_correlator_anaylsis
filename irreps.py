@@ -131,6 +131,8 @@ def translate_name_to_irrep(name):
     logging.info("particle1 %s at rest irreps: %s", particle1, " ".join(irrep_rest_particle(p1)))
     logging.info("particle2 %s at rest irreps: %s", particle2, " ".join(irrep_rest_particle(p2)))
 
+    iso = [i for i in name.split("_") if i.startswith("iso")][0]
+
     operators = particle_operators.particleDatabase()
 
     irreps1 = irrep_moving_particle(p1, momentum1)
@@ -154,6 +156,17 @@ def translate_name_to_irrep(name):
     for irrep in irreps2:
         op = operators.read_op(particle2, irrep, mom2)
         logging.info("particle2 %s in %s, primary operator is %s", particle2, irrep, op)
+
+    for i in irreps1:
+        op1 = operators.read_op(particle1, i, mom1)
+        for j in irreps2:
+            op2 = operators.read_op(particle2, j, mom2)
+            opfile = "{}_{}_{}_{}".format(momentums[mom1], i, momentums[mom2], j)
+            if op1 == op2:
+                print "cat S\=0_{opfile}_* | grep -r {op1}.*{op2}".format(opfile=opfile, op1=op1, op2=op2)
+            else:
+                print "cat S\=0_{opfile}_* | grep {op1} |grep {op2}".format(opfile=opfile, op1=op1, op2=op2)
+            print "op1:", "p={}".format(mom1), i, op1, "op2:", "p={}".format(mom2), j, op2
 
 
 if __name__ == "__main__":
