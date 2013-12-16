@@ -51,7 +51,10 @@ def diagonalize(correlator_pannel, t0, td, generalized=False):
         evecs = np.matrix(evecs)
         V = np.matrix(Binvsqrt)*evecs
 
-
+    if min(evals) < 0.05:
+        logging.warn("Warning, low eigenvalue detected. Eval={}".format(min(evals)))
+    else:
+        logging.info("lowest eigenvalue={}".format(min(evals)))       
     logging.debug("eigen values are {}".format(evals))
     logging.debug("eigen vectors are {}".format(evecs))
     n = len(evecs)
