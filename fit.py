@@ -102,7 +102,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         return(covariant_fit)
 
     boot_params = []
-    for strap in bootstrap_ensamble(cor, N=bootstraps):
+    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=write_each_boot):
         fitted_params = cov_fit(strap, original_ensamble_params)
         boot_params.append(fitted_params)
 
@@ -200,8 +200,12 @@ def bootstrap_cfgs(cor):
     return np.random.choice(cor.configs, size=len(cor.configs))
 
 
-def bootstrap(cor):
+def bootstrap(cor, filelog=None):
     newcfgs = bootstrap_cfgs(cor)
+    if filelog:
+        with open(filelog+".straps", 'a') as bootfile:
+            bootfile.write(",".join([str(c) for c in newcfgs]))
+            bootfile.write("\n")
     newcor = {i: cor.get(config=c) for i, c in enumerate(newcfgs)}
     # print cor.vev1
     newvev1 = {i: cor.vev1[c] for i, c in enumerate(newcfgs)}
@@ -209,9 +213,9 @@ def bootstrap(cor):
     return correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2)
 
 
-def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
+def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None):
     if N > 1:
-        return [bootstrap(cor) for i in range(N)]
+        return [bootstrap(cor, filelog) for i in range(N)]
     else:
         logging.info("Not bootstraping!")
         return [cor]
