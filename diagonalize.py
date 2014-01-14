@@ -80,6 +80,49 @@ def diagonalize(correlator_pannel, t0, td, generalized=False):
     return diag
 
 
+def principle(correlator_pannel, t0, generalized=False):
+    length = correlator_pannel.shape[0]
+    n = int(np.sqrt(length))
+    # Here we access the pannel major_xs gives time(n), mean incase it
+    # was a multi correlator should have no effect on an already averaged one
+    B = np.matrix(np.reshape(correlator_pannel.major_xs(t0).mean().values, (n, n)))
+    # Require B to be hermition for our generalized eigen value
+    # problem method to work. Here we force the matricies to be
+    # hermtion. This is justified since it is just useing the other
+    # measurement of the same value and averaging them.
+    B = hermitionize(B)
+    # Instead of using generalized eigen problem, we could solve a
+    # regular eigen problem involving Binvqrt
+
+    logging.debug("Matrix size {N}x{N}".format(N=n))
+
+    Binvsqrt =  LA.inv(LA.sqrtm(B))
+
+    def rotate(x):
+        # We are rotating on each one, so compute a new A for each
+        A = hermitionize(np.matrix(np.resize(x, (n, n))))
+        logging.info("condition number: {}".format(cond(Binvsqrt*A*Binvsqrt)))
+        evals, evecs = LA.eigh(Binvsqrt*A*Binvsqrt)
+        loging.info("lowest eval={}".format(min(evals)))
+        evecs = np.matrix(evecs)
+        V = np.matrix(Binvsqrt)*evecs
+
+        D = V.H * A * V
+        R = np.array(D).flatten()
+        return R
+
+    diag = correlator_pannel.apply(rotate, "items")
+    diag.items = ["{}{}".format(i,j) for i in reversed(range(n)) for j in reversed(range(n))]
+
+    # This method simultaniously diagaonlizes at t0 and td. Should be
+    # identity at t0 and the eigenvalues at td
+    assert compare_matrix(np.reshape(diag.major_xs(t0).mean().values, (n, n)),
+                          np.identity(n)), "Rotation error: is not ~identity at t0"
+
+    return diag
+
+
+    
 def parenformat(x):
     """Format complex number into paren grouped format"""
     return "({},{})".format(np.real(x), np.imag(x))
@@ -117,6 +160,8 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-g", "--generalized", action="store_true",
                         help="used generalized eigen solver")
+    parser.add_argument("-p", "--principle", action="store_true",
+                        help="compute princple correlator (diag on each t)")
     parser.add_argument("-a", "--analyize", type=str,
                         help="run effective mass analysis code on results and store in folder")
     parser.add_argument("-f", "--filewild", type=str, required=True,
@@ -124,7 +169,7 @@ if __name__ == "__main__":
                         "e.g. cor-snk{}_src{}.dat where {} are replaced with operator strings")
     parser.add_argument("-ts", "--tstar", type=int, required=True,
                         help="time diagonalization was done")
-    parser.add_argument("-to", "--tnaught", type=int, required=True,
+    parser.add_argument("-to", "--tnaught", type=int, required=False,
                         help="t naught, reference time")
     parser.add_argument("-r", "--operators", action='append', required=False,
                         help="operator to make e.g. -r etap000DDL7Egp1")
@@ -150,6 +195,11 @@ if __name__ == "__main__":
             parser.exit()
         args.operators = ops
 
+    if not args.principle and not args.tstar:
+        logging.error("tstar required, unless doing princple")
+        parser.print_help()
+        parser.exit()        
+        
     cor_matrix = {}
     cor_matrix_multi = {}
     cor_matrix_ave = {}
@@ -160,7 +210,10 @@ if __name__ == "__main__":
             cor_matrix[snk+src] = pandas_reader.read_configcols_paraenformat(filename)
 
     p = pd.Panel(cor_matrix)
-    diag = diagonalize(p, args.tnaught, args.tstar, generalized=args.generalized)
+    if args.principle:
+        diag = principle(p, args.tnaught, args.tstar, generalized=args.generalized)
+    else:
+        diag = diagonalize(p, args.tnaught, args.tstar, generalized=args.generalized)
     diagave = diag.mean(2)
 
     levels = range(len(args.operators))
