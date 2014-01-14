@@ -46,7 +46,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     tmax = tmax+1  # I use ranges, so this needs to be offset by one
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
 
-    initial_guess = fn.starting_guess
+    initial_guess = fn.starting_guess(cor, tmax-1, tmin)
     x = np.array(range(tmin, tmax))
     ave_cor = cor.average_sub_vev()
     y = [ave_cor[t] for t in range(tmin, tmax)]
@@ -76,6 +76,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if guess[0] < 0.0:
             logging.warn("first pass fit value found mass to be negative {}, lets flip it".format(guess[0]))
             guess[0] = -guess[0]
+            exit()
         def clamp(n, minn, maxn):
                 return max(min(maxn, n), minn)
         bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
@@ -102,8 +103,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         return(covariant_fit)
 
     boot_params = []
-    for strap in bootstrap_ensamble(cor, N=bootstraps):
-        fitted_params = cov_fit(strap, original_ensamble_params)
+    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=write_each_boot):
+        newguess = fn.starting_guess(strap, tmax-1, tmin)
+        fitted_params = cov_fit(strap, newguess)
         boot_params.append(fitted_params)
 
     original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
@@ -138,7 +140,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     chi_sqr = np.sum(((ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn.formula(v, tp))
                       for t in range(tmin, tmax) for tp in range(tmin, tmax)))
 
-    dof = len(x) - len(fn.starting_guess)
+    dof = len(x) - len(fn.parameter_names)
     results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr)))
 
@@ -150,7 +152,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             for i, params in enumerate(boot_params):
                 strparams = ", ".join([str(p) for p in params])
                 bootfile.write("{}, {}\n".format(i, strparams))
-    
+
     if return_chi:
         return boot_averages, boot_std, chi_sqr/dof
     if return_quality:
@@ -200,18 +202,21 @@ def bootstrap_cfgs(cor):
     return np.random.choice(cor.configs, size=len(cor.configs))
 
 
-def bootstrap(cor):
+def bootstrap(cor, filelog=None):
     newcfgs = bootstrap_cfgs(cor)
+    if filelog:
+        with open(filelog+".straps", 'a') as bootfile:
+            bootfile.write(",".join([str(c) for c in newcfgs]))
+            bootfile.write("\n")
     newcor = {i: cor.get(config=c) for i, c in enumerate(newcfgs)}
-    # print cor.vev1
     newvev1 = {i: cor.vev1[c] for i, c in enumerate(newcfgs)}
     newvev2 = {i: cor.vev2[c] for i, c in enumerate(newcfgs)}
     return correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2)
 
 
-def bootstrap_ensamble(cor, N=NBOOTSTRAPS):
+def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None):
     if N > 1:
-        return [bootstrap(cor) for i in range(N)]
+        return [bootstrap(cor, filelog) for i in range(N)]
     else:
         logging.info("Not bootstraping!")
         return [cor]
@@ -382,7 +387,7 @@ if __name__ == "__main__":
         logging.info("Setting random seed to %s", args.random)
         np.random.seed(args.random)
 #    print np.random.get_state()
-    
+
     corrfile = args.inputfile
     vev1 = args.vev
     vev2 = vev1

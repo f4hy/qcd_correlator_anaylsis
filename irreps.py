@@ -29,6 +29,7 @@ names["Kstar"]    = properties("1/2", -1, None, 1)
 names["KBstar"]    = properties("1/2", -1, None, 1)
 names["K1"]    = properties("1/2", 1, None, 1)
 names["KB1"]    = properties("1/2", 1, None, 1)
+names["K2star"]    = properties("1/2", 1, None, 2)
 
 meson_reps = {"A1": (0, 4), "A2": (3, 6), "E": (2, 4, 5, 6), "T1": (1, 3, 4), "T2": (2, 3, 4, 5)}
 reps_meson = {0: ["A1"], 4: ["A1"], 1: ["T1"], 2: ["E", "T2"], 3: ["T1", "T2", "A2"],

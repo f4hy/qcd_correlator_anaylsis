@@ -4,10 +4,42 @@ mass_bounds = (0.005, 2.0)
 amp_bounds = (0.0, 1.0e8)
 const_bounds = (-5.0, 1.0e8)
 
+def massamp_guess(cor, tmax, *args):
+    print cor
+    print tmax
+    dt = 3
+    maxt = tmax - dt
+    ave = cor.average_sub_vev()
+    emass = cor.effective_mass(dt)
+    print emass
+    mass_guess = emass[maxt]
+    amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
+    return [mass_guess, amp_guess]
+
+def const_guess(cor, tmax, *args):
+    dt = 3
+    maxt = tmax - dt
+    ave = cor.average_sub_vev()
+    emass = cor.effective_mass(dt)
+    mass_guess = emass[maxt]
+    amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
+    return [mass_guess, amp_guess, 0.01]
+
+def twoexp_sqr_guess(cor, tmax, tmin):
+    dt = 3
+    maxt = tmax - dt
+    ave = cor.average_sub_vev()
+    emass = cor.effective_mass(dt)
+    mass_guess = emass[maxt]
+    amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
+    mass2_guess = emass[tmin]
+    amp2_guess = (ave[tmin] - amp_guess*np.exp(-mass_guess*tmin))/(amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin))
+    return [mass_guess, amp_guess, mass2_guess, amp2_guess]
+
 
 class cosh:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.5, 50.0]
+        self.starting_guess = massamp_guess
         self.bounds = [mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp"]
         self.description = "cosh"
@@ -26,7 +58,7 @@ class cosh:
 
 class single_exp:
     def __init__(self, **kargs):
-        self.starting_guess = [0.1, 10.0]
+        self.starting_guess = massamp_guess
         self.bounds = [mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp"]
         self.description = "exp"
@@ -38,7 +70,7 @@ class single_exp:
 
 class periodic_exp:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.1, 10.0]
+        self.starting_guess = massamp_guess
         self.bounds = [mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp"]
         self.description = "fwd-back-exp"
@@ -55,7 +87,7 @@ class periodic_exp:
 
 class periodic_exp_const:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.05, 10.0, 0.01]
+        self.starting_guess = const_guess
         self.bounds = [mass_bounds, amp_bounds, const_bounds]
         self.parameter_names = ["mass", "amp", "const"]
         self.description = "fwd-back-exp_const"
@@ -69,11 +101,11 @@ class periodic_exp_const:
 
     def formula(self, v, x):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))+v[2]
-        
+
 
 class two_exp:
     def __init__(self, **kargs):
-        self.starting_guess = [0.05, 100, 1.0, 10]
+        self.starting_guess = twoexp_sqr_guess
         self.bounds = [mass_bounds, amp_bounds, mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp", "mass2", "amp2"]
         self.description = "two_exp"
@@ -85,7 +117,8 @@ class two_exp:
 
 class periodic_two_exp:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.05, 100, 1.0, 10]
+        self.starting_guess = twoexp_sqr_guess
+        self.bounds = [mass_bounds, amp_bounds, mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp", "mass2", "amp2"]
         self.description = "periodic_two_exp"
         self.template = "{1: f}exp(-{0: f}*t)(1+{3: f}exp(-{2: f}^2*t)"
@@ -103,7 +136,7 @@ class periodic_two_exp:
 
 class jlab:
     def __init__(self, **kargs):
-        self.starting_guess = [0.5, 100, 1.0, 10]
+        self.starting_guess = twoexp_sqr_guess
         self.parameter_names = ["mass", "amp", "mass2"]
         self.description = "jlab"
         self.template = "{1: f}exp(-{0: f}*t)+{1: f}exp(-{2: f}*t)"
@@ -114,7 +147,7 @@ class jlab:
 
 class cosh_const:
     def __init__(self, Nt=None):
-        self.starting_guess = [0.1, 10.0, 0.5]
+        self.starting_guess = const_guess
         self.bounds = [mass_bounds, amp_bounds, const_bounds]
         self.parameter_names = ["mass", "amp", "const"]
         self.description = "cosh+const"
@@ -129,10 +162,13 @@ class cosh_const:
     def formula(self, v, x):
         return (v[1] * np.cosh((-1.0)*v[0]*((x-(self.Nt/2.0)))))+v[2]
 
+def pade_guess(**kargs):
+    return [0.05, 100, 1.0, 10]
+
 class pade:
     """ exp( - E * t )  *    A /  ( 1 +   a1* t + a2 * t^2 ...  ) """
     def __init__(self, Nt=None):
-        self.starting_guess = [0.05, 100, 1.0, 10]
+        self.starting_guess = pade_guess
         self.parameter_names = ["mass", "amp", "B", "C"]
         self.description = "Pade"
         self.template = "{1: f}exp(-{0: f}*t)/(1+{3: f}t +{2: f}*t^2)"
