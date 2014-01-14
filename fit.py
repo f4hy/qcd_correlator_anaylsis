@@ -76,7 +76,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if guess[0] < 0.0:
             logging.warn("first pass fit value found mass to be negative {}, lets flip it".format(guess[0]))
             guess[0] = -guess[0]
-            exit()
         def clamp(n, minn, maxn):
                 return max(min(maxn, n), minn)
         bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
