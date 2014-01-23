@@ -51,10 +51,16 @@ def get_unspecified_parameters(args):
         print("Select strangeness")
         args.strangeness = readinput.selectchoices(["0","1","2"], default="0")
 
-    print("Select Channel")
     channeldir = os.path.join(operators_path, "BI{I}S{S}".format(I=args.isospin, S=args.strangeness))
     logging.debug("channel dir is {}".format(channeldir))
-    args.channel = readinput.selectchoices(sorted(os.listdir(channeldir)))
+    channel_list = os.listdir(channeldir)
+    if args.channel:
+        if args.channel not in channel_list:
+            logging.critical("format of input channel is not correct! use e.g. {}".format(channel_list[0]))
+            parser.exit()
+    else:
+        print("Select Channel")
+        args.channel = readinput.selectchoices(sorted(channel_list))
 
     args.opsdir = os.path.join(channeldir, args.channel)
 
@@ -64,7 +70,7 @@ def read_expected_levels(args):
     else:
         basedir = os.path.join(expected_levels_path, "24^3_phys/mom_000")
 
-    if args.isospin is "1h":
+    if args.isospin == "1h":
         filename = "bosonic_2I=1_S={}_levels.txt".format(args.strangeness)
     else:
         filename = "bosonic_I={}_S={}_levels.txt".format(args.isospin, args.strangeness)
@@ -137,10 +143,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="compute and plot effective masses")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
-    parser.add_argument("-I", "--isospin", choices=["1","2","1h"],
+    parser.add_argument("-I", "--isospin", choices=["0","1","1h"],
                         help="select isospin")
-    parser.add_argument("-S", "--strangeness", choices=["1","2","1/2"],
+    parser.add_argument("-S", "--strangeness", choices=["0","1","2"],
                         help="select strangeness")
+    parser.add_argument("-C", "--channel", type=str,
+                        help="select channel e.g. A1up_1")
     parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
                         default=sys.stdout)
     parser.add_argument("-32", "--thirtytwo", action="store_true",
