@@ -137,8 +137,13 @@ def translate_name_to_irrep(name):
 
     operators = particle_operators.particleDatabase()
 
-    irreps1 = irrep_moving_particle(p1, momentum1)
-    irreps2 = irrep_moving_particle(p2, momentum2)
+    try:
+        irreps1 = irrep_moving_particle(p1, momentum1)
+        irreps2 = irrep_moving_particle(p2, momentum2)
+    except KeyError:
+        logging.critical("I don't know how to do subductions for this momenta")
+        return None
+
     if mom1 > 0:
         logging.info("particle1 %s moving irreps: %s", particle1,
                      " ".join(irreps1))
