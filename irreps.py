@@ -30,6 +30,7 @@ names["KBstar"]    = properties("1/2", -1, None, 1)
 names["K1"]    = properties("1/2", 1, None, 1)
 names["KB1"]    = properties("1/2", 1, None, 1)
 names["K2star"]    = properties("1/2", 1, None, 2)
+names["K3star"]    = properties("1/2", 1, None, 3)
 
 meson_reps = {"A1": (0, 4), "A2": (3, 6), "E": (2, 4, 5, 6), "T1": (1, 3, 4), "T2": (2, 3, 4, 5)}
 reps_meson = {0: ["A1"], 4: ["A1"], 1: ["T1"], 2: ["E", "T2"], 3: ["T1", "T2", "A2"],
@@ -158,17 +159,20 @@ def translate_name_to_irrep(name):
         op = operators.read_op(particle2, irrep, mom2)
         logging.info("particle2 %s in %s, primary operator is %s", particle2, irrep, op)
 
+    opset = []
     for i in irreps1:
         op1 = operators.read_op(particle1, i, mom1)
         for j in irreps2:
             op2 = operators.read_op(particle2, j, mom2)
+            opset.append(((p1, momentums[mom1], i, op1), (p2, momentums[mom2], j, op2)))
             opfile = "{}_{}_{}_{}".format(momentums[mom1], i, momentums[mom2], j)
             if op1 == op2:
-                print "cat S\=0_{opfile}_* | grep -r {op1}.*{op2}".format(opfile=opfile, op1=op1, op2=op2)
+                logging.info("cat S\=0_{opfile}_* | grep -r {op1}.*{op2}".format(opfile=opfile, op1=op1, op2=op2))
             else:
-                print "cat S\=0_{opfile}_* | grep {op1} |grep {op2}".format(opfile=opfile, op1=op1, op2=op2)
-            print "op1:", "p={}".format(mom1), i, op1, "op2:", "p={}".format(mom2), j, op2
+                logging.info("cat S\=0_{opfile}_* | grep {op1} |grep {op2}".format(opfile=opfile, op1=op1, op2=op2))
+            #print "op1:", "p={}".format(mom1), i, op1, "op2:", "p={}".format(mom2), j, op2
 
+    return opset
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Determine lattice irreps from particle names")

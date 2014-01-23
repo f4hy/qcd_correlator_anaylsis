@@ -44,7 +44,7 @@ class particleDatabase():
     def add_op_entry(self, key, irrep):
         logging.info("please enter operator choice for {} {}".format(key, irrep))
         op = readinput.askoperator("{} {}".format(key, irrep))
-        print "user input operator", op
+        print "# user input operator", op
         if op:
             self.config.set(key, irrep, op)
             with open(self.datafile, "wb") as configfile:
