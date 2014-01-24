@@ -97,10 +97,11 @@ def get_ops(args, expected_levels):
     for level in expected_levels:
         args.outfile.write("# level {} {} \n".format(level_num, level))
         level_num += 1
-        opset = irreps.translate_name_to_irrep(level)
-        if not opset:
-            logging.warn("{} is not a two particle operator, skipping".format(level))
-            args.outfile.write("# {} is not a two particle operator, skipping \n".format(level))
+        try:
+            opset = irreps.translate_name_to_irrep(level)
+        except NotImplementedError, e:
+            logging.warn("This level {} is not supported {}, skipping".format(level, e))
+            args.outfile.write("# level is not supported: {}, skipping \n".format(e))
             continue
         for op in opset:
             p1, p2 = op

@@ -126,17 +126,21 @@ def translate_name_to_irrep(name):
         logging.info("Is a single hadron?")
         p1 = particle_name(name)
         logging.info("particle %s at rest irreps: %s", name, " ".join(irrep_rest_particle(p1)))
-        return
+        raise NotImplementedError("is a single hadron")
 
     if name.count("_") > 5:
         logging.info("Is a three or four hadron state?")
-        return
+        raise NotImplementedError("3 or more hadrons")
 
     particle1, momentum1, particle2, momentum2, _, _ = name.split("_")
     mom1 = int(momentum1[-1])
     mom2 = int(momentum2[-1])
-    p1 = particle_name(particle1)
-    p2 = particle_name(particle2)
+    try:
+        p1 = particle_name(particle1)
+        p2 = particle_name(particle2)
+    except KeyError:
+        logging.critical("I don't know understand one of the particle names")
+        raise NotImplementedError("Particle name unknown")
     logging.info("particle1 %s at rest irreps: %s", particle1, " ".join(irrep_rest_particle(p1)))
     logging.info("particle2 %s at rest irreps: %s", particle2, " ".join(irrep_rest_particle(p2)))
 
@@ -149,7 +153,7 @@ def translate_name_to_irrep(name):
         irreps2 = irrep_moving_particle(p2, momentum2)
     except KeyError:
         logging.critical("I don't know how to do subductions for this momenta")
-        return None
+        raise NotImplementedError("Unsupported momenta")
 
     if mom1 > 0:
         logging.info("particle1 %s moving irreps: %s", particle1,
