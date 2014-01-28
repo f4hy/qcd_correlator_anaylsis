@@ -117,10 +117,13 @@ class Correlator(configtimeobj.Cfgtimeobj):
             else:
                 break
         print new_times
-        self.times = new_times
-        self.asv = None
-        self.jkasv = None
-        print self.average_sub_vev()
+        if len(new_times) < 2:
+            logging.error("this correlator has less than 2 valid times!! Skipping pruing")
+        else:
+            logging.info("pruned times down to {}-{}".format( min(new_times), max(new_times) ) )
+            self.times = new_times
+            self.asv = None
+            self.jkasv = None
 
     def effective_mass(self, dt):
         asv = self.average_sub_vev()
