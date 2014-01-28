@@ -105,6 +105,23 @@ class Correlator(configtimeobj.Cfgtimeobj):
         asv = self.average_sub_vev()
         return {t: jackknife.errorbars(asv[t], jk.get(time=t)) for t in self.times}
 
+    def prune_invalid(self):
+        asv = self.average_sub_vev()
+        errors = self.jackknifed_errors()
+
+        # new_times = [t for t in self.times if asv[t] - 2.0 * errors[t] > 0.0]
+        new_times = []
+        for t in self.times:
+            if asv[t] - 2.0 * errors[t] > 0.0:
+                new_times.append(t)
+            else:
+                break
+        print new_times
+        self.times = new_times
+        self.asv = None
+        self.jkasv = None
+        print self.average_sub_vev()
+
     def effective_mass(self, dt):
         asv = self.average_sub_vev()
         emass = {}

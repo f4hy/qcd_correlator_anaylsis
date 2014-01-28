@@ -45,6 +45,8 @@ parser.add_argument("-dt", "--delta-t", nargs='+', required=False, default=[1, 3
 parser.add_argument("--function", choices=functions.keys(),
                     required=False, default="single_exp", help="function to fit to (if fitting)")
 parser.add_argument("--fit", action="store_true", help="Fit the correaltors, add fit value in the comments")
+parser.add_argument("--periodic", action="store_true", help="use periodic effective mass functions")
+parser.add_argument("--prune", action="store_true", help="don't plot stuff where the correlator value is too close to zero (with error)")
 parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
 parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
 
@@ -149,6 +151,9 @@ def main():
 
 def plot_corr(corr, out_folder, name, fitparams=None):
 
+    if args.prune:
+        corr.prune_invalid()
+
     avgcorr = corr.average_sub_vev()
     corr_errors = corr.jackknifed_errors()
 
@@ -169,17 +174,18 @@ def plot_corr(corr, out_folder, name, fitparams=None):
             fitcomment = None
         plot.plotwitherrorbarsnames("%semass%d.%s" % (out_folder, dt, name),  plot_emass,
                                     emass.keys(), autoscale=True, addcomment=fitcomment)
-        # Do it all again with periodic
-        cosh_emass = corr.cosh_effective_mass(dt)
-        cosh_emass_errors = corr.cosh_effective_mass_errors(dt)
-        plot_cosh_emass = {"%s cosh_emass dt=%d, \t error" % (name, dt): (cosh_emass, cosh_emass_errors)}
-        plot.plotwitherrorbarsnames("%scosh_emass%d.%s" % (out_folder, dt, name),  plot_cosh_emass,
-                                    cosh_emass.keys(), autoscale=True)
-        cosh_const_emass = corr.cosh_const_effective_mass(dt)
-        cosh_const_emass_errors = corr.cosh_const_effective_mass_errors(dt)
-        plot_cosh_const_emass = {"%s cosh_emass dt=%d, \t error" % (name, dt): (cosh_const_emass, cosh_const_emass_errors)}
-        plot.plotwitherrorbarsnames("%scosh_const_emass%d.%s" % (out_folder, dt, name),  plot_cosh_const_emass,
-                                    cosh_const_emass.keys(), autoscale=True)
+
+        if args.periodic:             # Do it all again with periodic
+            cosh_emass = corr.cosh_effective_mass(dt)
+            cosh_emass_errors = corr.cosh_effective_mass_errors(dt)
+            plot_cosh_emass = {"%s cosh_emass dt=%d, \t error" % (name, dt): (cosh_emass, cosh_emass_errors)}
+            plot.plotwitherrorbarsnames("%scosh_emass%d.%s" % (out_folder, dt, name),  plot_cosh_emass,
+                                        cosh_emass.keys(), autoscale=True)
+            cosh_const_emass = corr.cosh_const_effective_mass(dt)
+            cosh_const_emass_errors = corr.cosh_const_effective_mass_errors(dt)
+            plot_cosh_const_emass = {"%s cosh_emass dt=%d, \t error" % (name, dt): (cosh_const_emass, cosh_const_emass_errors)}
+            plot.plotwitherrorbarsnames("%scosh_const_emass%d.%s" % (out_folder, dt, name),  plot_cosh_const_emass,
+                                        cosh_const_emass.keys(), autoscale=True)
 
 
 def eigenvalue_24_balls(data_folder):
