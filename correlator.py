@@ -118,7 +118,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 logging.error("index out of range")
             except ZeroDivisionError:
                 logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t + dt]))
-                exit()
+                emass[t] = 0.0
         return emass
 
     def cosh_effective_mass(self, dt):
@@ -132,6 +132,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 emass[t] = 0.0
             except KeyError:
                 logging.error("index out of range")
+            except ZeroDivisionError:
+                logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t]))
+                emass[t] = 0.0
         return emass
 
     def cosh_const_effective_mass(self, dt):
@@ -146,9 +149,12 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 emass[t] = float('NaN')
             except KeyError:
                 logging.error("index out of range")
+            except ZeroDivisionError:
+                logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t]))
+                emass[t] = 0.0
         return emass
-        
-        
+
+
     def effective_mass_errors(self, dt):
 
         jkasv = self.jackknife_average_sub_vev()
@@ -221,8 +227,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
         effmass_dt = self.cosh_const_effective_mass(dt)
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[dt:-(dt+dt)]}
-                    
-                    
+
+
     def reduce_to_bins(self, n):
         reduced = {}
         binedvev1 = {}
