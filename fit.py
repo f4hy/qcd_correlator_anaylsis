@@ -273,6 +273,8 @@ def best_fit_range(fn, cor):
                                 " is good with chi/dof {}".format(tmin, tmax, chi))
             except RuntimeError:
                 logging.warn("Fitter failed, skipping this tmin,tmax")
+            except Exception:
+                logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
     logging.debug("Restored logging state to original")
     logging.info("Best fit range is {} with quality {}".format(best_ranges, best))
