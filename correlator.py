@@ -116,6 +116,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 emass[t] = 0.0
             except KeyError:
                 logging.error("index out of range")
+            except ZeroDivisionError:
+                logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t + dt]))
+                exit()
         return emass
 
     def cosh_effective_mass(self, dt):
