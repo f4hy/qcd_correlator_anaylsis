@@ -5,13 +5,10 @@ amp_bounds = (0.0, 1.0e8)
 const_bounds = (-5.0, 1.0e8)
 
 def massamp_guess(cor, tmax, *args):
-    print cor
-    print tmax
     dt = 3
     maxt = tmax - dt
     ave = cor.average_sub_vev()
     emass = cor.effective_mass(dt)
-    print emass
     mass_guess = emass[maxt]
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     return [mass_guess, amp_guess]
