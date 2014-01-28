@@ -46,6 +46,7 @@ parser.add_argument("--function", choices=functions.keys(),
                     required=False, default="single_exp", help="function to fit to (if fitting)")
 parser.add_argument("--fit", action="store_true", help="Fit the correaltors, add fit value in the comments")
 parser.add_argument("--periodic", action="store_true", help="use periodic effective mass functions")
+parser.add_argument("--prune", action="store_true", help="don't plot stuff where the correlator value is too close to zero (with error)")
 parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
 parser.add_argument("-t", "--times", required=False, type=int, help="specify the times to be used\n")
 
@@ -149,6 +150,9 @@ def main():
 
 
 def plot_corr(corr, out_folder, name, fitparams=None):
+
+    if args.prune:
+        corr.prune_invalid()
 
     avgcorr = corr.average_sub_vev()
     corr_errors = corr.jackknifed_errors()

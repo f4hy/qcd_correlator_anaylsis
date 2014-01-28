@@ -260,6 +260,7 @@ def best_fit_range(fn, cor):
     logger.setLevel(ALWAYSINFO)
     best = 100
     best_ranges = []
+    cor.prune_invalid()
     for tmin in cor.times:
         for tmax in range(tmin + 4, max(cor.times)):
             try:
