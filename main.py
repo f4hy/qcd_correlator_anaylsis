@@ -45,6 +45,8 @@ parser.add_argument("-dt", "--delta-t", nargs='+', required=False, default=[1, 3
 parser.add_argument("--function", choices=functions.keys(),
                     required=False, default="single_exp", help="function to fit to (if fitting)")
 parser.add_argument("--fit", action="store_true", help="Fit the correaltors, add fit value in the comments")
+parser.add_argument("-Nt", "--period", type=int, required=False,
+                    help="Period in time direction (not required for all functions)")
 parser.add_argument("--periodic", action="store_true", help="use periodic effective mass functions")
 parser.add_argument("--prune", action="store_true", help="don't plot stuff where the correlator value is too close to zero (with error)")
 parser.add_argument("-c", "--configs", type=int, required=False, help="specify the configs to be used\n")
@@ -54,7 +56,7 @@ parser.add_argument("-t", "--times", required=False, type=int, help="specify the
 args = parser.parse_args()
 
 if args.fit:
-    funct = functions[args.function](Nt=None)
+    funct = functions[args.function](Nt=args.period)
 
 if not args.operators:
     print "Operators not specified, attempting to automagically determine"
