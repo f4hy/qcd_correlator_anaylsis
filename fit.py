@@ -278,7 +278,6 @@ def best_fit_range(fn, cor):
                 logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
     logging.debug("Restored logging state to original")
-    logging.info("Best fit range is {} with quality {}".format(best_ranges, best))
     return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges)]
 
 
