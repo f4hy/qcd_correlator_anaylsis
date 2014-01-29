@@ -260,7 +260,6 @@ def best_fit_range(fn, cor):
     logger.setLevel(ALWAYSINFO)
     best = 100
     best_ranges = []
-    cor.prune_invalid()
     for tmin in cor.times:
         for tmax in range(tmin + 4, max(cor.times)):
             try:
@@ -273,9 +272,9 @@ def best_fit_range(fn, cor):
                     logging.log(ALWAYSINFO, "Fit range ({},{})"
                                 " is good with chi/dof {}".format(tmin, tmax, chi))
             except RuntimeError:
-                logging.warn("Fitter failed, skipping this tmin,tmax")
-            except Exception:
-                logging.warn("Fitter failed, skipping this tmin,tmax")
+                logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin,tmax))
+            # except Exception:
+            #     logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
     logging.debug("Restored logging state to original")
     return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges)]
@@ -399,6 +398,7 @@ if __name__ == "__main__":
         args.output_stub = os.path.splitext(args.output_stub)[0]
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
+    cor.prune_invalid(delete=True)
     tmin = args.time_start
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]

@@ -105,22 +105,27 @@ class Correlator(configtimeobj.Cfgtimeobj):
         asv = self.average_sub_vev()
         return {t: jackknife.errorbars(asv[t], jk.get(time=t)) for t in self.times}
 
-    def prune_invalid(self):
+    def prune_invalid(self, delete=False):
+        logging.info("original times {}-{}".format( min(self.times), max(self.times) ) )
         asv = self.average_sub_vev()
         errors = self.jackknifed_errors()
 
         # new_times = [t for t in self.times if asv[t] - 2.0 * errors[t] > 0.0]
         new_times = []
         for t in self.times:
-            if asv[t] - 2.0 * errors[t] > 0.0:
+            if asv[t] - 3.0 * errors[t] > 0.0:
                 new_times.append(t)
             else:
                 break
-        print new_times
         if len(new_times) < 2:
             logging.error("this correlator has less than 2 valid times!! Skipping pruing")
         else:
             logging.info("pruned times down to {}-{}".format( min(new_times), max(new_times) ) )
+            if delete:
+                for removed_times in [t for t in self.times if t > max(new_times)]:
+                    logging.info("removing data for time {}".format(removed_times))
+                    for cfg in self.configs:
+                        del self.data[cfg][removed_times]
             self.times = new_times
             self.asv = None
             self.jkasv = None
