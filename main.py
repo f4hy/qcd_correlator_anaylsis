@@ -108,17 +108,12 @@ def main():
             else:
                 correlator = diagonal_file(args.input_dir, oper)
 
-            if args.fit:
-                try:
-                    fitparams = fit.auto_fit(funct, correlator, return_quality=True)
-                except RuntimeError:
-                    logging.error("could not fit, skipping fit")
-
             if args.bins > 1:
                 correlator = correlator.reduce_to_bins(args.bins)
                 correlator.writefullfile(args.output_bins + "binned_%d_%s" % (args.bins, oper))
             if args.fit:
                 try:
+                    correlator.prune_invalid(delete=True)
                     fitparams = fit.auto_fit(funct, correlator, return_quality=True)
                     plot_corr(correlator, args.output_dir, oper, fitparams)
                 except RuntimeError:
