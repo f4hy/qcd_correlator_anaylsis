@@ -78,7 +78,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if guess[0] < 0.0:
             logging.warn("first pass fit value found mass to be negative {}, lets flip it".format(guess[0]))
             guess[0] = -guess[0]
-        if guess[2] < 0.0:
+
+        if len(guess) > 2 and guess[2] < 0.0:
             logging.warn("first pass fit value found mass2 to be negative {}, lets flip it".format(guess[2]))
             logging.info("first pass results are {}".format(repr(guess)))
             guess[2] = -guess[2]
