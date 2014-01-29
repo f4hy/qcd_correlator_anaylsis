@@ -13,6 +13,7 @@ import inspect
 import sys
 
 from scipy import linalg
+from scipy import stats
 from scipy.special import gammaincc
 from scipy.optimize import leastsq
 from scipy.optimize import fmin
@@ -47,9 +48,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
 
     initial_guess = fn.starting_guess(cor, tmax-1, tmin)
+    logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
     x = np.array(range(tmin, tmax))
-    ave_cor = cor.average_sub_vev()
-    y = [ave_cor[t] for t in range(tmin, tmax)]
+    orig_ave_cor = cor.average_sub_vev()
+    y = [orig_ave_cor[t] for t in range(tmin, tmax)]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if not success:
         raise ValueError()
@@ -76,6 +78,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if guess[0] < 0.0:
             logging.warn("first pass fit value found mass to be negative {}, lets flip it".format(guess[0]))
             guess[0] = -guess[0]
+        if guess[2] < 0.0:
+            logging.warn("first pass fit value found mass2 to be negative {}, lets flip it".format(guess[2]))
+            logging.info("first pass results are {}".format(repr(guess)))
+            guess[2] = -guess[2]
         def clamp(n, minn, maxn):
                 return max(min(maxn, n), minn)
         bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
@@ -114,29 +120,52 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info('Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
+    boota = np.array(boot_params)
+    upper_quartiles = [stats.scoreatpercentile(boota[:,i],75) for i in range(len(boot_averages))]
+    medians = [stats.scoreatpercentile(boota[:,i],50) for i in range(len(boot_averages))]
+    lower_quartiles = [stats.scoreatpercentile(boota[:,i],25) for i in range(len(boot_averages))]
+    inter_range = [stats.scoreatpercentile(boota[:,i],75) - stats.scoreatpercentile(boota[:,i],25) for i in range(len(boot_averages))]
+
 
     for name, boot, original, err in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit, boot_std):
         bias = abs(boot-original)
         percent_bias = abs(boot-original)/original
         results.info('Bootstrap Bias in {:<10}: {:.3%}'.format(name, percent_bias))
         if bias > err*2:
-            results.error('Bootstrap Bias in {:<10}: {:.3%}'.format(name, bias))
+            results.error('Bootstrap Bias in {:<10}: {:.3%}'.format(name, percent_bias))
             results.error("Bootstrap average does not agree with ensamble average!"
                           "\nNot enough statistics for this for to be valid!!!\n")
             if not unsafe:
                 results.critical("Exiting! Run with --unsafe to fit anyway")
                 raise RuntimeError("Bootstrap average does not agree with ensamble average")
 
+    for name, ave, med, std, iqr in zip(fn.parameter_names, boot_averages, medians, boot_std, inter_range):
+        skew = abs(ave-med)/ave
+        dist_skew = abs(std-iqr)/iqr
+        if skew > 1.0:
+            results.error("for {} diff of bootstrat average and bootstrap median is {:.3%}".format(name, skew))
+            results.error("Bootstrap distrubtion is skewed!!")
+        else:
+            results.info("for {} diff of bootstrat average and bootstrap median is {:.3%}".format(name, skew))
+        if dist_skew > 1.0:
+            results.error("for {} diff of standard deviation and interquartile range is {:.3%}".format(name, dist_skew))
+            results.error("Large outliers present in bootstrap fits!!")
+        else:
+            results.info("for {} diff of standard deviation and interquartile range is {:.3%}".format(name, dist_skew))
+
+
     results.info("")
-    results.log(OUTPUT, "Bootstrap fitted parameters t=%2d to %2d---------------------", tmin, tmax)
-    for name, ave, std in zip(fn.parameter_names, boot_averages, boot_std):
-        results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}".format(name, ave, std))
+    results.log(OUTPUT, "Full esamble fitted parameters t=%2d to %2d---------------------", tmin, tmax)
+    results.log(OUTPUT, "Name      : Average,        STD,           (1st Quart, Median, 3rd Quart, IQR)")
+    for name, ave, std, low, med, up, iqr in zip(fn.parameter_names, original_ensamble_correlatedfit, boot_std,
+                                            upper_quartiles, medians, lower_quartiles, inter_range):
+        results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}   ({:<9.6f}, {:<9.6f}, {:<9.6f}, {:<9.6f})".format(name, ave, std, low, med, up, iqr))
     results.log(OUTPUT, "--------------------------------------------------------")
 
-    v = boot_averages
+    v = original_ensamble_correlatedfit
     cov = covariance_matrix(cor, tmin, tmax)
     inv_cov = bestInverse(cov)
-    chi_sqr = np.sum(((ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (ave_cor[tp] - fn.formula(v, tp))
+    chi_sqr = np.sum(((orig_ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (orig_ave_cor[tp] - fn.formula(v, tp))
                       for t in range(tmin, tmax) for tp in range(tmin, tmax)))
 
     dof = len(x) - len(fn.parameter_names)
@@ -153,11 +182,11 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 bootfile.write("{}, {}\n".format(i, strparams))
 
     if return_chi:
-        return boot_averages, boot_std, chi_sqr/dof
+        return original_ensamble_correlatedfit , boot_std, chi_sqr/dof
     if return_quality:
-        return boot_averages, boot_std, quality_of_fit(dof, chi_sqr)
+        return original_ensamble_correlatedfit, boot_std, quality_of_fit(dof, chi_sqr)
     else:
-        return boot_averages, boot_std
+        return original_ensamble_correlatedfit, boot_std
 
 
 def quality_of_fit(degrees_of_freedom, chi_sqr):

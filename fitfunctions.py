@@ -29,7 +29,7 @@ def twoexp_sqr_guess(cor, tmax, tmin):
     emass = cor.effective_mass(dt)
     mass_guess = emass[maxt]
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
-    mass2_guess = emass[tmin]
+    mass2_guess = np.sqrt(emass[tmin])
     amp2_guess = (ave[tmin] - amp_guess*np.exp(-mass_guess*tmin))/(amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin))
     return [mass_guess, amp_guess, mass2_guess, amp2_guess]
 
