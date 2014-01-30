@@ -11,13 +11,14 @@ expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevel
 #operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
 operators_path = "/latticeQCD/raid6/bfahy/operators"
 
+
 def not_implemented(description, default=""):
     logging.error("No primary operator set for particle {}!".format(description))
-    logging.error("Unable to handle particles which have no primary operator set when run in script mode")
+    logging.error("Unable to handle particles which have"
+                  " no primary operator set when run in script mode")
     return None
 
 readinput.askoperator = not_implemented
-
 
 
 def flavor_type(particle):
@@ -28,8 +29,10 @@ def flavor_type(particle):
     if particle.I == "1/2":
         return "kaon"
 
+
 def folder_from_flavor(particle1, particle2):
     pass
+
 
 def swap(particle1, particle2):
     order = ["kaon", "eta", "phi", "pion"]
@@ -41,28 +44,32 @@ def swap(particle1, particle2):
         return True
     return False
 
+
 def get_unspecified_parameters(args):
 
     if not args.isospin:
         print("Select isospin")
-        args.isospin = readinput.selectchoices(["0","1","1h"], default="1")
+        args.isospin = readinput.selectchoices(["0", "1", "1h"], default="1")
 
     if not args.strangeness:
         print("Select strangeness")
-        args.strangeness = readinput.selectchoices(["0","1","2"], default="0")
+        args.strangeness = readinput.selectchoices(["0", "1", "2"], default="0")
 
-    channeldir = os.path.join(operators_path, "BI{I}S{S}".format(I=args.isospin, S=args.strangeness))
+    channeldir = os.path.join(operators_path, "BI{I}S{S}".format(I=args.isospin,
+                                                                 S=args.strangeness))
     logging.debug("channel dir is {}".format(channeldir))
     channel_list = os.listdir(channeldir)
     if args.channel:
         if args.channel not in channel_list:
-            logging.critical("format of input channel is not correct! use e.g. {}".format(channel_list[0]))
+            logging.critical("format of input channel is not correct!"
+                             " use e.g. {}".format(channel_list[0]))
             parser.exit()
     else:
         print("Select Channel")
         args.channel = readinput.selectchoices(sorted(channel_list))
 
     args.opsdir = os.path.join(channeldir, args.channel)
+
 
 def read_expected_levels(args):
     if args.thirtytwo:
@@ -92,8 +99,10 @@ def read_expected_levels(args):
     expected_levels = [level.strip() for level in re.findall("\) (.*)", expectedleveltxt)]
     return expected_levels
 
+
 def get_ops(args, expected_levels):
     level_num = 1
+    already_added = []
     for level in expected_levels:
         args.outfile.write("# level {} {} \n".format(level_num, level))
         level_num += 1
@@ -105,8 +114,9 @@ def get_ops(args, expected_levels):
             continue
         for op in opset:
             p1, p2 = op
-            if p1[3] == None or p2[3] == None:
-                args.outfile.write("# {} contains particle which primary operator was never defined! \n".format(level))
+            if p1[3] is None or p2[3] is None:
+                args.outfile.write("# {} contains particle which primary operator"
+                                   " was never defined! \n".format(level))
                 continue
             if swap(p1[0], p2[0]):
                 logging.info("swapping")
@@ -118,7 +128,7 @@ def get_ops(args, expected_levels):
             flavor_folder = "_".join((flavor1, flavor2))
             opdir = os.path.join(args.opsdir, flavor_folder)
             filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
-            filepath = os.path.join(opdir,filename)
+            filepath = os.path.join(opdir, filename)
             logging.info("opening {}".format(filepath))
             try:
                 opfile = open(filepath, 'r')
@@ -132,10 +142,24 @@ def get_ops(args, expected_levels):
                     momexpression = ".*(,3|3,).*"
                 for line in opfile:
                     if re.match(opexpression, line) and re.match(momexpression, line):
-                        args.outfile.write(line)
+                        if line in already_added:
+                            logging.warn("This operator already added!")
+                            args.outfile.write("# This operator already added! \n")
+                            args.outfile.write("# {}".format(line))
+                        else:
+                            args.outfile.write(line)
+                            already_added.append(line)
                         if "eta" in line:
                             args.outfile.write("# put in ss operators for every uu operator\n")
-                            args.outfile.write(line.replace("eta", "phi"))
+                            philine = line.replace("eta", "phi")
+                            if philine in already_added:
+                                logging.warn("This operator already added!")
+                                args.outfile.write("# This operator already added! \n")
+                                args.outfile.write("# {}".format(philine))
+                            else:
+                                args.outfile.write(philine)
+                                already_added.append(philine)
+
             except IOError:
                 logging.info("{} didn't exist".format(filename))
                 args.outfile.write("# {} didn't exist\n".format(filename))
@@ -144,9 +168,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="compute and plot effective masses")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
-    parser.add_argument("-I", "--isospin", choices=["0","1","1h"],
+    parser.add_argument("-I", "--isospin", choices=["0", "1", "1h"],
                         help="select isospin")
-    parser.add_argument("-S", "--strangeness", choices=["0","1","2"],
+    parser.add_argument("-S", "--strangeness", choices=["0", "1", "2"],
                         help="select strangeness")
     parser.add_argument("-C", "--channel", type=str,
                         help="select channel e.g. A1up_1")
@@ -162,7 +186,6 @@ if __name__ == "__main__":
         logging.debug("Verbose debuging mode activated")
     else:
         logging.basicConfig(format='# %(levelname)s: %(message)s', level=logging.WARN)
-
 
     get_unspecified_parameters(args)
 
