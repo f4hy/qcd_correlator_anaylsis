@@ -46,7 +46,7 @@ baryon_reps = {"G1": ("1/2", "7/2"), "G2": ("5/2", "7/2"), "H": ("3/2", "5/2", "
 
 parity = {-1: "u", 1: "g"}
 gparity = {-1: "m", 1: "p"}
-momentums = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA"}
+momentums = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA", 5: "PSQ5"}
 
 subductions = {}
 subductions[("A1", "g", 1)] = ["A1"]
@@ -92,6 +92,8 @@ subductions[("T1", "g", 4)] = ["A2", "E"]
 subductions[("T1", "u", 4)] = ["A1", "E"]
 subductions[("T2", "g", 4)] = ["B2", "E"]
 subductions[("T2", "u", 4)] = ["B1", "E"]
+
+subductions[("A1", "u", 5)] = ["A2"]
 
 
 def irrep_rest_particle(p):
