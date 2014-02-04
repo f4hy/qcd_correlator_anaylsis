@@ -10,7 +10,9 @@ import sys
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
 #operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
 operators_path = "/latticeQCD/raid6/bfahy/operators"
+coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_000"
 
+mom_map = {"#": 2, "+": 1, "0": 0, "-": -1, "=": -2 }
 
 def not_implemented(description, default=""):
     logging.error("No primary operator set for particle {}!".format(description))
@@ -19,6 +21,33 @@ def not_implemented(description, default=""):
     return None
 
 readinput.askoperator = not_implemented
+
+def psq5level(level, op, channel, outfile):
+    p1, p2 = op
+    splitlevel = level.split("_")
+    p1flavor = splitlevel[0]
+    p2flavor = splitlevel[2]
+    coeffsdir = os.path.join(coeffs_path, channel)
+    logging.info("Looking for coeffs in {}".format(coeffsdir))
+    coeffs = os.listdir(coeffsdir)
+    expression = ".*{}.*{}.*".format(p1[2], p2[2])
+    found = False
+    for c in coeffs:
+        if re.match(expression, c):
+            mom1 = c.split("_")[1]
+            mom2 = c.split("_")[3]
+            if sum(mom_map[m]**2 for m in mom1) == 5:
+                m1 = "({},{},{})".format(*[mom_map[m] for m in mom1])
+                m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
+                logging.info("Found coeff with spq5 {}".format(c))
+                found = True
+                opline  = '@oplist.push("isotriplet_{}_{} {} [P={} {} SS_0] [P={} {} SS_0]")\n'.format(p1flavor, p2flavor, channel,
+                                                                                                     m1, p1[2], m2, p2[2])
+                args.outfile.write(opline)
+    if not found:
+        logging.critical("Could not find psq5 coeffs for this level")
+        args.outfile.write("# Could not find psq5 coeffs for this level")
+        exit()
 
 
 def flavor_type(particle):
@@ -127,6 +156,10 @@ def get_ops(args, expected_levels):
                 flavor2 = "kbar"
             flavor_folder = "_".join((flavor1, flavor2))
             opdir = os.path.join(args.opsdir, flavor_folder)
+            if "PSQ5" in level:
+                logging.warn("PSQ5 level, running custom write")
+                psq5level(level, op, args.channel, args.outfile)
+                continue
             filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
             filepath = os.path.join(opdir, filename)
             logging.info("opening {}".format(filepath))
