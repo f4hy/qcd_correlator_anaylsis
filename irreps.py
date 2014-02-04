@@ -27,16 +27,16 @@ names["eta"]      = properties(0, -1, 1, 0)
 names["etaprime"] = properties(0, -1, 1, 0)
 names["eta2"]     = properties(0, -1, 1, 2)
 names["phi"]      = properties(0, -1, -1, 1)
-names["phi3"]      = properties(0, -1, -1, 3)
+names["phi3"]     = properties(0, -1, -1, 3)
 names["K"]        = properties("1/2", -1, None, 0)
 names["KB"]       = properties("1/2", -1, None, 0)
 names["Kstar"]    = properties("1/2", -1, None, 1)
-names["KBstar"]    = properties("1/2", -1, None, 1)
-names["K1"]    = properties("1/2", 1, None, 1)
-names["KB1"]    = properties("1/2", 1, None, 1)
-names["K2"]    = properties("1/2", -1, None, 2)
-names["K2star"]    = properties("1/2", 1, None, 2)
-names["K3star"]    = properties("1/2", 1, None, 3)
+names["KBstar"]   = properties("1/2", -1, None, 1)
+names["K1"]       = properties("1/2", 1, None, 1)
+names["KB1"]      = properties("1/2", 1, None, 1)
+names["K2"]       = properties("1/2", -1, None, 2)
+names["K2star"]   = properties("1/2", 1, None, 2)
+names["K3star"]   = properties("1/2", 1, None, 3)
 names["K0star"]   = properties("1/2", 1, None, 2)
 
 meson_reps = {"A1": (0, 4), "A2": (3, 6), "E": (2, 4, 5, 6), "T1": (1, 3, 4), "T2": (2, 3, 4, 5)}
@@ -53,8 +53,8 @@ subductions[("A1", "g", 1)] = ["A1"]
 subductions[("A1", "u", 1)] = ["A2"]
 subductions[("A2", "g", 1)] = ["B1"]
 subductions[("A2", "u", 1)] = ["B2"]
-subductions[("E", "g", 1)] = ["A1", "B1"]
-subductions[("E", "u", 1)] = ["A2", "B2"]
+subductions[("E", "g", 1)]  = ["A1", "B1"]
+subductions[("E", "u", 1)]  = ["A2", "B2"]
 subductions[("T1", "g", 1)] = ["A2", "E"]
 subductions[("T1", "u", 1)] = ["A1", "E"]
 subductions[("T2", "g", 1)] = ["B2", "E"]
@@ -86,8 +86,8 @@ subductions[("A1", "g", 4)] = ["A1"]
 subductions[("A1", "u", 4)] = ["A2"]
 subductions[("A2", "g", 4)] = ["B1"]
 subductions[("A2", "u", 4)] = ["B2"]
-subductions[("E", "g", 4)] = ["A1", "B1"]
-subductions[("E", "u", 4)] = ["A2", "B2"]
+subductions[("E", "g", 4)]  = ["A1", "B1"]
+subductions[("E", "u", 4)]  = ["A2", "B2"]
 subductions[("T1", "g", 4)] = ["A2", "E"]
 subductions[("T1", "u", 4)] = ["A1", "E"]
 subductions[("T2", "g", 4)] = ["B2", "E"]
@@ -192,7 +192,8 @@ def translate_name_to_irrep(name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Determine lattice irreps from particle names")
-    parser.add_argument('name', metavar='expected_level', type=str, help='expected level to determine irreps from')
+    parser.add_argument('name', metavar='expected_level', type=str,
+                        help='expected level to determine irreps from')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
