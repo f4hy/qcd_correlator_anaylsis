@@ -5,7 +5,7 @@ import logging
 import readinput
 import sys
 
-momentum_map = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA"}
+momentum_map = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA", 5: "PSQ5"}
 default_file = sys.path[0]+"/particles.ini"
 
 
