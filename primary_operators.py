@@ -45,6 +45,7 @@ def psq5level(level, op, channel, outfile):
                 logging.info("Found coeff with spq5 {}".format(c))
                 found = True
                 opline = '@oplist.push("isotriplet_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'.format(p1flavor, p2flavor, channel, cg_map[cg],
+                                                                                                        m1, p1[2], m2, p2[2])
                 args.outfile.write(opline)
     if not found:
         logging.critical("Could not find psq5 coeffs for this level")
