@@ -22,32 +22,33 @@ def not_implemented(description, default=""):
 
 readinput.askoperator = not_implemented
 
+
 def psq5level(level, op, channel, outfile):
     p1, p2 = op
+    cg_map = {"0": "", "1": "CG_1 "}
     splitlevel = level.split("_")
     p1flavor = splitlevel[0]
     p2flavor = splitlevel[2]
     coeffsdir = os.path.join(coeffs_path, channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
-    expression = ".*{}.*{}.*".format(p1[2], p2[2])
+    expression = ".*{}.*{}.*|.*{}.*{}.*".format(p1[2], p2[2], p2[2], p1[2])
     found = False
     for c in coeffs:
         if re.match(expression, c):
             mom1 = c.split("_")[1]
             mom2 = c.split("_")[3]
+            cg = c.split("_")[-1]
             if sum(mom_map[m]**2 for m in mom1) == 5:
                 m1 = "({},{},{})".format(*[mom_map[m] for m in mom1])
                 m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
                 logging.info("Found coeff with spq5 {}".format(c))
                 found = True
-                opline  = '@oplist.push("isotriplet_{}_{} {} [P={} {} SS_0] [P={} {} SS_0]")\n'.format(p1flavor, p2flavor, channel,
-                                                                                                     m1, p1[2], m2, p2[2])
+                opline = '@oplist.push("isotriplet_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'.format(p1flavor, p2flavor, channel, cg_map[cg],
                 args.outfile.write(opline)
     if not found:
         logging.critical("Could not find psq5 coeffs for this level")
         args.outfile.write("# Could not find psq5 coeffs for this level")
-        exit()
 
 
 def flavor_type(particle):
