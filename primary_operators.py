@@ -201,6 +201,54 @@ def get_ops(args, expected_levels):
             except IOError:
                 logging.info("{} didn't exist".format(filename))
                 args.outfile.write("# {} didn't exist\n".format(filename))
+    return already_added
+
+def secondary(ops, count):
+    args.outfile.write("\n# SECONDARY OPERATORS----------------\n\n")
+    newops = []
+    for op in ops[:count]:
+        words = op.split()
+        base, chan, mom1, irrep1, op1, mom2, irrep2, op2 = words
+        op1 , op2 = op1.strip(']")'), op2.strip(']")')
+        _, type1, type2 = base.split("_")
+        d = os.path.join(args.opsdir,"_".join((type1,type2)))
+        psqr_1 = sum([int(i)**2 for i in mom1[4:-1].split(",")])
+        psqr_2 = sum([int(i)**2 for i in mom2[4:-1].split(",")])
+        m1 = irreps.momentums[psqr_1]
+        m2 = irreps.momentums[psqr_2]
+        filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, m1, irrep1, m2, irrep2)
+        #filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
+        filepath = os.path.join(d, filename)
+        irrepexpression = ".*{}.*{}.*".format(irrep1, irrep2)
+        operator_options = []
+        op1_choices = set()
+        op2_choices = set()
+        with open(filepath, "r") as f:
+            for line in f:
+                if re.match(irrepexpression, line):
+                    split = line.split()
+                    newop1, newop2 = split[4], split[7]
+                    op1_choices.add(newop1.strip("]"))
+                    op2_choices.add(newop2.strip(']")'))
+        op1_choices.remove(op1)
+        op2_choices.remove(op2)
+        while True:
+            print "Select secondary operator for this level, the primary is:\n {}".format(op)
+            print "newop1? primary is {}".format(op1)
+            secondaryop1 = readinput.selectchoices(op1_choices)
+            print "newop2? primary is {}".format(op2)
+            secondaryop2 = readinput.selectchoices(op2_choices)
+            secondaryopline = " ".join((base, chan, mom1, irrep1, secondaryop1+"]", mom2, irrep2, secondaryop2+']")'))+"\n"
+            if secondaryopline in ops or secondaryopline in newops:
+                print "That choice of ops, already exists in the primary set!! Pick a different combination"
+            if secondaryopline in newops:
+                print "That choice of ops, already exists in the secondary set!! Pick a different combination"
+            else:
+                logging.info("Secondary operator accepted!")
+                break
+        newops.append(secondaryopline)
+        args.outfile.write(secondaryopline)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="compute and plot effective masses")
@@ -216,6 +264,9 @@ if __name__ == "__main__":
                         default=sys.stdout)
     parser.add_argument("-32", "--thirtytwo", action="store_true",
                         default=False, help="use 32^3 expected levels")
+    parser.add_argument("--secondary", type=int, default=0,
+                        help="Prompt user for seconday operators,"
+                        " the number is how many operators to make secondaries for")
 
     args = parser.parse_args()
 
@@ -228,4 +279,6 @@ if __name__ == "__main__":
     get_unspecified_parameters(args)
 
     expected_levels = read_expected_levels(args)
-    get_ops(args, expected_levels)
+    ops = get_ops(args, expected_levels)
+    if args.secondary:
+        secondary(ops, args.secondary)
