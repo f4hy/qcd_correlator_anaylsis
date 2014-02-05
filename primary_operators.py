@@ -23,12 +23,10 @@ def not_implemented(description, default=""):
 readinput.askoperator = not_implemented
 
 
-def psq5level(level, op, channel, outfile):
-    p1, p2 = op
+def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
+    print psqr
     cg_map = {"0": "", "1": "CG_1 "}
     splitlevel = level.split("_")
-    p1flavor = splitlevel[0]
-    p2flavor = splitlevel[2]
     coeffsdir = os.path.join(coeffs_path, channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
@@ -39,17 +37,18 @@ def psq5level(level, op, channel, outfile):
             mom1 = c.split("_")[1]
             mom2 = c.split("_")[3]
             cg = c.split("_")[-1]
-            if sum(mom_map[m]**2 for m in mom1) == 5:
+            if sum(mom_map[m]**2 for m in mom1) == int(psqr):
                 m1 = "({},{},{})".format(*[mom_map[m] for m in mom1])
                 m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
-                logging.info("Found coeff with spq5 {}".format(c))
+                logging.info("Found coeff with psqr{} {}".format(psqr,c))
                 found = True
                 opline = '@oplist.push("isotriplet_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'.format(p1flavor, p2flavor, channel, cg_map[cg],
                                                                                                         m1, p1[2], m2, p2[2])
                 args.outfile.write(opline)
+
     if not found:
-        logging.critical("Could not find psq5 coeffs for this level")
-        args.outfile.write("# Could not find psq5 coeffs for this level")
+        logging.critical("Could not find psqr{} coeffs for this level".format(psqr))
+        args.outfile.write("# Could not find psqr{} coeffs for this level".format(psqr))
 
 
 def flavor_type(particle):
@@ -160,7 +159,11 @@ def get_ops(args, expected_levels):
             opdir = os.path.join(args.opsdir, flavor_folder)
             if "PSQ5" in level:
                 logging.warn("PSQ5 level, running custom write")
-                psq5level(level, op, args.channel, args.outfile)
+                custom_psqlevel(level, 5, p1, p2, flavor1, flavor2, args.channel, args.outfile)
+                continue
+            if "PSQ6" in level:
+                logging.warn("PSQ6 level, running custom write")
+                custom_psqlevel(level, 6, p1, p2, flavor1, flavor2, args.channel, args.outfile)
                 continue
             filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
             filepath = os.path.join(opdir, filename)
