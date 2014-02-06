@@ -12,7 +12,8 @@ expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevel
 operators_path = "/latticeQCD/raid6/bfahy/operators"
 coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_000"
 
-mom_map = {"#": 2, "+": 1, "0": 0, "-": -1, "=": -2 }
+mom_map = {"#": 2, "+": 1, "0": 0, "-": -1, "=": -2}
+
 
 def not_implemented(description, default=""):
     logging.error("No primary operator set for particle {}!".format(description))
@@ -26,7 +27,6 @@ readinput.askoperator = not_implemented
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     print psqr
     cg_map = {"0": "", "1": "CG_1 "}
-    splitlevel = level.split("_")
     coeffsdir = os.path.join(coeffs_path, channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
@@ -40,10 +40,10 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
             if sum(mom_map[m]**2 for m in mom1) == int(psqr):
                 m1 = "({},{},{})".format(*[mom_map[m] for m in mom1])
                 m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
-                logging.info("Found coeff with psqr{} {}".format(psqr,c))
+                logging.info("Found coeff with psqr{} {}".format(psqr, c))
                 found = True
-                opline = '@oplist.push("isotriplet_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'.format(p1flavor, p2flavor, channel, cg_map[cg],
-                                                                                                        m1, p1[2], m2, p2[2])
+                temp = '@oplist.push("isotriplet_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'
+                opline = temp.format(p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], m2, p2[2])
                 args.outfile.write(opline)
 
     if not found:
@@ -203,15 +203,16 @@ def get_ops(args, expected_levels):
                 args.outfile.write("# {} didn't exist\n".format(filename))
     return already_added
 
+
 def secondary(ops, count):
     args.outfile.write("\n# SECONDARY OPERATORS----------------\n\n")
     newops = []
     for op in ops[:count]:
         words = op.split()
         base, chan, mom1, irrep1, op1, mom2, irrep2, op2 = words
-        op1 , op2 = op1.strip(']")'), op2.strip(']")')
+        op1, op2 = op1.strip(']")'), op2.strip(']")')
         _, type1, type2 = base.split("_")
-        d = os.path.join(args.opsdir,"_".join((type1,type2)))
+        d = os.path.join(args.opsdir, "_".join((type1, type2)))
         psqr_1 = sum([int(i)**2 for i in mom1[4:-1].split(",")])
         psqr_2 = sum([int(i)**2 for i in mom2[4:-1].split(",")])
         m1 = irreps.momentums[psqr_1]
@@ -220,7 +221,6 @@ def secondary(ops, count):
         #filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
         filepath = os.path.join(d, filename)
         irrepexpression = ".*{}.*{}.*".format(irrep1, irrep2)
-        operator_options = []
         op1_choices = set()
         op2_choices = set()
         with open(filepath, "r") as f:
@@ -238,11 +238,14 @@ def secondary(ops, count):
             secondaryop1 = readinput.selectchoices(op1_choices)
             print "newop2? primary is {}".format(op2)
             secondaryop2 = readinput.selectchoices(op2_choices)
-            secondaryopline = " ".join((base, chan, mom1, irrep1, secondaryop1+"]", mom2, irrep2, secondaryop2+']")'))+"\n"
+            secondaryopline = " ".join((base, chan, mom1, irrep1, secondaryop1+"]",
+                                        mom2, irrep2, secondaryop2+']")'))+"\n"
             if secondaryopline in ops or secondaryopline in newops:
-                print "That choice of ops, already exists in the primary set!! Pick a different combination"
+                print("That choice of ops, already exists in the primary set!!"
+                      " Pick a different combination")
             if secondaryopline in newops:
-                print "That choice of ops, already exists in the secondary set!! Pick a different combination"
+                print("That choice of ops, already exists in the secondary set!!"
+                      " Pick a different combination")
             else:
                 logging.info("Secondary operator accepted!")
                 break
