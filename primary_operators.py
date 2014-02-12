@@ -157,6 +157,8 @@ def get_ops(args, expected_levels):
     level_num = 1
     already_added = []
     for level in expected_levels:
+        if args.review:
+            raw_input("Look OK?")
         args.outfile.write("\n# level {} {} \n".format(level_num, level))
         level_num += 1
         try:
@@ -288,6 +290,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="compute and plot effective masses")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("-r", "--review", action="store_true",
+                        help="review each operator")
     parser.add_argument("-I", "--isospin", choices=["0", "1", "1h"],
                         help="select isospin")
     parser.add_argument("-S", "--strangeness", choices=["0", "1", "2"],
