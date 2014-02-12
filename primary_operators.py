@@ -257,16 +257,16 @@ def secondary(ops, count):
         op2_choices.remove(op2)
         while True:
             print "Select secondary operator for this level, the primary is:\n {}".format(op)
-            print "newop1? primary is {}".format(op1)
+            print "newop1 {} {} {}? primary is {}".format(type1, mom1, irrep1, op1)
             secondaryop1 = readinput.selectchoices(op1_choices)
-            print "newop2? primary is {}".format(op2)
+            print "newop2 {} {} {}? primary is {}".format(type2, mom2, irrep2, op2)
             secondaryop2 = readinput.selectchoices(op2_choices)
             secondaryopline = " ".join((base, chan, mom1, irrep1, secondaryop1+"]",
                                         mom2, irrep2, secondaryop2+']")'))+"\n"
             if secondaryopline in ops or secondaryopline in newops:
                 print("That choice of ops, already exists in the primary set!!"
                       " Pick a different combination")
-            if secondaryopline in newops:
+            elif secondaryopline in newops:
                 print("That choice of ops, already exists in the secondary set!!"
                       " Pick a different combination")
             else:
