@@ -24,6 +24,29 @@ def not_implemented(description, default=""):
 readinput.askoperator = not_implemented
 
 
+def single_hadrons():
+    logging.info("Include all the single hadrons")
+    args.outfile.write("# start with all the single hadrons\n") #beyonce
+    if args.isospin == "1":
+        singlepath = os.path.join(args.opsdir, "pion/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+    if args.isospin == "1h":
+        singlepath = os.path.join(args.opsdir, "kaon/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+    if args.isospin == "0":     # if I=0 we need eta ops and phi ops
+        singlepath = os.path.join(args.opsdir, "eta/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+        singlepath = os.path.join(args.opsdir, "phi/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     print psqr
     cg_map = {"0": "", "1": "CG_1 "}
@@ -280,6 +303,8 @@ if __name__ == "__main__":
         logging.basicConfig(format='# %(levelname)s: %(message)s', level=logging.WARN)
 
     get_unspecified_parameters(args)
+
+    single_hadrons()
 
     expected_levels = read_expected_levels(args)
     ops = get_ops(args, expected_levels)
