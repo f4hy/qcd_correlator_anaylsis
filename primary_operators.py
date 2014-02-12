@@ -50,6 +50,8 @@ def single_hadrons():
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     print psqr
     cg_map = {"0": "", "1": "CG_1 "}
+    isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
+    isoterm = isomap[args.isospin]
     coeffsdir = os.path.join(coeffs_path, channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
@@ -65,8 +67,8 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
                 m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
                 logging.info("Found coeff with psqr{} {}".format(psqr, c))
                 found = True
-                temp = '@oplist.push("isotriplet_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'
-                opline = temp.format(p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], m2, p2[2])
+                temp = '@oplist.push("{}_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'
+                opline = temp.format(isoterm, p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], m2, p2[2])
                 args.outfile.write(opline)
 
     if not found:
