@@ -157,7 +157,7 @@ def get_ops(args, expected_levels):
     level_num = 1
     already_added = []
     for level in expected_levels:
-        args.outfile.write("# level {} {} \n".format(level_num, level))
+        args.outfile.write("\n# level {} {} \n".format(level_num, level))
         level_num += 1
         try:
             opset = irreps.translate_name_to_irrep(level)
@@ -178,6 +178,10 @@ def get_ops(args, expected_levels):
             flavor2 = flavor_type(p2[0])
             if flavor2 == "kaon":
                 flavor2 = "kbar"
+            if (flavor1,p1[2]) == ("eta","A1gp") or (flavor2,p2[2]) == ("eta","A1gp"):
+                print "OZI SUPRESSED"
+                args.outfile.write("# {} SHOULD BE OZI SUPRESSED!! \n".format(level))
+                continue
             flavor_folder = "_".join((flavor1, flavor2))
             opdir = os.path.join(args.opsdir, flavor_folder)
             if "PSQ5" in level:
@@ -201,8 +205,10 @@ def get_ops(args, expected_levels):
                     momexpression = ".*(,2|2,).*"
                 if "PSQ9" in level:
                     momexpression = ".*(,3|3,).*"
+                found_something = False
                 for line in opfile:
                     if re.match(opexpression, line) and re.match(momexpression, line):
+                        found_something = True
                         if line in already_added:
                             logging.warn("This operator already added!")
                             args.outfile.write("# This operator already added! \n")
@@ -220,7 +226,9 @@ def get_ops(args, expected_levels):
                             else:
                                 args.outfile.write(philine)
                                 already_added.append(philine)
-
+                if not found_something:
+                    logging.critical("Found no operators for this level!!")
+                    exit()
             except IOError:
                 logging.info("{} didn't exist".format(filename))
                 args.outfile.write("# {} didn't exist\n".format(filename))
