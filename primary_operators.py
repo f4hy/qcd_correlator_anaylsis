@@ -8,8 +8,8 @@ import irreps
 import sys
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
-#operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
-operators_path = "/latticeQCD/raid6/bfahy/operators"
+operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
+#operators_path = "/latticeQCD/raid6/bfahy/operators"
 coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_000"
 
 mom_map = {"#": 2, "+": 1, "0": 0, "-": -1, "=": -2}
