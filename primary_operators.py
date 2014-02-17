@@ -48,14 +48,13 @@ def single_hadrons():
                 args.outfile.write(line)
 
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
-    print psqr
     cg_map = {"0": "", "1": "CG_1 "}
     isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
     isoterm = isomap[args.isospin]
     coeffsdir = os.path.join(coeffs_path, channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
-    expression = ".*{}.*{}.*|.*{}.*{}.*".format(p1[2], p2[2], p2[2], p1[2])
+    expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
     found = False
     for c in coeffs:
         if re.match(expression, c):
