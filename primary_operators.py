@@ -8,8 +8,8 @@ import irreps
 import sys
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
-#operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
-operators_path = "/latticeQCD/raid6/bfahy/operators"
+operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
+#operators_path = "/latticeQCD/raid6/bfahy/operators"
 coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_000"
 
 mom_map = {"#": 2, "+": 1, "0": 0, "-": -1, "=": -2}
@@ -24,9 +24,34 @@ def not_implemented(description, default=""):
 readinput.askoperator = not_implemented
 
 
+def single_hadrons():
+    logging.info("Include all the single hadrons")
+    args.outfile.write("# start with all the single hadrons\n") #beyonce
+    if args.isospin == "1":
+        singlepath = os.path.join(args.opsdir, "pion/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+    if args.isospin == "1h":
+        singlepath = os.path.join(args.opsdir, "kaon/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+    if args.isospin == "0":     # if I=0 we need eta ops and phi ops
+        singlepath = os.path.join(args.opsdir, "eta/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+        singlepath = os.path.join(args.opsdir, "phi/SH")
+        with open(singlepath, 'r') as singlefile:
+            for line in singlefile:
+                args.outfile.write(line)
+
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     print psqr
     cg_map = {"0": "", "1": "CG_1 "}
+    isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
+    isoterm = isomap[args.isospin]
     coeffsdir = os.path.join(coeffs_path, channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
@@ -42,8 +67,8 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
                 m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
                 logging.info("Found coeff with psqr{} {}".format(psqr, c))
                 found = True
-                temp = '@oplist.push("isotriplet_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'
-                opline = temp.format(p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], m2, p2[2])
+                temp = '@oplist.push("{}_{}_{} {} {}[P={} {} SS_0] [P={} {} SS_0]")\n'
+                opline = temp.format(isoterm, p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], m2, p2[2])
                 args.outfile.write(opline)
 
     if not found:
@@ -134,7 +159,9 @@ def get_ops(args, expected_levels):
     level_num = 1
     already_added = []
     for level in expected_levels:
-        args.outfile.write("# level {} {} \n".format(level_num, level))
+        if args.review:
+            raw_input("Look OK?")
+        args.outfile.write("\n# level {} {} \n".format(level_num, level))
         level_num += 1
         try:
             opset = irreps.translate_name_to_irrep(level)
@@ -155,6 +182,10 @@ def get_ops(args, expected_levels):
             flavor2 = flavor_type(p2[0])
             if flavor2 == "kaon":
                 flavor2 = "kbar"
+            if (flavor1,p1[2]) == ("eta","A1gp") or (flavor2,p2[2]) == ("eta","A1gp"):
+                print "OZI SUPRESSED"
+                args.outfile.write("# {} SHOULD BE OZI SUPRESSED!! \n".format(level))
+                continue
             flavor_folder = "_".join((flavor1, flavor2))
             opdir = os.path.join(args.opsdir, flavor_folder)
             if "PSQ5" in level:
@@ -178,8 +209,10 @@ def get_ops(args, expected_levels):
                     momexpression = ".*(,2|2,).*"
                 if "PSQ9" in level:
                     momexpression = ".*(,3|3,).*"
+                found_something = False
                 for line in opfile:
                     if re.match(opexpression, line) and re.match(momexpression, line):
+                        found_something = True
                         if line in already_added:
                             logging.warn("This operator already added!")
                             args.outfile.write("# This operator already added! \n")
@@ -197,7 +230,9 @@ def get_ops(args, expected_levels):
                             else:
                                 args.outfile.write(philine)
                                 already_added.append(philine)
-
+                if not found_something:
+                    logging.critical("Found no operators for this level!!")
+                    exit()
             except IOError:
                 logging.info("{} didn't exist".format(filename))
                 args.outfile.write("# {} didn't exist\n".format(filename))
@@ -234,16 +269,16 @@ def secondary(ops, count):
         op2_choices.remove(op2)
         while True:
             print "Select secondary operator for this level, the primary is:\n {}".format(op)
-            print "newop1? primary is {}".format(op1)
+            print "newop1 {} {} {}? primary is {}".format(type1, mom1, irrep1, op1)
             secondaryop1 = readinput.selectchoices(op1_choices)
-            print "newop2? primary is {}".format(op2)
+            print "newop2 {} {} {}? primary is {}".format(type2, mom2, irrep2, op2)
             secondaryop2 = readinput.selectchoices(op2_choices)
             secondaryopline = " ".join((base, chan, mom1, irrep1, secondaryop1+"]",
                                         mom2, irrep2, secondaryop2+']")'))+"\n"
             if secondaryopline in ops or secondaryopline in newops:
                 print("That choice of ops, already exists in the primary set!!"
                       " Pick a different combination")
-            if secondaryopline in newops:
+            elif secondaryopline in newops:
                 print("That choice of ops, already exists in the secondary set!!"
                       " Pick a different combination")
             else:
@@ -257,6 +292,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="compute and plot effective masses")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("-r", "--review", action="store_true",
+                        help="review each operator")
     parser.add_argument("-I", "--isospin", choices=["0", "1", "1h"],
                         help="select isospin")
     parser.add_argument("-S", "--strangeness", choices=["0", "1", "2"],
@@ -280,6 +317,8 @@ if __name__ == "__main__":
         logging.basicConfig(format='# %(levelname)s: %(message)s', level=logging.WARN)
 
     get_unspecified_parameters(args)
+
+    single_hadrons()
 
     expected_levels = read_expected_levels(args)
     ops = get_ops(args, expected_levels)

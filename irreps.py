@@ -124,7 +124,7 @@ def particle_name(name):
 
 def translate_name_to_irrep(name):
     logging.info("Translating {}".format(name))
-
+    name = name.replace("KB","K")
     if "_" not in name:
         logging.info("Is a single hadron?")
         p1 = particle_name(name)
