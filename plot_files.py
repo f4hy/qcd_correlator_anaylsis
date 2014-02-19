@@ -34,6 +34,15 @@ def lines_without_comments(filename, comment="#"):
     s.seek(0)
     return s
 
+def myconverter(s):
+    try:
+        return np.float(s.strip(','))
+    except:
+        return np.nan
+
+def removecomma(s):
+    return int(s.strip(','))
+
 
 def determine_type(txt):
     firstline = txt.readline()
@@ -52,7 +61,7 @@ def read_file(filename):
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"],
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
-        df = pd.read_csv(txt, sep=",", names=["time", "correlator", "error", "quality"], skipinitialspace=True)
+        df = pd.read_csv(txt, sep=",", delimiter=",", names=["time", "correlator", "error", "quality"], skipinitialspace=True, delim_whitespace=True, converters={0: removecomma, 1: myconverter})
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"])
     return df
@@ -118,7 +127,7 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
     tmin_plot = {}
     has_colorbar = False
     labels = label_names_from_filelist(files)
-    labels = [translate(l) for l in labels]
+    #labels = [translate(l) for l in labels]
     seperate = cols > 0
     layout = None
     if seperate:
@@ -139,6 +148,8 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
         df = read_file(filename)
+        print df.head(20)
+        #exit()
         time_offset = df.time.values+(index*0.1)
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
         if any(df["quality"].notnull()):
@@ -183,6 +194,7 @@ def plot_files(files, output_stub=None, yrange=None, cols=-1, fit=False, real=Fa
                                                       markerfacecolor='none',
                                                       linestyle="none", c=color, marker=mark, label=None)
             else:
+                print df.correlator.values, df.error.values
                 plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
                                            linestyle="none", c=color, marker=mark, label=label)
 
