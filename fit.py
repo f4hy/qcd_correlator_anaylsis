@@ -8,6 +8,7 @@ import pylab
 import argparse
 import os
 
+import iminuit
 from fitfunctions import *  # noqa
 import inspect
 import sys
@@ -88,9 +89,29 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
         logging.debug("guess {}, bounded guess {}".format(repr(guess),repr(bounded_guess)))
         newresults = fmin_slsqp(cov_fun, bounded_guess, bounds=fn.bounds, full_output=1, disp=0, iter=10000)
+
+        m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
+        m.migrad()
+        minuit_results = [m.values[name] for name in fn.parameter_names]
+        if m.get_fmin().is_valid:
+            print "minuit worked!"
+            difference = minuit_results - newresults[0]
+            print "difference:", difference
+            if max(difference) < 0.0001:
+                return minuit_results
+            else:
+                print "fitters gave diff results!"
+                print m.fval
+                print newresults
+                exit()
+        else:
+            print "minuit failed!"
+            exit()
         logging.debug("fit value {}".format(repr(newresults)))
         results = newresults
         covariant_fit, fit_info, flag = results[0], results[1:3], results[3]
+        print covariant_fit
+        exit()
         if covariant_fit[0] < 0.0:
             logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
             raise RuntimeError("Fitter sanity failed")
