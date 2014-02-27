@@ -82,15 +82,13 @@ class periodic_exp:
 
     def formula(self, v, x):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
-    def read_data(self, data, invmatrix, times):
+    def my_cov_fun(self, mass, amp):
+        vect = self.aoc - self.formula((mass, amp), self.times)
+        return vect.dot(self.inv_cov).dot(vect)
+    def custom_minuit(self, data, invmatrix, times, guess):
         self.aoc = data
         self.inv_cov = invmatrix
         self.times = times
-    def my_cov_fun(self, mass, amp):
-        vect = self.aoc - self.formula((mass, amp) , self.times)
-        return vect.dot(self.inv_cov).dot(vect)
-    def custom_minuit(self, data, invmatrix, times, guess):
-        self.read_data(data, invmatrix, times)
         m = iminuit.Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1], print_level=0, pedantic=False)
         return m
 
