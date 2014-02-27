@@ -90,29 +90,29 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
         logging.debug("guess {}, bounded guess {}".format(repr(guess),repr(bounded_guess)))
         newresults = fmin_slsqp(cov_fun, bounded_guess, bounds=fn.bounds, full_output=1, disp=0, iter=10000)
-
-        m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
-        m.migrad()
-        minuit_results = [m.values[name] for name in fn.parameter_names]
-        if m.get_fmin().is_valid:
-            print "minuit worked!"
-            difference = minuit_results - newresults[0]
-            print "difference:", difference
-            if max(difference) < 0.0001:
-                return minuit_results
-            else:
-                print "fitters gave diff results!"
-                print m.fval
-                print newresults
-                exit()
-        else:
-            print "minuit failed!"
-            exit()
-        logging.debug("fit value {}".format(repr(newresults)))
         results = newresults
         covariant_fit, fit_info, flag = results[0], results[1:3], results[3]
-        print covariant_fit
-        exit()
+
+        if args.minuit:
+            m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
+            #m.set_strategy(2)
+            m.migrad()
+            minuit_results = [m.values[name] for name in fn.parameter_names]
+            if m.get_fmin().is_valid and flag != 0:
+                return minuit_results
+            if m.get_fmin().is_valid:
+                difference = minuit_results - covariant_fit
+                if max(difference) < 0.0001:
+                    return minuit_results
+                else:
+                    if m.fval > newresults[1] and m.fval - newresults[1] > 0.00001:
+                        logging.error("other fitter worked better than minuit!")
+                        exit()
+            else:
+                if flag == 0:
+                    logging.error("Both fitters failed")
+                    exit()
+        logging.debug("fit value {}".format(repr(newresults)))
         if covariant_fit[0] < 0.0:
             logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
             raise RuntimeError("Fitter sanity failed")
@@ -124,9 +124,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if flag != 0:
             logging.error("Fitter flag set to {}. Error!".format(flag))
             raise RuntimeError("Fitter failed")
-
-        logging.debug("Covariant fit {}, regular fit {}".format(repr(covariant_fit),
-                                                                repr(uncorrelated_fit_values)))
 
         return(covariant_fit)
 
@@ -424,6 +421,8 @@ if __name__ == "__main__":
                         "This option will cause the code to fit anyway.")
     parser.add_argument("--first_pass", action="store_true",
                         help="Do an uncorrelated chi square first, and use that as the guess")
+    parser.add_argument("-m", "--minuit", action="store_true",
+                        help="use the minuit fitter")
     parser.add_argument("-f", "--function", choices=functions.keys(),
                         required=False, default="periodic_exp", help="function to fit to")
 
