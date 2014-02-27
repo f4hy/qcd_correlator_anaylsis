@@ -144,10 +144,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         skew = abs(ave-med)/ave
         dist_skew = abs(std-iqr)/iqr
         if skew > 1.0:
-            results.error("for {} diff of bootstrat average and bootstrap median is {:.3%}".format(name, skew))
+            results.error("for {} diff of bootstrap average and bootstrap median is {:.3%}".format(name, skew))
             results.error("Bootstrap distrubtion is skewed!!")
         else:
-            results.info("for {} diff of bootstrat average and bootstrap median is {:.3%}".format(name, skew))
+            results.info("for {} diff of bootstrap average and bootstrap median is {:.3%}".format(name, skew))
         if dist_skew > 1.0:
             results.error("for {} diff of standard deviation and interquartile range is {:.3%}".format(name, dist_skew))
             results.error("Large outliers present in bootstrap fits!!")
