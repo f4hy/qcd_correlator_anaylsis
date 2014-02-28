@@ -1,5 +1,5 @@
 import numpy as np
-import iminuit
+from iminuit import Minuit
 
 mass_bounds = (0.005, 2.0)
 amp_bounds = (0.0, 1000.0)
@@ -15,6 +15,7 @@ def massamp_guess(cor, tmax, *args):
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     return [mass_guess, amp_guess]
 
+
 def const_guess(cor, tmax, *args):
     dt = 3
     maxt = tmax - dt
@@ -24,6 +25,7 @@ def const_guess(cor, tmax, *args):
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     return [mass_guess, amp_guess, 0.01]
 
+
 def twoexp_sqr_guess(cor, tmax, tmin):
     dt = 3
     maxt = tmax - dt
@@ -32,9 +34,9 @@ def twoexp_sqr_guess(cor, tmax, tmin):
     mass_guess = emass[maxt]
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     mass2_guess = np.sqrt(emass[tmin])
-    amp2_guess = (ave[tmin] - amp_guess*np.exp(-mass_guess*tmin))/(amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin))
+    amp2_guess = ((ave[tmin] - amp_guess*np.exp(-mass_guess*tmin)) /
+                  (amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin)))
     return [mass_guess, amp_guess, mass2_guess, amp2_guess]
-
 
 
 class periodic(object):
@@ -58,12 +60,15 @@ class mass_amp(object):
     def my_cov_fun(self, mass, amp):
         vect = self.aoc - self.formula((mass, amp), self.times)
         return vect.dot(self.inv_cov).dot(vect)
+
     def custom_minuit(self, data, invmatrix, times, guess):
         self.aoc = data
         self.inv_cov = invmatrix
         self.times = times
-        m = iminuit.Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1], print_level=0, pedantic=False)
+        m = Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1],
+                   print_level=0, pedantic=False)
         return m
+
 
 class mass_amp_const(object):
     """Parent class for functions which take a mass and an amplitude"""
@@ -75,13 +80,15 @@ class mass_amp_const(object):
     def my_cov_fun(self, mass, amp, const):
         vect = self.aoc - self.formula((mass, amp, const), self.times)
         return vect.dot(self.inv_cov).dot(vect)
+
     def custom_minuit(self, data, invmatrix, times, guess):
         self.aoc = data
         self.inv_cov = invmatrix
         self.times = times
-        m = iminuit.Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1], const=guess[2],
-                           print_level=0, pedantic=False)
+        m = Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1], const=guess[2],
+                   print_level=0, pedantic=False)
         return m
+
 
 class twice_mass_amp(object):
     """Parent class for functions which take a mass and an amplitude"""
@@ -93,10 +100,11 @@ class twice_mass_amp(object):
     def my_cov_fun(self, mass, amp, mass2, amp2):
         vect = self.aoc - self.formula((mass, amp, mass2, amp2), self.times)
         return vect.dot(self.inv_cov).dot(vect)
+
     def custom_minuit(self, data, invmatrix, times, guess):
         self.aoc = data
         self.inv_cov = invmatrix
         self.times = times
-        m = iminuit.Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1], mass2=guess[2], amp2=guess[3],
-                           print_level=0, pedantic=False, limit_amp2=amp_bounds, limit_mass2=amp_bounds)
+        m = Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1], mass2=guess[2], amp2=guess[3],
+                   print_level=0, pedantic=False, limit_amp2=amp_bounds, limit_mass2=amp_bounds)
         return m

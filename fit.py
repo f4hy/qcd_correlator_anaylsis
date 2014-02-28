@@ -4,11 +4,9 @@ import numpy as np
 import logging
 import correlator
 import build_corr
-import pylab
 import argparse
 import os
 
-import iminuit
 from fitfunctions import *  # noqa
 import inspect
 import sys
@@ -17,9 +15,9 @@ from scipy import linalg
 from scipy import stats
 from scipy.special import gammaincc
 from scipy.optimize import leastsq
-from scipy.optimize import fmin
+# from scipy.optimize import fmin
 from scipy.optimize import fmin_slsqp
-from scipy.optimize import fmin_l_bfgs_b
+# from scipy.optimize import fmin_l_bfgs_b
 # from scipy.optimize import minimize
 OUTPUT = 25
 ALWAYSINFO = 26
@@ -30,7 +28,8 @@ Nt = 128
 NBOOTSTRAPS = 1000
 
 
-def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, return_chi=False):
+def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False,
+        return_chi=False):
     if(tmax-tmin < len(fn.parameter_names)):
         raise ValueError("Can not fit to less points than parameters")
 
@@ -76,20 +75,22 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 raise ValueError()
             guess = uncorrelated_fit_values
 
-        #results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000, full_output=1, disp=0, retall=0)
+        #results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000, full_output=1, disp=0, retall=0)  # noqa
         if guess[0] < 0.0:
-            logging.warn("first pass fit value found mass to be negative {}, lets flip it".format(guess[0]))
+            logging.warn("first pass found mass to be negative {}, lets flip it".format(guess[0]))
             guess[0] = -guess[0]
 
         if len(guess) > 2 and guess[2] < 0.0:
-            logging.warn("first pass fit value found mass2 to be negative {}, lets flip it".format(guess[2]))
+            logging.warn("first pass found mass2 to be negative {}, lets flip it".format(guess[2]))
             logging.info("first pass results are {}".format(repr(guess)))
             guess[2] = -guess[2]
+
         def clamp(n, minn, maxn):
                 return max(min(maxn, n), minn)
-        bounded_guess = [clamp(g,b[0],b[1]) for g,b in zip(guess,fn.bounds)]
-        logging.debug("guess {}, bounded guess {}".format(repr(guess),repr(bounded_guess)))
-        newresults = fmin_slsqp(cov_fun, bounded_guess, bounds=fn.bounds, full_output=1, disp=0, iter=10000)
+        bounded_guess = [clamp(g, b[0], b[1]) for g, b in zip(guess, fn.bounds)]
+        logging.debug("guess {}, bounded guess {}".format(repr(guess), repr(bounded_guess)))
+        newresults = fmin_slsqp(cov_fun, bounded_guess, bounds=fn.bounds,
+                                full_output=1, disp=0, iter=10000)
         results = newresults
         covariant_fit, fit_info, flag = results[0], results[1:3], results[3]
 
@@ -109,6 +110,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                         logging.error("other fitter worked better than minuit!")
                         exit()
             else:
+                logging.error("minuit failed!!")
                 if flag == 0:
                     logging.error("Both fitters failed")
                     exit()
@@ -119,7 +121,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
         #would like to use minimize, but seems to be not installed
         # covariant_fit = minimize(cov_fun, initial_guess)
-        #logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))
+        #logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))  # noqa
         logging.debug("Fit results: f() ={}, Iterations={}".format(*fit_info))
         if flag != 0:
             logging.error("Fitter flag set to {}. Error!".format(flag))
@@ -141,13 +143,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
     boota = np.array(boot_params)
-    upper_quartiles = [stats.scoreatpercentile(boota[:,i],75) for i in range(len(boot_averages))]
-    medians = [stats.scoreatpercentile(boota[:,i],50) for i in range(len(boot_averages))]
-    lower_quartiles = [stats.scoreatpercentile(boota[:,i],25) for i in range(len(boot_averages))]
-    inter_range = [stats.scoreatpercentile(boota[:,i],75) - stats.scoreatpercentile(boota[:,i],25) for i in range(len(boot_averages))]
+    upper_quartiles = [stats.scoreatpercentile(boota[:, i], 75) for i in range(len(boot_averages))]
+    medians = [stats.scoreatpercentile(boota[:, i], 50) for i in range(len(boot_averages))]
+    lower_quartiles = [stats.scoreatpercentile(boota[:, i], 25) for i in range(len(boot_averages))]
+    inter_range = [stats.scoreatpercentile(boota[:, i], 75) - stats.scoreatpercentile(boota[:, i], 25) for i in range(len(boot_averages))]
 
-
-    for name, boot, original, err in zip(fn.parameter_names, boot_averages, original_ensamble_correlatedfit, boot_std):
+    for name, boot, original, err in zip(fn.parameter_names, boot_averages,
+                                         original_ensamble_correlatedfit, boot_std):
         bias = abs(boot-original)
         percent_bias = abs(boot-original)/original
         results.info('Bootstrap Bias in {:<10}: {:.3%}'.format(name, percent_bias))
@@ -159,20 +161,21 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 results.critical("Exiting! Run with --unsafe to fit anyway")
                 raise RuntimeError("Bootstrap average does not agree with ensamble average")
 
-    for name, ave, med, std, iqr in zip(fn.parameter_names, boot_averages, medians, boot_std, inter_range):
+    for name, ave, med, std, iqr in zip(fn.parameter_names, boot_averages, medians, boot_std,
+                                        inter_range):
         skew = abs(ave-med)/ave
         dist_skew = abs(std-iqr)/iqr
         if skew > 1.0:
-            results.error("for {} diff of bootstrap average and bootstrap median is {:.3%}".format(name, skew))
+            results.error("{}: diff of bstrap average and bstrap med is {:.3%}".format(name, skew))
             results.error("Bootstrap distrubtion is skewed!!")
         else:
-            results.info("for {} diff of bootstrap average and bootstrap median is {:.3%}".format(name, skew))
+            results.info("{}: diff of bstrap average and bstrap med is {:.3%}".format(name, skew))
         if dist_skew > 1.0:
-            results.error("for {} diff of standard deviation and interquartile range is {:.3%}".format(name, dist_skew))
+            results.error("for {} diff of stddev and IQR is {:.3%}".format(name, dist_skew))
             results.error("Large outliers present in bootstrap fits!!")
         else:
-            results.info("for {} diff of standard deviation and interquartile range is {:.3%}".format(name, dist_skew))
-
+            results.info("for {} diff of standard deviation"
+                         " and interquartile range is {:.3%}".format(name, dist_skew))
 
     results.info("")
     results.log(OUTPUT, "Full esamble fitted parameters t=%2d to %2d---------------------", tmin, tmax)
