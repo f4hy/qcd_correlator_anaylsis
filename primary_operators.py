@@ -231,7 +231,8 @@ def get_ops(args, expected_levels):
                                 already_added.append(philine)
                 if not found_something:
                     logging.critical("Found no operators for this level!!")
-                    exit()
+                    logging.critical("Quitting prematurely")
+                    exit(-1)
             except IOError:
                 logging.info("{} didn't exist".format(filename))
                 args.outfile.write("# {} didn't exist\n".format(filename))
@@ -264,14 +265,16 @@ def secondary(ops, count):
                     newop1, newop2 = split[4], split[7]
                     op1_choices.add(newop1.strip("]"))
                     op2_choices.add(newop2.strip(']")'))
-        op1_choices.remove(op1)
-        op2_choices.remove(op2)
+        # op1_choices.remove(op1)
+        # op2_choices.remove(op2)
+        print "op1 choices {}".format(" ".join(op1_choices))
+        print "op2 choices {}".format(" ".join(op2_choices))
         while True:
             print "Select secondary operator for this level, the primary is:\n {}".format(op)
             print "newop1 {} {} {}? primary is {}".format(type1, mom1, irrep1, op1)
-            secondaryop1 = readinput.selectchoices(op1_choices)
+            secondaryop1 = readinput.selectchoices(op1_choices, default=op1)
             print "newop2 {} {} {}? primary is {}".format(type2, mom2, irrep2, op2)
-            secondaryop2 = readinput.selectchoices(op2_choices)
+            secondaryop2 = readinput.selectchoices(op2_choices, default=op2)
             secondaryopline = " ".join((base, chan, mom1, irrep1, secondaryop1+"]",
                                         mom2, irrep2, secondaryop2+']")'))+"\n"
             if secondaryopline in ops or secondaryopline in newops:
