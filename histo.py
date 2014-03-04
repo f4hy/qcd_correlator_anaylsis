@@ -42,7 +42,11 @@ def make_histogram(data, numbins=10, norm=False):
             y = mlab.normpdf(bincenters, np.mean(data), np.std(data))
             plt.plot(bincenters, y, 'r--', linewidth=1)
 
-    plt.show()
+    if(args.output_stub):
+        logging.info("Saving plot to {}".format(args.output_stub+".png"))
+        plt.savefig(args.output_stub+".png",dpi=200)
+    else:
+        plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="plot a histogram of a file for a single time")
@@ -54,6 +58,8 @@ if __name__ == "__main__":
                         help="number of bins for the histogram")
     parser.add_argument("-n", "--norm", action="store_true",
                         help="normalize and draw normal distribution")
+    parser.add_argument("-o", "--output-stub", type=str, required=False,
+                        help="stub of name to write output to")
     parser.add_argument('datafile', metavar='f', type=str, help='file to plot')
     args = parser.parse_args()
 
