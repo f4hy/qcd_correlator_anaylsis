@@ -42,7 +42,7 @@ def sanity_check(data):
         toobig = data.loc[time][(data.loc[time] > upperbound)].index.values
         if toobig.size > 0:
             outliers_big[time] = "".join(toobig)
-            outlierfile.write("{:<30}".format("".join(toobig).replace("correlator","")))
+            outlierfile.write("{:<30}".format(",".join(toobig).replace("correlator","")))
             for o in [s.replace("correlator","config") for s in toobig]:
                 if o in outliercount:
                     outliercount[o] += 1
@@ -53,7 +53,7 @@ def sanity_check(data):
         toosmall = data.loc[time][(data.loc[time] < lowerbound)].index.values
         if toosmall.size > 0:
             outliers_small[time] = "".join(toosmall)
-            outlierfile.write(" {:<30}\n".format("".join(toosmall).replace("correlator","")))
+            outlierfile.write(" {:<30}\n".format(",".join(toosmall).replace("correlator","")))
             for o in [s.replace("correlator","config") for s in toosmall]:
                 if o in outliercount:
                     outliercount[o] += 1
