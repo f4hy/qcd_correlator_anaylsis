@@ -113,7 +113,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         # new_times = [t for t in self.times if asv[t] - 2.0 * errors[t] > 0.0]
         new_times = []
         for t in self.times:
-            if asv[t] - 3.0 * errors[t] > 0.0:
+            if asv[t] - 2.0 * errors[t] > 0.0:
                 new_times.append(t)
             else:
                 break
