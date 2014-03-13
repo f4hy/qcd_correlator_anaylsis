@@ -54,7 +54,7 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-t", "--time", type=int, required=True,
                         help="time slice to histogram", default=None)
-    parser.add_argument("-b", "--bins", type=int, required=False, default=10,
+    parser.add_argument("-b", "--bins", type=int, required=False, default=100,
                         help="number of bins for the histogram")
     parser.add_argument("-n", "--norm", action="store_true",
                         help="normalize and draw normal distribution")
