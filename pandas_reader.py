@@ -83,7 +83,7 @@ def read_datadict_paraenformat_real(filename, real=True):
                      converters={1: parse_pair})
 
     if(real):
-        df = df.apply(np.real)  # Take the real part
+        df = df.apply(np.real, reduce=False)  # Take the real part
 
     vc = df.time.value_counts()
     times = vc.index
