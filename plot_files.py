@@ -97,6 +97,7 @@ def label_names_from_filelist(filelist):
     postfix = os.path.commonprefix([n[::-1] for n in names])
     if len(postfix) > 1:
         names = [n[:-len(postfix)] for n in names]
+    names = [(n.strip(" _") if n != "" else "base") for n in names]
     return names
 
 
