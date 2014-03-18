@@ -148,14 +148,14 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
         df = read_file(filename)
-        print df.head(20)
+        #print df.head(20)
         #exit()
         time_offset = df.time.values+(index*0.1)
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
             cmap = mpl.cm.cool
-            print df.correlator.values
+            #print df.correlator.values
             if seperate:
                 logging.info("plotting {}  {}, {}".format(label, i, j))
                 ax = layout[i][j]
@@ -196,7 +196,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                                                       markerfacecolor='none',
                                                       linestyle="none", c=color, marker=mark, label=None)
             else:
-                print df.correlator.values, df.error.values
+                #print df.correlator.values, df.error.values
                 plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
                                            linestyle="none", c=color, marker=mark, label=label)
 
