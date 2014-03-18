@@ -153,7 +153,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         bias = abs(boot-original)
         percent_bias = abs(boot-original)/original
         results.info('Bootstrap Bias in {:<10}: {:.3%}'.format(name, percent_bias))
-        if bias > err*2:
+        if bias > err*2 and (err > 0.0):
             results.error('Bootstrap Bias in {:<10}: {:.3%}'.format(name, percent_bias))
             results.error("Bootstrap average does not agree with ensamble average!"
                           "\nNot enough statistics for this for to be valid!!!\n")
