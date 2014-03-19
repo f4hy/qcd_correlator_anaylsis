@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import matplotlib.pyplot as plt
-from matplotlib import mpl
+import matplotlib as mpl
 import logging
 import argparse
 from matplotlib.widgets import CheckButtons
@@ -55,15 +55,19 @@ def determine_type(txt):
 
 
 def read_file(filename):
+    with open(filename, 'r') as f:
+        first_line = f.readline()
+    names=[s.strip(" #") for s in first_line.split(",")[0:-2]]
+    print names
     txt = lines_without_comments(filename)
     filetype = determine_type(txt)
     if filetype == "paren_complex":
-        df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"],
+        df = pd.read_csv(txt, delimiter=' ', names=names,
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
-        df = pd.read_csv(txt, sep=",", delimiter=",", names=["time", "correlator", "error", "quality"], skipinitialspace=True, delim_whitespace=True, converters={0: removecomma, 1: myconverter})
+        df = pd.read_csv(txt, sep=",", delimiter=",", names=names, skipinitialspace=True, delim_whitespace=True, converters={0: removecomma, 1: myconverter})
     if filetype == "space_seperated":
-        df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"])
+        df = pd.read_csv(txt, delimiter=' ', names=names)
     return df
 
 
@@ -120,130 +124,75 @@ def add_fit_info(filename, ax=None):
         logging.error("File {} had no fit into".format(filename))
 
 
-def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=False, real=False, title=None):
+def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
     colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"]
     plots = {}
     tmin_plot = {}
     has_colorbar = False
-    labels = label_names_from_filelist(files)
+    labels = label_names_from_filelist(args.files)
     #labels = [translate(l) for l in labels]
-    seperate = cols > 0
     layout = None
-    if seperate:
-        f, layout = plt.subplots(nrows=int(math.ceil(float(len(labels))/cols)), ncols=cols, sharey=True, sharex=True)
-    for index, label, filename in zip(range(len(files)), labels, files):
-        i = (index)/cols
-        j = (index) % cols
-
-        if fit:
-            if seperate:
-                fitstring = add_fit_info(filename, ax=layout[i][j])
-            else:
-                fitstring = add_fit_info(filename)
-            if fitstring:
-                label += " " + fitstring
+    data = []
+    f, ax = plt.subplots()
+    for index, label, filename in zip(range(len(args.files)), labels, args.files):
 
         # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
         df = read_file(filename)
-        #print df.head(20)
-        #exit()
-        time_offset = df.time.values+(index*0.1)
-        logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
-        if any(df["quality"].notnull()):
-            logging.info("found 4th column, plotting as quality")
-            cmap = mpl.cm.cool
-            #print df.correlator.values
-            if seperate:
-                logging.info("plotting {}  {}, {}".format(label, i, j))
-                ax = layout[i][j]
-                ax.set_title(label)
-                pass
-            else:
-                ax = plt
-            plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                       linestyle="none", c=color, marker=mark, label=label,
-                                       fmt=None, zorder=0)
-            tmin_plot[label] = ax.scatter(time_offset, df.correlator.values, c=df.quality.values,
-                                          s=50, cmap=cmap, marker=mark)
-            tmin_plot[label].set_clim(0, 1)
-            if seperate:
-                has_colorbar = True
-            if not has_colorbar and not seperate:
-                cb = plt.colorbar(tmin_plot[label])  # noqa
-                has_colorbar = True
-            if yrange:
-                plt.ylim(yrange)
-            if xrang:
-                plt.xlim(xrang)
 
+        if args.seperate:
+            data.append(df.mass.values)
         else:
-            if seperate:
-                logging.info("plotting {}  {}, {}".format(label, i, j))
-                ax = layout[i][j]
-                ax.set_title(label)
-            else:
-                ax = plt
-            if np.iscomplexobj(df.correlator.values):
-                plots[label] = ax.errorbar(time_offset, np.real(df.correlator.values),
-                                           yerr=np.real(df.error.values),
-                                           linestyle="none", c=color, marker=mark, label=label)
-                if not real:
-                    plots["imag"+label] = ax.errorbar(time_offset, np.imag(df.correlator.values),
-                                                      yerr=np.imag(df.error.values),
-                                                      markerfacecolor='none',
-                                                      linestyle="none", c=color, marker=mark, label=None)
-            else:
-                #print df.correlator.values, df.error.values
-                plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                           linestyle="none", c=color, marker=mark, label=label)
+            plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True)
+            plt.setp(plots[label]["boxes"], color=color)
+            plt.setp(plots[label]["whiskers"], color=color)
+            plt.setp(plots[label]["fliers"], color=color)
 
-            if yrange:
-                plt.ylim(yrange)
-            if xrang:
-                plt.xlim(xrang)
-
-    if not seperate:
+    if args.seperate:
+        plt.boxplot(data, widths=0.5, patch_artist=True)
+        xticknames = plt.setp(ax, xticklabels=labels)
+        plt.setp(xticknames, rotation=45, fontsize=8)
+    if not args.seperate:
         leg = plt.legend(fancybox=True, shadow=True)
-    else:
-        plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
-        if has_colorbar:
-            f.subplots_adjust(right=0.95)
-            cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
-            f.colorbar(tmin_plot[label], cax=cbar_ax)
+    # else:
+    #     plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
+    #     if has_colorbar:
+    #         f.subplots_adjust(right=0.95)
+    #         cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
+    #         f.colorbar(tmin_plot[label], cax=cbar_ax)
 
-    if(output_stub):
-        if title:
-            f.suptitle(title)
+    if(args.output_stub):
+        if args.title:
+            f.suptitle(args.title)
         f.set_size_inches(18.5,10.5)
         plt.rcParams.update({'font.size': 5})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         plt.tight_layout()
-        logging.info("Saving plot to {}".format(output_stub+".png"))
-        plt.savefig(output_stub+".png",dpi=200)
-        logging.info("Saving plot to {}".format(output_stub+".eps"))
-        plt.savefig(output_stub+".eps")
+        logging.info("Saving plot to {}".format(args.output_stub+".png"))
+        plt.savefig(args.output_stub+".png",dpi=200)
+        # logging.info("Saving plot to {}".format(args.output_stub+".eps"))
+        # plt.savefig(output_stub+".eps")
         return
 
-    def toggle_errorbar_vis(ebarplot):
-        for i in flatten(ebarplot):
-            if i:
-                i.set_visible(not i.get_visible())
+    # def toggle_errorbar_vis(ebarplot):
+    #     for i in flatten(ebarplot):
+    #         if i:
+    #             i.set_visible(not i.get_visible())
 
-    def func(label):
-        toggle_errorbar_vis(plots[label])
-        if label in tmin_plot.keys():
-            tmin_plot[label].set_visible(not tmin_plot[label].get_visible())
-        plt.draw()
+    # def func(label):
+    #     toggle_errorbar_vis(plots[label])
+    #     if label in tmin_plot.keys():
+    #         tmin_plot[label].set_visible(not tmin_plot[label].get_visible())
+    #     plt.draw()
 
-    if not seperate:
-        rax = plt.axes([0.85, 0.8, 0.1, 0.15])
-        check = CheckButtons(rax, plots.keys(), [True]*len(plots))
-        check.on_clicked(func)
-        leg.draggable()
+    # if not seperate:
+    #     rax = plt.axes([0.85, 0.8, 0.1, 0.15])
+    #     check = CheckButtons(rax, plots.keys(), [True]*len(plots))
+    #     check.on_clicked(func)
+    #     leg.draggable()
 
     plt.show()
 
@@ -252,14 +201,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="plot a set of data files")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
-    parser.add_argument("-f", "--include-fit", action="store_true",
-                        help="check file for fit into, add it to plots")
     parser.add_argument("-r", "--real", action="store_true",
                         help="don't include the imgainry part'")
-    parser.add_argument("-c", "--columns", type=int, required=False,
-                        help="number of columns to make the plot", default=None)
     parser.add_argument("-t", "--title", type=str, required=False,
                         help="plot title", default=None)
+    parser.add_argument("-s", "--seperate", action="store_true", required=False,
+                        help="plot one column or multi columns")
     parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
                         help="set the yrange of the plot", default=None)
     parser.add_argument("-x", "--xrang", type=float, required=False, nargs=2,
@@ -278,10 +225,4 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    if args.columns:
-        logging.info("Plotting each file as a seperate plot")
-        plot_files(args.files, output_stub=args.output_stub,
-                   cols=args.columns, yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
-    else:
-        plot_files(args.files, output_stub=args.output_stub,
-                   yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
+    boxplot_files()
