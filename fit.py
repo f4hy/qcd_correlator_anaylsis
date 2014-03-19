@@ -74,7 +74,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             if not success:
                 raise ValueError()
             guess = uncorrelated_fit_values
-
+            logging.debug("firstpass guess {}".format(str(guess)))
         #results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000, full_output=1, disp=0, retall=0)  # noqa
         if guess[0] < 0.0:
             logging.warn("first pass found mass to be negative {}, lets flip it".format(guess[0]))
@@ -131,7 +131,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     boot_params = []
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=args.write_each_boot):
-        newguess = fn.starting_guess(strap, tmax-1, tmin)
+        if args.reguess:
+            newguess = fn.starting_guess(strap, tmax-1, tmin)
+        else:
+            newguess = initial_guess
         fitted_params = cov_fit(strap, newguess)
         boot_params.append(fitted_params)
 
@@ -424,6 +427,8 @@ if __name__ == "__main__":
                         "This option will cause the code to fit anyway.")
     parser.add_argument("--first_pass", action="store_true",
                         help="Do an uncorrelated chi square first, and use that as the guess")
+    parser.add_argument("--reguess", action="store_true",
+                        help="use emass on each bootstrap to set inital guess, otherwise use full ensamble as guess")
     parser.add_argument("-m", "--minuit", action="store_true",
                         help="use the minuit fitter")
     parser.add_argument("-f", "--function", choices=functions.keys(),
