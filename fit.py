@@ -437,7 +437,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    funct = functions[args.function](Nt=args.period)
 
     if args.random:
         logging.info("Setting random seed to %s", args.random)
@@ -454,7 +453,19 @@ if __name__ == "__main__":
         args.output_stub = os.path.splitext(args.output_stub)[0]
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
-    cor.prune_invalid(delete=True)
+    cor.prune_invalid(delete=True, sigma=0.5)
+
+    if not args.period:
+        if cor.numconfigs == 551:
+            logging.warning("period not set, guessing by confiigs, setting to 128")
+            args.period = 128
+        if cor.numconfigs == 412:
+            logging.warning("period not set, guessing by confiigs, setting to 256")
+            args.period = 256
+
+    funct = functions[args.function](Nt=args.period)
+
+
     tmin = args.time_start
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]
