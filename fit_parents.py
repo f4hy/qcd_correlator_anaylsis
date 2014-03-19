@@ -11,7 +11,14 @@ def massamp_guess(cor, tmax, *args):
     maxt = tmax - dt
     ave = cor.average_sub_vev()
     emass = cor.effective_mass(dt)
-    mass_guess = emass[maxt]
+    if not emass[maxt] > 0:
+        for t in range(maxt,0,-1):
+            if emass[t] > 0:
+                mass_guess = emass[t]
+                break
+
+    else:
+        mass_guess = emass[maxt]
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     return [mass_guess, amp_guess]
 
@@ -21,7 +28,14 @@ def const_guess(cor, tmax, *args):
     maxt = tmax - dt
     ave = cor.average_sub_vev()
     emass = cor.effective_mass(dt)
-    mass_guess = emass[maxt]
+    if not emass[maxt] > 0:
+        for t in range(maxt,0,-1):
+            if emass[t] > 0:
+                mass_guess = emass[t]
+                break
+
+    else:
+        mass_guess = emass[maxt]
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     return [mass_guess, amp_guess, 0.01]
 
@@ -31,7 +45,14 @@ def twoexp_sqr_guess(cor, tmax, tmin):
     maxt = tmax - dt
     ave = cor.average_sub_vev()
     emass = cor.effective_mass(dt)
-    mass_guess = emass[maxt]
+    if not emass[maxt] > 0:
+        for t in range(maxt,0,-1):
+            if emass[t] > 0:
+                mass_guess = emass[t]
+                break
+
+    else:
+        mass_guess = emass[maxt]
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     mass2_guess = np.sqrt(emass[tmin])
     amp2_guess = ((ave[tmin] - amp_guess*np.exp(-mass_guess*tmin)) /
