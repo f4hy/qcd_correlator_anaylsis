@@ -3,18 +3,12 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import logging
 import argparse
-from matplotlib.widgets import CheckButtons
-from compiler.ast import flatten
 import os
 import pandas as pd
-from operator_tranlator import translate
 import math
-
-from fitfunctions import *  # noqa
 from cStringIO import StringIO
-
 import re
-import operator
+import numpy as np
 
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
 
@@ -35,11 +29,13 @@ def lines_without_comments(filename, comment="#"):
     s.seek(0)
     return s
 
+
 def myconverter(s):
     try:
         return np.float(s.strip(','))
     except:
         return np.nan
+
 
 def removecomma(s):
     return int(s.strip(','))
@@ -58,14 +54,15 @@ def determine_type(txt):
 def read_file(filename):
     with open(filename, 'r') as f:
         first_line = f.readline()
-    names=[s.strip(" #") for s in first_line.split(",")[0:-2]]
+    names = [s.strip(" #") for s in first_line.split(",")[0:-2]]
     txt = lines_without_comments(filename)
     filetype = determine_type(txt)
     if filetype == "paren_complex":
         df = pd.read_csv(txt, delimiter=' ', names=names,
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
-        df = pd.read_csv(txt, sep=",", delimiter=",", names=names, skipinitialspace=True, delim_whitespace=True, converters={0: removecomma, 1: myconverter})
+        df = pd.read_csv(txt, sep=",", delimiter=",", names=names, skipinitialspace=True,
+                         delim_whitespace=True, converters={0: removecomma, 1: myconverter})
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=names)
     return df
@@ -140,14 +137,11 @@ def format_error_string(value, error):
 def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
-    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g" and c != "k"]
+    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w'
+              and c != "g" and c != "k"]
     plots = {}
-    plots_outline = {}
-    tmin_plot = {}
-    has_colorbar = False
     labels = label_names_from_filelist(args.files)
     #labels = [translate(l) for l in labels]
-    layout = None
     data = []
     f, ax = plt.subplots()
 
@@ -160,7 +154,6 @@ def boxplot_files():
     for index, (label, df) in enumerate(sdfs):
 
         # for index, label in enumerate(labels):
-        mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
 
         if args.seperate:
@@ -168,10 +161,11 @@ def boxplot_files():
         else:
             med = df.mass.median()
             width = df.mass.std()
-            offset = (1-(index+1)%3)*0.33
+            offset = (1-(index+1) % 3) * 0.33
             prevtextloc = med if med-prevtextloc > 0.02 else prevtextloc+0.02
-            textloc=(-1.2 if (index+1)%3  >0 else 1,prevtextloc)
-            plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True, positions = [offset])
+            textloc = (-1.2 if (index + 1) % 3 > 0 else 1, prevtextloc)
+            plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True,
+                                       positions=[offset])
             hide = not args.clean
             plots[label]["boxes"][0].set_facecolor(color)
             plots[label]["boxes"][0].set_linewidth(2)
@@ -179,8 +173,8 @@ def boxplot_files():
             plt.setp(plots[label]["fliers"], color=color, visible=hide)
             plt.setp(plots[label]["caps"], color=color, visible=hide)
             plt.setp(plots[label]["medians"], visible=hide)
-            ax.annotate(label+":{}".format(format_error_string(med,width)), xy=(offset,med), xytext=textloc,
-                        arrowprops=dict(arrowstyle="simple", fc="0.6") )
+            ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset, med),
+                        xytext=textloc, arrowprops=dict(arrowstyle="simple", fc="0.6"))
 
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
@@ -195,8 +189,8 @@ def boxplot_files():
         xticknames = plt.setp(ax, xticklabels=labels)
         plt.setp(xticknames, rotation=45, fontsize=8)
     if not args.seperate:
-        plt.xlim(-1.5,1.5)
-        plt.tick_params(labelbottom="off",bottom='off')
+        plt.xlim(-1.5, 1.5)
+        plt.tick_params(labelbottom="off", bottom='off')
 
     if args.yrange:
         plt.ylim(args.yrange)
@@ -209,12 +203,12 @@ def boxplot_files():
     if(args.output_stub):
         if args.title:
             f.suptitle(args.title)
-        f.set_size_inches(18.5,10.5)
+        f.set_size_inches(18.5, 10.5)
         plt.rcParams.update({'font.size': 5})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         plt.tight_layout()
         logging.info("Saving plot to {}".format(args.output_stub+".png"))
-        plt.savefig(args.output_stub+".png",dpi=200)
+        plt.savefig(args.output_stub+".png", dpi=200)
         # logging.info("Saving plot to {}".format(args.output_stub+".eps"))
         # plt.savefig(output_stub+".eps")
         return
@@ -245,7 +239,6 @@ if __name__ == "__main__":
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
     args = parser.parse_args()
-
 
     if args.verbose:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
