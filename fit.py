@@ -106,15 +106,18 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 if max(difference) < 0.0001:
                     return minuit_results
                 else:
-                    if m.fval > newresults[1] and m.fval - newresults[1] > 0.00001:
+                    if m.fval > newresults[1] and m.fval - newresults[1] > 0.01:
                         logging.error("other fitter worked better than minuit!")
                         logging.error("minuit: {}, old: {}".format(m.fval , newresults[1]))
-                        raise RuntimeError("Other Fitter did better")
+                        logging.error("Using other fitter")
+                        # raise RuntimeError("Other Fitter did better")
             else:
                 logging.error("minuit failed!!")
-                if flag == 0:
+                if flag != 0:
                     logging.error("Both fitters failed")
                     raise RuntimeError("Both fitters failed")
+                else:
+                    logging.error("Using old fitter")
         logging.debug("fit value {}".format(repr(newresults)))
         if covariant_fit[0] < 0.0:
             logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
