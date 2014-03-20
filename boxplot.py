@@ -59,7 +59,6 @@ def read_file(filename):
     with open(filename, 'r') as f:
         first_line = f.readline()
     names=[s.strip(" #") for s in first_line.split(",")[0:-2]]
-    print names
     txt = lines_without_comments(filename)
     filetype = determine_type(txt)
     if filetype == "paren_complex":
@@ -105,7 +104,6 @@ def label_names_from_filelist(filelist):
     names = [(n.strip(" _") if n != "" else "base") for n in names]
 
     if all([re.match(".*[0-9]_srcCol[0-9].*", n) for n in names]):
-        print re.match(".*[0-9]+_srcCol([0-9]+).*", "11_srcCol11").group(1)
         names = ["level_"+re.match(".*[0-9]+_srcCol([0-9]+).*", n).group(1) for n in names]
 
     return names
@@ -160,7 +158,6 @@ def boxplot_files():
 
     sdfs = sorted(dfs.iteritems(), key=lambda s: s[1].mass.median())
     for index, (label, df) in enumerate(sdfs):
-        print index, label, df.mass.median()
 
         # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
@@ -174,7 +171,6 @@ def boxplot_files():
             offset = (1-(index+1)%3)*0.33
             prevtextloc = med if med-prevtextloc > 0.02 else prevtextloc+0.02
             textloc=(-1.2 if (index+1)%3  >0 else 1,prevtextloc)
-            print textloc
             plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True, positions = [offset])
             hide = not args.clean
             plots[label]["boxes"][0].set_facecolor(color)
@@ -209,12 +205,6 @@ def boxplot_files():
 
     if args.title:
         f.suptitle(args.title)
-    # else:
-    #     plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
-    #     if has_colorbar:
-    #         f.subplots_adjust(right=0.95)
-    #         cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
-    #         f.colorbar(tmin_plot[label], cax=cbar_ax)
 
     if(args.output_stub):
         if args.title:
@@ -228,23 +218,6 @@ def boxplot_files():
         # logging.info("Saving plot to {}".format(args.output_stub+".eps"))
         # plt.savefig(output_stub+".eps")
         return
-
-    # def toggle_errorbar_vis(ebarplot):
-    #     for i in flatten(ebarplot):
-    #         if i:
-    #             i.set_visible(not i.get_visible())
-
-    # def func(label):
-    #     toggle_errorbar_vis(plots[label])
-    #     if label in tmin_plot.keys():
-    #         tmin_plot[label].set_visible(not tmin_plot[label].get_visible())
-    #     plt.draw()
-
-    # if not seperate:
-    #     rax = plt.axes([0.85, 0.8, 0.1, 0.15])
-    #     check = CheckButtons(rax, plots.keys(), [True]*len(plots))
-    #     check.on_clicked(func)
-    #     leg.draggable()
 
     plt.show()
 
@@ -274,7 +247,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    print os.path.dirname(args.files[0])
     if args.verbose:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
         logging.debug("Verbose debuging mode activated")
