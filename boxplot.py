@@ -14,6 +14,7 @@ from fitfunctions import *  # noqa
 from cStringIO import StringIO
 
 import re
+import operator
 
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
 
@@ -102,6 +103,11 @@ def label_names_from_filelist(filelist):
     if len(postfix) > 1:
         names = [n[:-len(postfix)] for n in names]
     names = [(n.strip(" _") if n != "" else "base") for n in names]
+
+    if all([re.match(".*[0-9]_srcCol[0-9].*", n) for n in names]):
+        print re.match(".*[0-9]+_srcCol([0-9]+).*", "11_srcCol11").group(1)
+        names = ["level_"+re.match(".*[0-9]+_srcCol([0-9]+).*", n).group(1) for n in names]
+
     return names
 
 
@@ -124,11 +130,21 @@ def add_fit_info(filename, ax=None):
         logging.error("File {} had no fit into".format(filename))
 
 
+def format_error_string(value, error):
+    digits = -1.0*round(math.log10(error))
+    if np.isnan(digits):
+        return "****"
+    formated_error = int(round(error * (10**(digits + 1))))
+    formated_value = "{m:.{d}}".format(d=int(digits) + 1, m=value)
+    return "{m}({e})".format(m=formated_value, e=formated_error)
+
+
 def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
-    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"]
+    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g" and c != "k"]
     plots = {}
+    plots_outline = {}
     tmin_plot = {}
     has_colorbar = False
     labels = label_names_from_filelist(args.files)
@@ -136,27 +152,61 @@ def boxplot_files():
     layout = None
     data = []
     f, ax = plt.subplots()
-    for index, label, filename in zip(range(len(args.files)), labels, args.files):
+
+    prevtextloc = 0.0
+    dfs = {}
+    for label, filename in zip(labels, args.files):
+        dfs[label] = read_file(filename)
+
+    sdfs = sorted(dfs.iteritems(), key=lambda s: s[1].mass.median())
+    for index, (label, df) in enumerate(sdfs):
+        print index, label, df.mass.median()
 
         # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
-        df = read_file(filename)
 
         if args.seperate:
             data.append(df.mass.values)
         else:
-            plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True)
-            plt.setp(plots[label]["boxes"], color=color)
-            plt.setp(plots[label]["whiskers"], color=color)
-            plt.setp(plots[label]["fliers"], color=color)
+            med = df.mass.median()
+            width = df.mass.std()
+            offset = (1-(index+1)%3)*0.33
+            prevtextloc = med if med-prevtextloc > 0.02 else prevtextloc+0.02
+            textloc=(-1.2 if (index+1)%3  >0 else 1,prevtextloc)
+            print textloc
+            plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True, positions = [offset])
+            hide = not args.clean
+            plots[label]["boxes"][0].set_facecolor(color)
+            plots[label]["boxes"][0].set_linewidth(2)
+            plt.setp(plots[label]["whiskers"], color=color, visible=hide)
+            plt.setp(plots[label]["fliers"], color=color, visible=hide)
+            plt.setp(plots[label]["caps"], color=color, visible=hide)
+            plt.setp(plots[label]["medians"], visible=hide)
+            ax.annotate(label+":{}".format(format_error_string(med,width)), xy=(offset,med), xytext=textloc,
+                        arrowprops=dict(arrowstyle="simple", fc="0.6") )
 
     if args.seperate:
-        plt.boxplot(data, widths=0.5, patch_artist=True)
+        splot = plt.boxplot(data, widths=0.5, patch_artist=True)
+        for b in splot["boxes"]:
+            b.set_linewidth(2)
+        if args.clean:
+            plt.setp(splot["whiskers"], visible=False)
+            plt.setp(splot["fliers"], visible=False)
+            plt.setp(splot["caps"], visible=False)
+            plt.setp(splot["medians"], visible=False)
+
         xticknames = plt.setp(ax, xticklabels=labels)
         plt.setp(xticknames, rotation=45, fontsize=8)
     if not args.seperate:
-        leg = plt.legend(fancybox=True, shadow=True)
+        plt.xlim(-1.5,1.5)
+        plt.tick_params(labelbottom="off",bottom='off')
+
+    if args.yrange:
+        plt.ylim(args.yrange)
+    if args.xrang:
+        plt.xlim(args.xrang)
+
     # else:
     #     plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
     #     if has_colorbar:
@@ -213,12 +263,16 @@ if __name__ == "__main__":
                         help="set the xrang of the plot", default=None)
     parser.add_argument("-o", "--output-stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("-c", "--clean", action="store_true", required=False,
+                        help="display without outliers or wiskers")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
     args = parser.parse_args()
 
+
+    print os.path.dirname(args.files[0])
     if args.verbose:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
         logging.debug("Verbose debuging mode activated")
