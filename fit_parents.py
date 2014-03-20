@@ -45,18 +45,11 @@ def twoexp_sqr_guess(cor, tmax, tmin):
     maxt = tmax - dt
     ave = cor.average_sub_vev()
     emass = cor.effective_mass(dt)
-    if not emass[maxt] > 0:
-        for t in range(maxt,0,-1):
-            if emass[t] > 0:
-                mass_guess = emass[t]
-                break
-
-    else:
-        mass_guess = emass[maxt]
+    mass_guess = np.mean(emass.values())
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     mass2_guess = np.sqrt(emass[tmin])
     amp2_guess = ((ave[tmin] - amp_guess*np.exp(-mass_guess*tmin)) /
-                  (amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin)))
+                  (amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin)))/2
     return [mass_guess, amp_guess, mass2_guess, amp2_guess]
 
 
