@@ -413,6 +413,8 @@ if __name__ == "__main__":
                         help="first time slice to start a fit, can be a list of times")
     parser.add_argument("-te", "--time-end", type=int, required=False,
                         help="last time slice to fit, can be a list of times")
+    parser.add_argument("-max", "--maxrange", action="store_true", required=False,
+                        help="fit over the full valid range")
     parser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
                         help="Number of straps")
     parser.add_argument("-p", "--plot", action="store_true", required=False,
@@ -471,6 +473,10 @@ if __name__ == "__main__":
 
     funct = functions[args.function](Nt=args.period)
 
+    if args.maxrange:
+        logging.info("setting trange to the all of the data")
+        args.time_start = min(cor.times)
+        args.time_end = max(cor.times)
 
     tmin = args.time_start
     tmax = args.time_end
