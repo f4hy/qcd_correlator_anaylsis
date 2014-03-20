@@ -49,13 +49,17 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     initial_guess = fn.starting_guess(cor, tmax-1, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
+    # return initial_guess, [0.1, 0.1, 0.1, 0.1] # For testing initila guess in plot
     x = np.array(range(tmin, tmax))
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in range(tmin, tmax)]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if not success:
         raise ValueError()
-    initial_guess = original_ensamble_params
+    if args.first_pass:
+        initial_guess = original_ensamble_params
+        logging.info("initial_guess after first pass: {}".format(repr(initial_guess)))
+        # return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
 
     def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
@@ -64,6 +68,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         inv_cov = bestInverse(cov)
         start_time = correlator.times[0]
         aoc = np.fromiter(ave_cor.values(), np.float)[tmin-start_time:tmax-start_time]
+        logging.debug("guess {}".format(str(guess)))
 
         def cov_fun(g):
             """ Function to be minizied. computed using matrix mult"""
@@ -97,7 +102,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if args.minuit:
             m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
             #m.set_strategy(2)
-            m.migrad()
+            migradinfo = m.migrad()
             minuit_results = [m.values[name] for name in fn.parameter_names]
             if m.get_fmin().is_valid and flag != 0:
                 return minuit_results
@@ -114,6 +119,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             else:
                 logging.error("minuit failed!!")
                 if flag != 0:
+                    logging.info("migradinfo: {}".format(str(migradinfo)))
+                    logging.info("Fit results: f() ={}, Iterations={}".format(*fit_info))
+                    logging.error("Fitter flag set to {}. Error!".format(flag))
                     logging.error("Both fitters failed")
                     raise RuntimeError("Both fitters failed")
                 else:
