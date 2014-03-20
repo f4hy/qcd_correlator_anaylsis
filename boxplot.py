@@ -207,6 +207,8 @@ def boxplot_files():
     if args.xrang:
         plt.xlim(args.xrang)
 
+    if args.title:
+        f.suptitle(args.title)
     # else:
     #     plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
     #     if has_colorbar:
