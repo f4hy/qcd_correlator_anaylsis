@@ -120,5 +120,6 @@ class twice_mass_amp(object):
         self.inv_cov = invmatrix
         self.times = times
         m = Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1], mass2=guess[2], amp2=guess[3],
-                   print_level=0, pedantic=False, limit_amp2=amp_bounds, limit_mass2=amp_bounds)
+                   print_level=0, pedantic=False, limit_amp2=amp_bounds, limit_mass2=mass_bounds,
+                   limit_mass=mass_bounds, limit_amp=amp_bounds)
         return m
