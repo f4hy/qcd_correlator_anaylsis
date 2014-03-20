@@ -78,12 +78,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             uncorrelated_fit_values, success = leastsq(fun, guess, args=(x, y), maxfev=100000)
             if not success:
                 raise ValueError()
-            guess = uncorrelated_fit_values
-            logging.debug("firstpass guess {}".format(str(guess)))
+            logging.debug("firstpass guess {}".format(str(uncorrelated_fit_values)))
+            if guess[0] < 0.0:
+                logging.warn("first pass found mass to be negative {}, lets not use it".format(guess[0]))
+            else:
+                guess = uncorrelated_fit_values
+
         #results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000, full_output=1, disp=0, retall=0)  # noqa
-        if guess[0] < 0.0:
-            logging.warn("first pass found mass to be negative {}, lets flip it".format(guess[0]))
-            guess[0] = -guess[0]
 
         if len(guess) > 2 and guess[2] < 0.0:
             logging.warn("first pass found mass2 to be negative {}, lets flip it".format(guess[2]))
