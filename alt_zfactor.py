@@ -83,6 +83,7 @@ def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub,
     # print normalized_err
 
     if(outputstub):
+        logging.info("Writing alt_zfactors to {}".format(outputstub+".out"))
         with open(outputstub+".out", 'w') as outfile:
             outfile.write("# normalized Zfactors\n")
             for level in levels_to_make:
