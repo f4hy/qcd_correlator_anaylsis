@@ -53,11 +53,11 @@ def read_emasses(filewild, N, t, levels_to_make):
         logging.debug("reading level %d", level)
         try:
             emasses[level] = np.array(np.real(df.ix[df["time"] == t, "correlator"]))
-        except ValueError:
-            logging.critical("Failed to read effective mass for level {}. ".format(level))
-            logging.error("Try restricting number of levels to make with -n")
-            exit(level)
-    return emasses
+        except (IOError, ValueError) as e:
+            logging.critical("Failed to read effective mass for level {}.".format(level))
+            logging.error("Restricting number of levels to make to {}".format(level))
+            return emasses, level
+    return emasses, levels_to_make
 
 
 def normalize_Zs(Zs, normalize):
@@ -78,7 +78,9 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxleve
 
     levels_to_make = range(min(len(ops), maxlevels))
 
-    emasses = read_emasses(emasswild, len(ops), t, levels_to_make)
+    emasses, emasses_read = read_emasses(emasswild, len(ops), t, levels_to_make)
+    levels_to_make = range(min(emasses_read, maxlevels))
+
     Zs = {}
     for level in levels_to_make:
         v_n = v[:, level]
@@ -88,8 +90,9 @@ def compute_zfactor(corwild, rotfile, emasswild, ops, t0, t, outputstub, maxleve
         logging.debug("normed Z_j for level{}: {}".format(level, str(normalized_Zs[level])))
 
     if(outputstub):
+        logging.info("Writing zfactors to {}".format(outputstub+".out"))
         with open(outputstub+".out", 'w') as outfile:
-            outfile.write("# normalized Zfactors\n")
+            outfile.write("# Zfactors\n")
             for level in levels_to_make:
                 for j in range(len(ops)):
                     outfile.write("{:d}{:03d} {}\n".format(j+1, level+1, normalized_Zs[level][j]))
