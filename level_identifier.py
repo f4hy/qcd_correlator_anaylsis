@@ -85,11 +85,12 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
 
         values = df.ix[indexes].identities.values
         errors = df.ix[indexes].error.values
-        errors = None
+        if args.no_errors:
+            errors = None
         # plots[(i, j)] = ax.bar(ops, values, yerr=errors)
         if mode == "level":
-            plot[(i, j)] = ax.bar(ops[:ns], values[:ns], 1, color="g")
-            plot[(i, j)] = ax.bar(ops[ns:], values[ns:], 1, color="b")
+            plot[(i, j)] = ax.bar(ops[:ns], values[:ns], 1, color="g", yerr=errors)
+            plot[(i, j)] = ax.bar(ops[ns:], values[ns:], 1, color="b", yerr=errors)
             ax.set_xticks(np.array(ops)+0.5)
             ax.set_xticklabels([o if o % 5 == 0 else "" for o in ops])
             plt.title("level {}".format(plot_index))
@@ -136,6 +137,8 @@ if __name__ == "__main__":
                         help="operator names file")
     parser.add_argument("-t", "--title", type=str, required=False,
                         help="plot title", default=None)
+    parser.add_argument("-ne", "--no-errors", action="store_true", default=None,
+                        help="suppress the error bars")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
