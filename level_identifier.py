@@ -11,6 +11,15 @@ import math
 OUTPUT = 25
 logging.addLevelName(OUTPUT, "OUTPUT")
 
+def readops(filename):
+    with open(filename) as opfile:
+        raw_operators = opfile.readlines()
+        if len(raw_operators) == 1:
+            operators = raw_operators[0].split()
+        else:
+            operators = map(str.strip, raw_operators)
+    return operators
+
 
 def read_file(filename):
     txt = plot_files.lines_without_comments(filename)
@@ -132,10 +141,10 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
+
     names = None
     if args.names:
-        with open(args.names) as namefile:
-            names = namefile.readline().split()
+        names = readops(args.names)
         print names
 
     make_bar_plot(args.inputfile, args.columns, args.output_stub, args.mode, args.number_singlehadrons, names, maxplots=args.max_plots)
