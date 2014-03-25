@@ -102,6 +102,9 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
         ax.set_xlim(xmin=1)
     # end plot loop
 
+    if args.title:
+        f.suptitle(args.title)
+
     if(output_stub):
         plt.rcParams.update({'font.size': 8})
         plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
@@ -131,6 +134,8 @@ if __name__ == "__main__":
                         help="Maximum number of plots")
     parser.add_argument("-n", "--names", type=str, required=False,
                         help="operator names file")
+    parser.add_argument("-t", "--title", type=str, required=False,
+                        help="plot title", default=None)
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
@@ -140,7 +145,6 @@ if __name__ == "__main__":
         logging.debug("Verbose debuging mode activated")
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-
 
     names = None
     if args.names:
