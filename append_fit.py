@@ -7,7 +7,7 @@ import re
 def append_fit_results():
 
     txt = args.fitlog.read()
-    ts, te = re.findall("t=.*(\d+) to (\d+)", txt)[0]
+    ts, te = re.findall("t=.*(\d+).*to.*(\d+)", txt)[0]
     mass, masserror = re.findall("mass.*(\d+\.\d+).*(\d+\.\d+)", txt)[0]
     amp, amperror = re.findall("amp.*(\d+\.\d+).*(\d+\.\d+)", txt)[0]
     qual = re.findall("Qual (\d+\.\d+)", txt)[0]
