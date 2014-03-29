@@ -256,6 +256,8 @@ if __name__ == "__main__":
                         help="check file for fit into, add it to plots")
     parser.add_argument("-r", "--real", action="store_true",
                         help="don't include the imgainry part'")
+    parser.add_argument("-s", "--sort", action="store_true",
+                        help="attempt to sort them first")
     parser.add_argument("-c", "--columns", type=int, required=False,
                         help="number of columns to make the plot", default=None)
     parser.add_argument("-t", "--title", type=str, required=False,
@@ -277,6 +279,18 @@ if __name__ == "__main__":
         logging.debug("Verbose debuging mode activated")
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
+
+    if args.sort:
+        try:
+            s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files), key=lambda t: int(t[0]))]
+            args.files = s
+        except e:
+            logging.warn("sorting failed")
+        else:
+            logging.info("level sorting worked")
+
+
 
     if args.columns:
         logging.info("Plotting each file as a seperate plot")
