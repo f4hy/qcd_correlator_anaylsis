@@ -137,8 +137,8 @@ def format_error_string(value, error):
 def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
-    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w'
-              and c != "g" and c != "k"]
+    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "k"]
+    colors.append("#ffa500")
     plots = {}
     labels = label_names_from_filelist(args.files)
     #labels = [translate(l) for l in labels]
