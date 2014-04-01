@@ -202,6 +202,9 @@ def boxplot_files():
     if args.title:
         f.suptitle(args.title)
 
+    if args.threshold:
+        plt.plot([-2, 200], [args.threshold, args.threshold], color='r', linestyle='--', linewidth=2)
+
     if(args.output_stub):
         if args.title:
             f.suptitle(args.title)
@@ -236,6 +239,8 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     parser.add_argument("-c", "--clean", action="store_true", required=False,
                         help="display without outliers or wiskers")
+    parser.add_argument("-3", "--threshold", type=float, required=False,
+                        help="Draw a line where 3 particle threshold is")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
