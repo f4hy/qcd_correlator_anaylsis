@@ -161,7 +161,7 @@ def boxplot_files():
         else:
             med = df.mass.median()
             width = df.mass.std()
-            offset = (1-(index+1) % 3) * 0.33
+            offset = ((1-(index+1) % 3) * 0.33)+(index/3)*0.05
             prevtextloc = med if med-prevtextloc > 0.02 else prevtextloc+0.02
             textloc = (-1.2 if (index + 1) % 3 > 0 else 1, prevtextloc)
             plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True,
@@ -169,6 +169,8 @@ def boxplot_files():
             hide = not args.clean
             plots[label]["boxes"][0].set_facecolor(color)
             plots[label]["boxes"][0].set_linewidth(2)
+            plots[label]["boxes"][0].set_alpha(1.0-width*3.0)
+            plots[label]["boxes"][0].set_zorder(-1*width)
             plt.setp(plots[label]["whiskers"], color=color, visible=hide)
             plt.setp(plots[label]["fliers"], color=color, visible=hide)
             plt.setp(plots[label]["caps"], color=color, visible=hide)
