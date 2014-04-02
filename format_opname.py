@@ -13,6 +13,7 @@ def format_op(op):
     p2 = "".join(p2.replace("[P=(", "").replace(")", "").split(","))
     o1=o1.strip(']\"').replace("_","")
     o2=o2.strip(']\"').replace("_","")
+    rep=rep.replace("_","")
 
     print "{}{}-{}p{}{}{}-{}p{}{}{}".format(iso, rep, n1, p1, o1, c1, n2, p2, o2, c2)
 
