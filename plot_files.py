@@ -67,7 +67,7 @@ def read_file(filename):
     return df
 
 
-def get_fit(filename):
+def get_fit(filename, noexcept=False):
     with open(filename) as f:
         for line in f:
             if "fit" in line:
@@ -78,6 +78,8 @@ def get_fit(filename):
                 error = float(re.search("e=(.*?) ", line).group(1))
                 qual = re.search("qual:(.*)", line).group(1)
                 return (tmin, tmax, mass, error, qual)
+    if noexcept:
+        return (0, 0, 1.0, 0, 0)
     raise RuntimeError("No fit info")
 
 
@@ -292,13 +294,15 @@ if __name__ == "__main__":
     if args.sort:
         try:
             if args.fit_only:
-                fitvalues =[get_fit(i)[2] for i in args.files]
+                fitvalues =[get_fit(i, noexcept=True)[2] for i in args.files]
                 s = [x[1] for x in sorted(zip(fitvalues, args.files), key=lambda t: float(t[0]))]
             else:
                 s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files), key=lambda t: int(t[0]))]
             args.files = s
-        except e:
+        except Exception as e:
             logging.warn("sorting failed")
+            print e
+            exit()
         else:
             logging.info("level sorting worked")
 
