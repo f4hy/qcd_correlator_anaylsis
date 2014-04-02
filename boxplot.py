@@ -151,6 +151,7 @@ def boxplot_files():
         dfs[label] = read_file(filename)
 
     sdfs = sorted(dfs.iteritems(), key=lambda s: s[1].mass.median())
+    sorted_labels = [i[0] for i in sdfs]
     for index, (label, df) in enumerate(sdfs):
 
         # for index, label in enumerate(labels):
@@ -188,7 +189,7 @@ def boxplot_files():
             plt.setp(splot["caps"], visible=False)
             plt.setp(splot["medians"], visible=False)
 
-        xticknames = plt.setp(ax, xticklabels=labels)
+        xticknames = plt.setp(ax, xticklabels=sorted_labels)
         plt.setp(xticknames, rotation=45, fontsize=8)
     if not args.seperate:
         plt.xlim(-1.5, 1.5)
