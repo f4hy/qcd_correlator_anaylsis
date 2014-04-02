@@ -266,6 +266,8 @@ if __name__ == "__main__":
                         help="attempt to sort them first")
     parser.add_argument("-c", "--columns", type=int, required=False,
                         help="number of columns to make the plot", default=None)
+    parser.add_argument("-n", "--number", type=int, required=False,
+                        help="number of correlators to include per plot", default=10000)
     parser.add_argument("-t", "--title", type=str, required=False,
                         help="plot title", default=None)
     parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
@@ -300,12 +302,20 @@ if __name__ == "__main__":
         else:
             logging.info("level sorting worked")
 
+    def chunks(l, n):
+        """ Yield successive n-sized chunks from l.
+        """
+        for i in xrange(0, len(l), n):
+            yield l[i:i+n]
 
-
-    if args.columns:
-        logging.info("Plotting each file as a seperate plot")
-        plot_files(args.files, output_stub=args.output_stub,
-                   cols=args.columns, yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
-    else:
-        plot_files(args.files, output_stub=args.output_stub,
-                   yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
+    for index,chunk in enumerate(chunks(args.files, args.number)):
+        ostub=args.output_stub
+        if args.output_stub and index > 0:
+            ostub="{}_{}".format(args.output_stub, index)
+        if args.columns:
+            logging.info("Plotting each file as a seperate plot")
+            plot_files(chunk, output_stub=ostub,
+                       cols=args.columns, yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
+        else:
+            plot_files(chunk, output_stub=ostub,
+                       yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
