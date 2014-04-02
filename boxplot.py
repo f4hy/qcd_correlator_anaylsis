@@ -151,7 +151,10 @@ def boxplot_files():
         dfs[label] = read_file(filename)
 
     sdfs = sorted(dfs.iteritems(), key=lambda s: s[1].mass.median())
+    if args.maxlevels:
+        sdfs = sdfs[:args.maxlevels]
     sorted_labels = [i[0] for i in sdfs]
+
     for index, (label, df) in enumerate(sdfs):
 
         # for index, label in enumerate(labels):
@@ -162,8 +165,15 @@ def boxplot_files():
         else:
             med = df.mass.median()
             width = df.mass.std()
-            offset = ((1-(index+1) % 3) * 0.33)+(index/3)*0.05
-            prevtextloc = med if med-prevtextloc > 0.02 else prevtextloc+0.02
+            offset = ((1-(index+1) % 3) * 0.33)#+(index/3)*0.05
+            if index%3 == 0 and index%2==0 :
+                offset += (index/3)*0.03
+            if index%3 == 2 and index%2==0:
+                offset += (index/3)*0.03
+            if index%3 == 1 and index%2==0:
+                offset -= (index/3)*0.03
+            prevtextloc = med if med-prevtextloc > 0.01 else prevtextloc+0.01
+
             textloc = (-1.2 if (index + 1) % 3 > 0 else 1, prevtextloc)
             plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True,
                                        positions=[offset])
@@ -176,8 +186,8 @@ def boxplot_files():
             plt.setp(plots[label]["fliers"], color=color, visible=hide)
             plt.setp(plots[label]["caps"], color=color, visible=hide)
             plt.setp(plots[label]["medians"], visible=hide)
-            ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset, med),
-                        xytext=textloc, arrowprops=dict(arrowstyle="simple", fc="0.6"))
+            ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset-0.1, med),
+                        xytext=textloc, arrowprops=dict(arrowstyle="->", fc="0.6"))
 
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
@@ -243,6 +253,8 @@ if __name__ == "__main__":
                         help="display without outliers or wiskers")
     parser.add_argument("-3", "--threshold", type=float, required=False,
                         help="Draw a line where 3 particle threshold is")
+    parser.add_argument("-n", "--maxlevels", type=int, required=False,
+                        help="dont plot more  than this many levels")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
