@@ -209,7 +209,7 @@ def boxplot_files():
         if args.title:
             f.suptitle(args.title)
         f.set_size_inches(19.2, 12.0)
-        plt.rcParams.update({'font.size': 8})
+        plt.rcParams.update({'font.size': 12})
         f.set_dpi(100)
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         #plt.tight_layout()
