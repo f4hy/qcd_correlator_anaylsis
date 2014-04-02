@@ -151,6 +151,7 @@ def boxplot_files():
         dfs[label] = read_file(filename)
 
     sdfs = sorted(dfs.iteritems(), key=lambda s: s[1].mass.median())
+    sdfs = [i for i in sdfs if i[1].mass.std() < args.prune]
     if args.maxlevels:
         sdfs = sdfs[:args.maxlevels]
     sorted_labels = [i[0] for i in sdfs]
@@ -255,6 +256,8 @@ if __name__ == "__main__":
                         help="Draw a line where 3 particle threshold is")
     parser.add_argument("-n", "--maxlevels", type=int, required=False,
                         help="dont plot more  than this many levels")
+    parser.add_argument("-p", "--prune", type=float, required=False,
+                        help="remove levels with error above this")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
