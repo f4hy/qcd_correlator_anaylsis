@@ -143,7 +143,11 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             else:
                 fitstring = add_fit_info(filename)
             if fitstring:
-                label += " " + fitstring
+                if args.fit_only:
+                    print "setting label to {}".format(fitstring)
+                    label = fitstring
+                else:
+                    label += " " + fitstring
 
         # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
@@ -254,6 +258,8 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-f", "--include-fit", action="store_true",
                         help="check file for fit into, add it to plots")
+    parser.add_argument("-fo", "--fit_only", action="store_true",
+                        help="replace_labels with fit info")
     parser.add_argument("-r", "--real", action="store_true",
                         help="don't include the imgainry part'")
     parser.add_argument("-s", "--sort", action="store_true",
@@ -283,7 +289,11 @@ if __name__ == "__main__":
 
     if args.sort:
         try:
-            s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files), key=lambda t: int(t[0]))]
+            if args.fit_only:
+                fitvalues =[get_fit(i)[2] for i in args.files]
+                s = [x[1] for x in sorted(zip(fitvalues, args.files), key=lambda t: float(t[0]))]
+            else:
+                s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files), key=lambda t: int(t[0]))]
             args.files = s
         except e:
             logging.warn("sorting failed")
