@@ -117,7 +117,8 @@ def add_fit_info(filename, ax=None):
         formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
         # ax.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
         #              xytext=(tmax+1, mass+error))
-        return "{m}({e}) qual:{q:.4}".format(m=formated_mass, e=formated_error, q=quality)
+        #return "{m}({e}) qual:{q:.4}".format(m=formated_mass, e=formated_error, q=quality)
+        return "{m}({e})".format(m=formated_mass, e=formated_error)
     except RuntimeError:
         logging.error("File {} had no fit into".format(filename))
 
