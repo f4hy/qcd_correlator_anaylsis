@@ -225,13 +225,13 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         if title:
             f.suptitle(title)
         f.set_size_inches(18.5,10.5)
-        plt.rcParams.update({'font.size': 5})
+        plt.rcParams.update({'font.size': 10})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         plt.tight_layout()
         logging.info("Saving plot to {}".format(output_stub+".png"))
-        plt.savefig(output_stub+".png",dpi=200)
-        logging.info("Saving plot to {}".format(output_stub+".eps"))
-        plt.savefig(output_stub+".eps")
+        plt.savefig(output_stub+".png",dpi=100)
+        # logging.info("Saving plot to {}".format(output_stub+".eps"))
+        # plt.savefig(output_stub+".eps")
         return
 
     def toggle_errorbar_vis(ebarplot):
