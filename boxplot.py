@@ -269,7 +269,7 @@ if __name__ == "__main__":
                         help="dont plot more  than this many levels")
     parser.add_argument("-p", "--prune", type=float, required=False,
                         help="remove levels with error above this")
-    parser.add_argument("-single", type=int, nargs='+', required=False, default=[]
+    parser.add_argument("-single", type=int, nargs='+', required=False, default=[],
                         help="mark which ones are single hadrons")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
