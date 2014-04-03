@@ -9,6 +9,7 @@ import math
 from cStringIO import StringIO
 import re
 import numpy as np
+from matplotlib.patches import Ellipse
 
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
 
@@ -142,6 +143,7 @@ def boxplot_files():
     plots = {}
     labels = label_names_from_filelist(args.files)
     #labels = [translate(l) for l in labels]
+    circles = []
     data = []
     f, ax = plt.subplots()
 
@@ -163,6 +165,11 @@ def boxplot_files():
 
         if args.seperate:
             data.append(df.mass.values)
+            levelnum=int(label.split("_")[1])
+            if levelnum in args.single:
+                print "ploting a ciecle", index, label
+                print df.mass.median(), df.mass.std()
+                circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r', fill=False))
         else:
             med = df.mass.median()
             width = df.mass.std()
@@ -192,16 +199,22 @@ def boxplot_files():
 
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
-        for b in splot["boxes"]:
+        for i,b in enumerate(splot["boxes"]):
             b.set_linewidth(2)
+            # if i in args.single:
+            #     b.set_facecolor('g')
         if args.clean:
             plt.setp(splot["whiskers"], visible=False)
             plt.setp(splot["fliers"], visible=False)
             plt.setp(splot["caps"], visible=False)
             plt.setp(splot["medians"], visible=False)
-
-        xticknames = plt.setp(ax, xticklabels=sorted_labels)
-        plt.setp(xticknames, rotation=45, fontsize=8)
+        for c in circles:
+            f.gca().add_artist(c)
+        # xticknames = plt.setp(ax, xticklabels=sorted_labels)
+        # plt.setp(xticknames, rotation=45, fontsize=8)
+        plt.setp( ax.get_xticklabels(), visible=False)
+        ax.set_ylabel("Energy", fontweight='bold')
+        ax.set_xlabel("Levels", fontweight='bold')
     if not args.seperate:
         plt.xlim(-1.5, 1.5)
         plt.tick_params(labelbottom="off", bottom='off')
@@ -212,14 +225,12 @@ def boxplot_files():
         plt.xlim(args.xrang)
 
     if args.title:
-        f.suptitle(args.title)
+        f.suptitle(args.title.replace("_", " "))
 
     if args.threshold:
         plt.plot([-2, 200], [args.threshold, args.threshold], color='r', linestyle='--', linewidth=2)
 
     if(args.output_stub):
-        if args.title:
-            f.suptitle(args.title)
         f.set_size_inches(19.2, 12.0)
         plt.rcParams.update({'font.size': 12})
         f.set_dpi(100)
@@ -258,6 +269,8 @@ if __name__ == "__main__":
                         help="dont plot more  than this many levels")
     parser.add_argument("-p", "--prune", type=float, required=False,
                         help="remove levels with error above this")
+    parser.add_argument("-single", type=int, nargs='+', required=False,
+                        help="mark which ones are single hadrons")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
