@@ -56,6 +56,7 @@ parser.add_argument("-t", "--times", required=False, type=int, help="specify the
 args = parser.parse_args()
 
 if args.fit:
+    raise DeprecationWarning("Fit no long works (plotting fits was reworked)")
     funct = functions[args.function](Nt=args.period)
 
 if not args.operators:
