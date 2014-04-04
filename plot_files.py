@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
-from matplotlib import mpl
+import matplotlib as mpl
 import logging
 import argparse
 from matplotlib.widgets import CheckButtons
