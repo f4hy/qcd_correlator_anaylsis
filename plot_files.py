@@ -70,16 +70,18 @@ def read_file(filename):
 def get_fit(filename, noexcept=False):
     with open(filename) as f:
         for line in f:
-            if "fit" in line:
+            if line.startswith("#fit"):
                 logging.info("found fit info: {}".format(line))
-                fitrange = re.search("\(([0-9]+),([0-9]+)\)", line)
-                tmin, tmax = int(fitrange.group(1)), int(fitrange.group(2))
-                mass = float(re.search("m=(.*?) ", line).group(1))
-                error = float(re.search("e=(.*?) ", line).group(1))
-                qual = re.search("qual:(.*)", line).group(1)
-                return (tmin, tmax, mass, error, qual)
+                function, tmin, tmax, params, errors = line.split(",")
+                fittype = function.split(" ")[0].strip()
+                fn = function.split(" ")[1].strip()
+                tmin = int(tmin.strip(" (),."))
+                tmax = int(tmax.strip(" (),."))
+                params = [float(i) for i in params.strip(" []\n").split()  ]
+                errors = [float(i) for i in errors.strip(" []\n").split()  ]
+                return (fittype, fn, tmin, tmax, params, errors)
     if noexcept:
-        return (0, 0, 1.0, 0, 0)
+        return ("single_exp", 0, 1, [0.0,0.0], [0.0,0.0])
     raise RuntimeError("No fit info")
 
 
@@ -106,19 +108,34 @@ def label_names_from_filelist(filelist):
 def add_fit_info(filename, ax=None):
     if not ax:
         ax = plt
-
+    funmap = {"two_exp": two_exp, "single_exp": single_exp}
     try:
-        tmin, tmax, mass, error, quality = get_fit(filename)
-        ax.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)))
-        ax.plot(range(tmin, tmax+1), [mass+error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-        ax.plot(range(tmin, tmax+1), [mass-error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-        digits = -1.0*round(math.log10(error))
-        formated_error = int(round(error * (10**(digits + 1))))
-        formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
-        # ax.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
-        #              xytext=(tmax+1, mass+error))
-        #return "{m}({e}) qual:{q:.4}".format(m=formated_mass, e=formated_error, q=quality)
-        return "{m}({e})".format(m=formated_mass, e=formated_error)
+        fittype, function, tmin, tmax, fitparams, fiterrors = get_fit(filename)
+        fun = funmap[function]()
+        if fittype == "#fit":
+            logging.info("correlator fit info")
+            xpoints=np.arange(tmin,tmax,0.3)
+            fitpoints = fun.formula(fitparams, xpoints )
+            ax.plot(xpoints, fitpoints, ls="dashed", color="r")
+            return fun.template.format(*fitparams)
+        if fittype == "#fit_emass":
+            massindex = fun.parameter_names.index("mass")
+            mass= fitparams[massindex]
+            masserror = fiterrors[massindex]
+            xpoints=np.arange(tmin,tmax,1.0)
+            fitpoints = fun.formula(fitparams, xpoints )
+            emassfit = []
+            dt=3
+            for i in range(len(fitpoints))[:-dt]:
+                emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
+                emassfit.append(emass)
+            ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r")
+            ax.plot(range(tmin, tmax+1), [mass+masserror]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+            ax.plot(range(tmin, tmax+1), [mass-masserror]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+            digits = -1.0*round(math.log10(masserror))
+            formated_error = int(round(masserror * (10**(digits + 1))))
+            formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
+            return "{m}({e})".format(m=formated_mass, e=formated_error)
     except RuntimeError:
         logging.error("File {} had no fit into".format(filename))
 
