@@ -216,16 +216,16 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             if np.iscomplexobj(df.correlator.values):
                 plots[label] = ax.errorbar(time_offset, np.real(df.correlator.values),
                                            yerr=np.real(df.error.values),
-                                           linestyle="none", c=color, marker=mark, label=label)
+                                           linestyle="none", c=color, marker=mark, label=label, ms=10)
                 if not real:
                     plots["imag"+label] = ax.errorbar(time_offset, np.imag(df.correlator.values),
                                                       yerr=np.imag(df.error.values),
                                                       markerfacecolor='none',
-                                                      linestyle="none", c=color, marker=mark, label=None)
+                                                      linestyle="none", c=color, marker=mark, label=None, ms=10)
             else:
                 #print df.correlator.values, df.error.values
                 plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                           linestyle="none", c=color, marker=mark, label=label)
+                                           linestyle="none", c=color, marker=mark, label=label, ms=12)
 
             if yrange:
                 plt.ylim(yrange)
@@ -245,7 +245,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         if title:
             f.suptitle(title)
         f.set_size_inches(18.5,10.5)
-        plt.rcParams.update({'font.size': 10})
+        plt.rcParams.update({'font.size': 20})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         plt.tight_layout()
         logging.info("Saving plot to {}".format(output_stub+".png"))
