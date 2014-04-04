@@ -271,11 +271,10 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     if(filestub):
         logging.info("Saving plot to {}".format(filestub+".png"))
         plt.savefig(filestub+".png")
-        header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, fitted_params, fitted_errors)
+        header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
         cor.writeasv(filestub+".fittedcor.out", header=header)
-        header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, fitted_params,fitted_errors)
+        header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params),np.array(fitted_errors))
         cor.writeemass(filestub+".fittedemass.out", header=header)
-
     else:
         plt.show()
 
