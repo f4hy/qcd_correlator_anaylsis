@@ -156,10 +156,15 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     for index, label, filename in zip(range(len(files)), labels, files):
         i = (index)/cols
         j = (index) % cols
+        if seperate:
+            if len(labels) <= cols:
+                axe=layout[j]
+            else:
+                axe=layout[i][j]
 
         if fit:
             if seperate:
-                fitstring = add_fit_info(filename, ax=layout[i][j])
+                fitstring = add_fit_info(filename, ax=axe)
             else:
                 fitstring = add_fit_info(filename)
             if fitstring:
@@ -185,7 +190,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             #print df.correlator.values
             if seperate:
                 logging.info("plotting {}  {}, {}".format(label, i, j))
-                ax = layout[i][j]
+                ax = axe
                 ax.set_title(label)
                 pass
             else:
@@ -209,7 +214,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         else:
             if seperate:
                 logging.info("plotting {}  {}, {}".format(label, i, j))
-                ax = layout[i][j]
+                ax = axe
                 ax.set_title(label)
             else:
                 ax = plt
@@ -229,8 +234,13 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
 
             if yrange:
                 plt.ylim(yrange)
+            else:
+                axe.set_ylim(min(df.correlator), max(df.correlator))
             if xrang:
                 plt.xlim(xrang)
+            else:
+                axe.set_xlim(min(df.time), max(df.time))
+
 
     if not seperate:
         leg = plt.legend(fancybox=True, shadow=True)
