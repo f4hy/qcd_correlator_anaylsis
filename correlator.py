@@ -279,3 +279,25 @@ class Correlator(configtimeobj.Cfgtimeobj):
             logging.warning("Bin size %d not factor of num configs %d !!!", n, self.numconfigs)
         for i in xrange(0, self.numconfigs, n):
             yield self.configs[i:i + n]
+
+    def writeasv(self, filename, header=None):
+        logging.info("Writing asv_cor to {}".format(filename))
+        asv = self.average_sub_vev()
+        error = self.jackknifed_errors()
+        with open(filename, 'w') as outfile:
+            if header:
+                outfile.write(header)
+                outfile.write("\n")
+            for t, a in asv.iteritems():
+                outfile.write("{!r},   {!r}, {!r}\n".format(t, a, error[t]))
+
+    def writeemass(self, filename, dt=3, header=None):
+        logging.info("Writing emass{} to {}".format(dt,filename))
+        emass = self.effective_mass(dt)
+        error = self.effective_mass_errors(dt)
+        with open(filename, 'w') as outfile:
+            if header:
+                outfile.write(header)
+                outfile.write("\n")
+            for t, e in emass.iteritems():
+                outfile.write("{!r},   {!r}, {!r}\n".format(t, e, error[t]))

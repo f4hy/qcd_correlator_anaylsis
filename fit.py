@@ -254,13 +254,28 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
     named_params = {n: (m, e) for n, m, e in zip(fn.parameter_names, fitted_params, fitted_errors)}
     mass, mass_err = named_params["mass"]
-    fitplt = emassplot.errorbar(massX, mass * np.ones_like(massX), yerr=mass_err)
+    abovefitline = emassplot.plot(range(tmin, tmax+1), [mass+mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+    fitplt = emassplot.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)), ls="dotted", color="r")
+    belowfitline = emassplot.plot(range(tmin, tmax+1), [mass-mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+    fitpoints = fn.formula(fitted_params, np.arange(tmin,tmax+1))
+    emassfit = []
+    dt=emass_dt
+    for i in range(len(fitpoints))[:-dt]:
+        fitemass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
+        emassfit.append(fitemass)
+    emass_fit = emassplot.plot(range(tmin, tmax+1)[:-dt], emassfit)
+
     plt.legend([dataplt, fitplt], ["data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
     plt.ylim([0, max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
     if(filestub):
         logging.info("Saving plot to {}".format(filestub+".png"))
         plt.savefig(filestub+".png")
+        header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, fitted_params, fitted_errors)
+        cor.writeasv(filestub+".fittedcor.out", header=header)
+        header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, fitted_params,fitted_errors)
+        cor.writeemass(filestub+".fittedemass.out", header=header)
+
     else:
         plt.show()
 
