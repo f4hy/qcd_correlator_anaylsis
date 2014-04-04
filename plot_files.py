@@ -159,6 +159,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         #print df.head(20)
         #exit()
         time_offset = df.time.values+(index*0.1)
+        if seperate:
+            time_offset=df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
