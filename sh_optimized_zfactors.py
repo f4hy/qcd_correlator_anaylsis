@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import pandas_reader
 import re
+import matplotlib.pyplot as plt
+import math
 
 from level_identifier import readops
 from level_identifier import read_file
@@ -16,7 +18,7 @@ class overlaps(object):
     "class for rotation coeffs and zfactors"
     def __init__(self, panda_data):
         self.data = panda_data
-        self.ops, self.levels = map(int,re.search("(\d+)0+(\d+)", str(self.data.index[-1])).groups(1))
+        self.ops, self.levels = map(int,re.search("(\d+)0+(\d\d+)", str(self.data.index[-1])).groups(1))
         logging.info("created object with {}ops and {}levels".format(self.ops,self.levels))
 
     def index_format(self, op, level):
@@ -27,17 +29,16 @@ class overlaps(object):
 
     def get_entry(self, op, level):
         i = self.index_format(op,level)
-        print i
         return self.get_index(i)
 
     def get_index(self, i):
         return self.data.ix[i].identities
 
     def get_level(self, level):
-        print [self.get_entry(op,level) for op in range(1,self.ops+1)]
+        return [self.get_entry(op,level) for op in range(1,self.ops+1)]
 
     def get_op(self, op):
-        print [self.get_entry(op,level) for level in range(1,self.levels+1)]
+        return [self.get_entry(op,level) for level in range(1,self.levels+1)]
 
 
         # print self.data
@@ -46,27 +47,29 @@ class overlaps(object):
 def sh_optimized_zfacts():
     shops = readops(args.single_hadron_ops)
     mhops = readops(args.full_hadron_ops)
-    fullz = overlaps(read_file(args.full_zfactors))
     rotco = overlaps(read_coeffs_file(args.rotation_coeffs))
+    fullz = overlaps(read_file(args.full_zfactors))
     print shops
-    indicies = [mhops.index(o) for o in shops]
+    indicies = [mhops.index(o)+1 for o in shops]
     print indicies
-    # print fullz
-    # print rotco
-    print [mhops[i] for i in indicies]
 
-    print fullz.index_format(1,1)
-    print fullz.index_format(103,82)
+    OptZ = {}
+    for m in range(1,rotco.levels+1):
+        OptZ[m] = [np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T)) for l in range(1,fullz.levels+1)]
+    N = len(OptZ.keys())
 
-    print fullz.get_entry(1,1)
-    # print fullz.get_index(1001)
-    print fullz.get_level(60)
-    print fullz.get_op(64)
+    Ncols=5
+    rows = int(math.ceil(float(N)/Ncols))
+    fig, ax = plt.subplots(ncols=Ncols, nrows=rows)
+    print OptZ.keys(), range(1,N+1)
+    for m in range(1,N+1):
+        i = (m-1)/Ncols
+        j = (m-1) % Ncols
+        ax[i][j].bar(range(len(OptZ[m])), OptZ[m], 1.0, color="b")
+        ax[i][j].set_title("SH-opt level{}".format(m))
 
-    # for i in range(1,105):
-    #     index = int("{}001".format(i))
-    #     print index
-    #     print fullz.get_index(index)
+    plt.tight_layout()
+    plt.show()
 
 
 
