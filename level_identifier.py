@@ -23,10 +23,13 @@ def readops(filename):
 
 def read_file(filename):
     txt = plot_files.lines_without_comments(filename)
-    # parse_pair = plot_files.parse_pair
-    # df = pd.read_csv(txt, delimiter=' ', names=["id", "identities", "error"],
-    #                  converters={1: parse_pair, 2: parse_pair}, index_col=0)
-    df = pd.read_csv(txt, delimiter=' ', names=["id", "identities", "error"], index_col=0)
+    filetype = plot_files.determine_type(txt)
+    if filetype == "paren_complex":
+        parse_pair = plot_files.parse_pair
+        df = pd.read_csv(txt, delimiter=' ', names=["id", "identities", "error"],
+                         converters={1: parse_pair, 2: parse_pair}, index_col=0)
+    else:
+        df = pd.read_csv(txt, delimiter=' ', names=["id", "identities", "error"], index_col=0)
     return df
 
 
