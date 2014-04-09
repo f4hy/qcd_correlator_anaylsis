@@ -75,7 +75,8 @@ def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub,
                           ABS((errmat[j]*(v_n)).flat[0])*np.sqrt(zr)
                           for j in range(len(ops))]
             #err[level] = np.sqrt(fit_values.amp_error[level])*ABS(v_n)+np.sqrt(zr)*ABS(ev_n)
-    normalized_Zs = zfactor.normalize_Zs(Zs, normalize)
+
+    # normalized_Zs = zfactor.normalize_Zs(Zs, normalize)
     A = np.array(Zs.values())
     maximums = np.array([max(ABS(A[:, i])) for i in range(len(Zs[0]))])
     if normalize:
