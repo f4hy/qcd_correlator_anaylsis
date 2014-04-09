@@ -49,27 +49,42 @@ def sh_optimized_zfacts():
     mhops = readops(args.full_hadron_ops)
     rotco = overlaps(read_coeffs_file(args.rotation_coeffs))
     fullz = overlaps(read_file(args.full_zfactors))
-    print shops
     indicies = [mhops.index(o)+1 for o in shops]
-    print indicies
 
     OptZ = {}
     for m in range(1,rotco.levels+1):
-        OptZ[m] = [np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T)) for l in range(1,fullz.levels+1)]
+        OptZ[m] = np.array([np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T)) for l in range(1,fullz.levels+1)]).flatten()
     N = len(OptZ.keys())
+
 
     Ncols=5
     rows = int(math.ceil(float(N)/Ncols))
     fig, ax = plt.subplots(ncols=Ncols, nrows=rows)
-    print OptZ.keys(), range(1,N+1)
+    # print OptZ.keys(), range(1,N+1)
     for m in range(1,N+1):
         i = (m-1)/Ncols
         j = (m-1) % Ncols
         ax[i][j].bar(range(len(OptZ[m])), OptZ[m], 1.0, color="b")
         ax[i][j].set_title("SH-opt level{}".format(m))
+        ax[i][j].set_ylim((0,max(OptZ[m])))
 
-    plt.tight_layout()
-    plt.show()
+    # plt.ylim((0,np.max(OptZ.values())))
+
+
+    if args.output_stub:
+        logging.info("Saving shopt_zfactors to {}".format(args.output_stub+".out"))
+        with open(args.output_stub+".out", 'w') as outfile:
+            for level,d in OptZ.iteritems():
+                outfile.write("{}, {}\n".format(level, d))
+        plt.rcParams.update({'font.size': 10})
+        fig.set_size_inches(18.5,10.5)
+        plt.tight_layout()
+        logging.info("Saving plot to {}".format(args.output_stub+".png"))
+        plt.savefig(args.output_stub+".png",dpi=100)
+    else:
+        plt.tight_layout()
+        plt.show()
+
 
 
 
