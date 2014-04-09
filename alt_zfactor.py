@@ -58,23 +58,29 @@ def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub,
 
     Zs = {}
     err = {}
+    ABS = np.abs
+    def nothing(a):
+        return a
+    if args.complex:
+        ABS = nothing
+
     for level in levels_to_make:
         zr = fit_values.amp[level]
         #err[level] = zrots.error[level]*np.ones(N)
         for op in range(N):
             v_n = (v[:, level])
             ev_n = np.ravel(roterror[:, level])
-            Zs[level] = [np.abs((cormat[j]*(v_n)).flat[0])*np.sqrt(zr) for j in range(len(ops))]
-            err[level] = [np.abs((cormat[j]*(v_n)).flat[0])*np.sqrt(fit_values.amp_error[level]) +
-                          np.abs((errmat[j]*(v_n)).flat[0])*np.sqrt(zr)
+            Zs[level] = [ABS((cormat[j]*(v_n)).flat[0])*np.sqrt(zr) for j in range(len(ops))]
+            err[level] = [ABS((cormat[j]*(v_n)).flat[0])*np.sqrt(fit_values.amp_error[level]) +
+                          ABS((errmat[j]*(v_n)).flat[0])*np.sqrt(zr)
                           for j in range(len(ops))]
-            #err[level] = np.sqrt(fit_values.amp_error[level])*np.abs(v_n)+np.sqrt(zr)*np.abs(ev_n)
+            #err[level] = np.sqrt(fit_values.amp_error[level])*ABS(v_n)+np.sqrt(zr)*ABS(ev_n)
     normalized_Zs = zfactor.normalize_Zs(Zs, normalize)
     A = np.array(Zs.values())
-    maximums = np.array([max(np.abs(A[:, i])) for i in range(len(Zs[0]))])
+    maximums = np.array([max(ABS(A[:, i])) for i in range(len(Zs[0]))])
     if normalize:
-        normalized_Zs = {k: np.abs(values)/maximums for k, values in Zs.iteritems()}
-        normalized_err = {k: np.abs(values)/maximums for k, values in err.iteritems()}
+        normalized_Zs = {k: ABS(values)/maximums for k, values in Zs.iteritems()}
+        normalized_err = {k: ABS(values)/maximums for k, values in err.iteritems()}
     else:
         normalized_Zs = Zs
         normalized_err = err
@@ -88,8 +94,13 @@ def alt_zfactor(corwild, zrotfile, rotfile, ops, t0, outputstub,
             outfile.write("# normalized Zfactors\n")
             for level in levels_to_make:
                 for j in range(N):
-                    outfile.write("{:d}{:03d} {} {}\n".format(j+1, level+1,
-                                                              normalized_Zs[level][j], normalized_err[level][j]))
+                    if args.complex:
+                        outfile.write("{:d}{:03d} ({},{}) ({},{})\n".format(j+1, level+1,
+                                                                            np.real(normalized_Zs[level][j]), np.imag(normalized_Zs[level][j]),
+                                                                            np.real(normalized_err[level][j]), np.imag(normalized_err[level][j])))
+                    else:
+                        outfile.write("{:d}{:03d} {} {}\n".format(j+1, level+1,
+                                                                  normalized_Zs[level][j], normalized_err[level][j]))
 
     if(reconstruct_stub):
         reconstructed_correaltors(Zs, err, fit_values, ops, reconstruct_stub)
@@ -131,6 +142,8 @@ if __name__ == "__main__":
                         help="restrict to a number of levels", default=1000)
     parser.add_argument("-norm", "--normalize", action="store_true", required=False,
                         help="normalized the zfactors")
+    parser.add_argument("-c", "--complex", action="store_true", required=False,
+                        help="output in complex format")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
