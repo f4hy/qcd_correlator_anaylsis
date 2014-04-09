@@ -52,12 +52,13 @@ def sh_optimized_zfacts():
     indicies = [mhops.index(o)+1 for o in shops]
 
     OptZ = {}
+    # Main calculation below
+    # TODO this should be done as matrix multiplication, would be WAY faster but this works.
     for m in range(1,rotco.levels+1):
         OptZ[m] = np.array([np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T)) for l in range(1,fullz.levels+1)]).flatten()
+
     N = len(OptZ.keys())
-
-
-    Ncols=5
+    Ncols=args.columns
     rows = int(math.ceil(float(N)/Ncols))
     fig, ax = plt.subplots(ncols=Ncols, nrows=rows)
     # print OptZ.keys(), range(1,N+1)
@@ -94,6 +95,8 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("-c", "--columns", type=int, default=3, required=False,
+                        help="Number of columns")
     parser.add_argument("-z", "--full_zfactors", type=str, required=True,
                         help="zfactors")
     parser.add_argument("-s", "--single_hadron_ops", type=str, required=True,
