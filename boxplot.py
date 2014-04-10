@@ -135,6 +135,37 @@ def format_error_string(value, error):
     return "{m}({e})".format(m=formated_value, e=formated_error)
 
 
+def escale(i):
+    if not args.experiment:
+        return i
+    else:
+        return (5.0 * i) / (3.0 * 1.67245)
+
+def tscale(i):
+    lattice_omegamass=0.27803
+    if not args.experiment:
+        return i
+    else:
+        return (5.0 * i) / (3.0 * lattice_omegamass)
+
+
+def add_experiment_results(experimental_results, f, ax):
+
+    with open(experimental_results, "r") as expfile:
+        for line in expfile:
+            if line.startswith("#"):
+                continue
+            name, mass, uncertainty = [i.strip() for i in  line.split(",")]
+            smass = escale(float(mass))
+            suncertainty = escale(float(uncertainty))
+            rect = plt.Rectangle((-1.5, smass-suncertainty), 0.5, 2*suncertainty,
+                                 fc='r', fill=True, linewidth=1, color='r')
+            f.gca().add_artist(rect)
+            ax.annotate("${}$".format(name), xy=(-1.8, smass), fontsize=18)
+    plt.xlim(-2.0, 1.0)
+    plt.ylim(0, 3.0)
+
+
 def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
@@ -163,19 +194,20 @@ def boxplot_files():
     for index, (label, df) in enumerate(sdfs):
 
         # for index, label in enumerate(labels):
-        color = colors[index % len(colors)]
+        color = "b" if args.experiment else colors[index % len(colors)]
 
         if args.seperate:
             data.append(df.mass.values)
             levelnum=int(label)
             if levelnum in args.single:
-                print "adding level{} index {} to single_index".format(levelnum, index)
+                logging.info("adding level{} index {} to single_index".format(levelnum, index))
                 single_indecies.append(index)
-                print "ploting a ciecle", index, label
                 circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r', fill=False))
         else:
-            med = df.mass.median()
-            width = df.mass.std()
+            med = tscale(df.mass.median())
+            width = tscale(df.mass.std())
+            values = tscale(df.mass.values)
+
             offset = ((1-(index+1) % 3) * 0.33)#+(index/3)*0.05
             if index%3 == 0 and index%2==0 :
                 offset += (index/3)*0.03
@@ -186,19 +218,20 @@ def boxplot_files():
             prevtextloc = med if med-prevtextloc > 0.01 else prevtextloc+0.01
 
             textloc = (-1.2 if (index + 1) % 3 > 0 else 1, prevtextloc)
-            plots[label] = plt.boxplot(df.mass.values, widths=0.5, patch_artist=True,
+            plots[label] = plt.boxplot(values, widths=0.5, patch_artist=True,
                                        positions=[offset])
             hide = not args.clean
             plots[label]["boxes"][0].set_facecolor(color)
             plots[label]["boxes"][0].set_linewidth(0)
-            plots[label]["boxes"][0].set_alpha(1.0-width*3.0)
+            plots[label]["boxes"][0].set_alpha(max(1.0-width*2.0, 0.1))
             plots[label]["boxes"][0].set_zorder(-1*width)
             plt.setp(plots[label]["whiskers"], color=color, visible=hide)
             plt.setp(plots[label]["fliers"], color=color, visible=hide)
             plt.setp(plots[label]["caps"], color=color, visible=hide)
             plt.setp(plots[label]["medians"], visible=hide)
-            ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset-0.1, med),
-                        xytext=textloc, arrowprops=dict(arrowstyle="->", fc="0.6"))
+            if not args.experiment:
+                ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset-0.1, med),
+                            xytext=textloc, arrowprops=dict(arrowstyle="->", fc="0.6"))
 
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
@@ -225,13 +258,13 @@ def boxplot_files():
         ax.yaxis.set_tick_params(width=5, length=10)
         ax.xaxis.set_tick_params(width=2, length=6)
     if not args.seperate:
-        plt.xlim(-1.5, 1.5)
         plt.tick_params(labelbottom="off", bottom='off')
+        if args.experiment:
+            add_experiment_results(args.experiment, f, ax)
+        else:
+            plt.xlim(-1.5, 1.5)
 
-    if args.yrange:
-        plt.ylim(args.yrange)
-    if args.xrang:
-        plt.xlim(args.xrang)
+
 
     if args.title:
         f.suptitle(args.title.replace("_", " "), fontsize=24)
@@ -264,12 +297,10 @@ if __name__ == "__main__":
                         help="plot title", default=None)
     parser.add_argument("-s", "--seperate", action="store_true", required=False,
                         help="plot one column or multi columns")
-    parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
-                        help="set the yrange of the plot", default=None)
-    parser.add_argument("-x", "--xrang", type=float, required=False, nargs=2,
-                        help="set the xrang of the plot", default=None)
     parser.add_argument("-o", "--output-stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("-e", "--experiment", type=str, required=False,
+                        help="file with experimental results")
     parser.add_argument("-c", "--clean", action="store_true", required=False,
                         help="display without outliers or wiskers")
     parser.add_argument("-3", "--threshold", type=float, required=False,
@@ -285,6 +316,12 @@ if __name__ == "__main__":
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
     args = parser.parse_args()
+
+    if args.experiment and args.seperate:
+        logging.error("Comaparison to experimental results doesn't work in seperate mode'")
+        parser.print_help()
+        parser.exit()
+
 
     if args.verbose:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
