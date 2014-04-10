@@ -211,7 +211,14 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr)))
 
-    if args.write_each_boot:
+    valid = True
+    if original_ensamble_correlatedfit[0]*2 < min(cor.effective_mass(3).values()):
+        logging.error("fit value much lower than effective mass {} , {}!!".format(original_ensamble_correlatedfit[0],
+                                                                                  min(cor.effective_mass(3).values())))
+        valid = False
+
+
+    if args.write_each_boot and valid:
         results.info("writing each bootstrap to {}.boot".format(args.write_each_boot))
         with open(args.write_each_boot+".boot", 'w') as bootfile:
             str_ensamble_params = ", ".join([str(p) for p in original_ensamble_params])
