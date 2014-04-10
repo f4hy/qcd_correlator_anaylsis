@@ -138,12 +138,14 @@ def format_error_string(value, error):
 def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
+    mpl.rcParams['axes.linewidth'] = 5.0
     colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "k"]
     colors.append("#ffa500")
     plots = {}
     labels = label_names_from_filelist(args.files)
     #labels = [translate(l) for l in labels]
     circles = []
+    single_indecies = []
     data = []
     f, ax = plt.subplots()
 
@@ -167,6 +169,8 @@ def boxplot_files():
             data.append(df.mass.values)
             levelnum=int(label)
             if levelnum in args.single:
+                print "adding level{} index {} to single_index".format(levelnum, index)
+                single_indecies.append(index)
                 print "ploting a ciecle", index, label
                 print df.mass.median(), df.mass.std()
                 circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r', fill=False))
@@ -187,7 +191,7 @@ def boxplot_files():
                                        positions=[offset])
             hide = not args.clean
             plots[label]["boxes"][0].set_facecolor(color)
-            plots[label]["boxes"][0].set_linewidth(2)
+            plots[label]["boxes"][0].set_linewidth(0)
             plots[label]["boxes"][0].set_alpha(1.0-width*3.0)
             plots[label]["boxes"][0].set_zorder(-1*width)
             plt.setp(plots[label]["whiskers"], color=color, visible=hide)
@@ -201,8 +205,12 @@ def boxplot_files():
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
         for i,b in enumerate(splot["boxes"]):
             b.set_linewidth(2)
-            # if i in args.single:
-            #     b.set_facecolor('g')
+            b.set_facecolor('c')
+            b.set_linewidth(1)
+            b.set_color('c')
+            if i in single_indecies:
+                b.set_facecolor('b')
+                b.set_color('b')
         if args.clean:
             plt.setp(splot["whiskers"], visible=False)
             plt.setp(splot["fliers"], visible=False)
@@ -213,8 +221,10 @@ def boxplot_files():
         # xticknames = plt.setp(ax, xticklabels=sorted_labels)
         # plt.setp(xticknames, rotation=45, fontsize=8)
         plt.setp( ax.get_xticklabels(), visible=False)
-        ax.set_ylabel("Energy", fontweight='bold')
+        ax.set_ylabel("$a_t$Energy", fontweight='bold')
         ax.set_xlabel("Levels", fontweight='bold')
+        ax.yaxis.set_tick_params(width=5, length=10)
+        ax.xaxis.set_tick_params(width=2, length=6)
     if not args.seperate:
         plt.xlim(-1.5, 1.5)
         plt.tick_params(labelbottom="off", bottom='off')
@@ -225,14 +235,14 @@ def boxplot_files():
         plt.xlim(args.xrang)
 
     if args.title:
-        f.suptitle(args.title.replace("_", " "))
+        f.suptitle(args.title.replace("_", " "), fontsize=24)
 
     if args.threshold:
         plt.plot([-2, 200], [args.threshold, args.threshold], color='r', linestyle='--', linewidth=2)
 
     if(args.output_stub):
         f.set_size_inches(19.2, 12.0)
-        plt.rcParams.update({'font.size': 12})
+        plt.rcParams.update({'font.size': 24})
         f.set_dpi(100)
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         #plt.tight_layout()
