@@ -55,7 +55,12 @@ def sh_optimized_zfacts():
     # Main calculation below
     # TODO this should be done as matrix multiplication, would be WAY faster but this works.
     for m in range(1,rotco.levels+1):
-        OptZ[m] = np.array([np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T)) for l in range(1,fullz.levels+1)]).flatten()
+        value = np.array([np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T)) for l in range(1,fullz.levels+1)]).flatten()
+        if np.all(value==0):
+            break
+        OptZ[m] = value
+
+
 
     N = len(OptZ.keys())
     Ncols=args.columns
@@ -77,6 +82,11 @@ def sh_optimized_zfacts():
         with open(args.output_stub+".out", 'w') as outfile:
             for level,d in OptZ.iteritems():
                 outfile.write("{}, {}\n".format(level, d))
+        logging.info("Saving shcandidates to {}".format(args.output_stub+".singleresonances"))
+        with open(args.output_stub+".singleresonances", 'w') as resfile:
+            for level,d in OptZ.iteritems():
+                resfile.write("{}, {}\n".format(level, np.argmax(d)))
+
         plt.rcParams.update({'font.size': 10})
         fig.set_size_inches(18.5,10.5)
         plt.tight_layout()
