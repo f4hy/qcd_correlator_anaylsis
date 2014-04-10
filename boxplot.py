@@ -165,7 +165,7 @@ def boxplot_files():
 
         if args.seperate:
             data.append(df.mass.values)
-            levelnum=int(label.split("_")[1])
+            levelnum=int(label)
             if levelnum in args.single:
                 print "ploting a ciecle", index, label
                 print df.mass.median(), df.mass.std()
