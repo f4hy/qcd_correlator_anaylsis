@@ -172,7 +172,6 @@ def boxplot_files():
                 print "adding level{} index {} to single_index".format(levelnum, index)
                 single_indecies.append(index)
                 print "ploting a ciecle", index, label
-                print df.mass.median(), df.mass.std()
                 circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r', fill=False))
         else:
             med = df.mass.median()
@@ -277,7 +276,7 @@ if __name__ == "__main__":
                         help="Draw a line where 3 particle threshold is")
     parser.add_argument("-n", "--maxlevels", type=int, required=False,
                         help="dont plot more  than this many levels")
-    parser.add_argument("-p", "--prune", type=float, required=False,
+    parser.add_argument("-p", "--prune", type=float, required=False, default=1e10,
                         help="remove levels with error above this")
     parser.add_argument("-single", type=int, nargs='+', required=False, default=[],
                         help="mark which ones are single hadrons")
