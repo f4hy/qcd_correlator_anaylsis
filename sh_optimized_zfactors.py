@@ -55,7 +55,7 @@ def sh_optimized_zfacts():
     # Main calculation below
     # TODO this should be done as matrix multiplication, would be WAY faster but this works.
     for m in range(1,rotco.levels+1):
-        value = np.array([np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T)) for l in range(1,fullz.levels+1)]).flatten()
+        value = np.array([np.abs(np.array(np.matrix( np.conj(rotco.get_level(m))) * np.matrix([fullz.get_entry(i,l) for i in indicies]).T))**2 for l in range(1,fullz.levels+1)]).flatten()
         if np.all(value==0):
             break
         OptZ[m] = value
@@ -73,6 +73,8 @@ def sh_optimized_zfacts():
         ax[i][j].bar(range(len(OptZ[m])), OptZ[m], 1.0, color="b")
         ax[i][j].set_title("SH-opt level{}".format(m))
         ax[i][j].set_ylim((0,max(OptZ[m])))
+        ax[i][j].set_ylabel("$|Z|^2$", fontweight='bold')
+
 
     # plt.ylim((0,np.max(OptZ.values())))
 
