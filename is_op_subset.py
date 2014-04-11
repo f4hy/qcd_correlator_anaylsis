@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import logging
-import os
 from level_identifier import readops
 
 
@@ -9,15 +8,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="oplist B is a sebset of oplist A")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
-    parser.add_argument("-c", "--correlators", type=str, help="location of correlators",
-                        default=os.path.join(os.getcwd(), "normed_correlators/"))
     parser.add_argument('A', metavar='oplistA', type=str, help='OplistA')
     parser.add_argument('B', metavar='oplistB', type=str, help='OplistB')
-    parser.add_argument("-f", "--format", type=str, required=False,
-                        help="fromat of the correlator files in the directory\n\n"
-                        "e.g. cor_snk-{}_src-{}.dat where {} are replaced with operator strings"
-                        "Defaults to 'ncor_snk-{}_src-{}.dat'",
-                        default="ncor_snk-{}_src-{}.dat")
 
     args = parser.parse_args()
 
