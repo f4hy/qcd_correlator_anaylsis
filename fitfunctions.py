@@ -67,7 +67,7 @@ class two_exp(twice_mass_amp):
         return (v[1] * np.exp((-1.0) * v[0] * x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x)))
 
 
-class periodic_two_exp(twice_mass_amp):
+class periodic_two_exp(twice_mass_amp, periodic):
     def __init__(self, Nt=None):
         super(periodic_two_exp, self).__init__()
         self.setNt(Nt)
