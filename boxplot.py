@@ -264,6 +264,8 @@ def boxplot_files():
         else:
             plt.xlim(-1.5, 1.5)
 
+    if args.yrange:
+        plt.ylim(args.yrange)
 
 
     if args.title:
@@ -299,6 +301,8 @@ if __name__ == "__main__":
                         help="plot one column or multi columns")
     parser.add_argument("-o", "--output-stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
+                        help="set the yrange of the plot", default=None)
     parser.add_argument("-e", "--experiment", type=str, required=False,
                         help="file with experimental results")
     parser.add_argument("-c", "--clean", action="store_true", required=False,
