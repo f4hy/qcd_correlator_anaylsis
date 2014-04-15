@@ -51,6 +51,15 @@ def determine_type(txt):
         return "comma"
     return "space_seperated"
 
+def get_singles(singlefilename):
+    if not os.path.isfile(args.single):
+        logging.warn("Single file missing, ignoring")
+        return []
+    else:
+        txt = lines_without_comments(singlefilename)
+        df = pd.read_csv(txt, sep=",", delimiter=",", skipinitialspace=True, names=["index", "levelnum"])
+        return list(df.levelnum.values)
+
 
 def read_file(filename):
     with open(filename, 'r') as f:
@@ -189,6 +198,12 @@ def boxplot_files():
     sdfs = [i for i in sdfs if i[1].mass.std() < args.prune]
     if args.maxlevels:
         sdfs = sdfs[:args.maxlevels]
+
+    if args.experiment and args.single:
+        logging.info("experiment and single, so only plot the singles")
+
+        sdfs = [(l,df) for l,df in sdfs if int(l) in args.single]
+
     sorted_labels = [i[0] for i in sdfs]
 
     for index, (label, df) in enumerate(sdfs):
@@ -313,8 +328,8 @@ if __name__ == "__main__":
                         help="dont plot more  than this many levels")
     parser.add_argument("-p", "--prune", type=float, required=False, default=1e10,
                         help="remove levels with error above this")
-    parser.add_argument("-single", type=int, nargs='+', required=False, default=[],
-                        help="mark which ones are single hadrons")
+    parser.add_argument("--single", type=str, required=False, default="",
+                        help="file with single hadron info")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
@@ -326,6 +341,12 @@ if __name__ == "__main__":
         parser.print_help()
         parser.exit()
 
+    if args.single:
+        args.single = get_singles(args.single)
+
+
+    if args.experiment and args.single:
+        logging.info("experiemental and single, so only ploting the singles against experiment")
 
     if args.verbose:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
