@@ -251,8 +251,12 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     corplot = plt.subplot(211)
     cordata = corplot.errorbar(cor.times, cor.average_sub_vev().values(),
                                yerr=cor.jackknifed_errors().values(), fmt='o')
-    corfit, = corplot.plot(X, fn.formula(fitted_params, X))
-    corplot.legend([cordata, corfit], ["data", fn.template.format(*fitted_params)])
+    corfit, = corplot.plot(X, fn.formula(fitted_params, X), lw=2.0)
+    single_fit = None
+    if fn.description != "exp":
+        single = functions["single_exp"]()
+        single_fit, = corplot.plot(X, single.formula(fitted_params[:2], X), ls="-.", lw=2.0)
+    corplot.legend([cordata, corfit,single_fit], ["data", fn.template.format(*fitted_params), "single_exp with these numbers"])
     plt.ylim([0, max(cor.average_sub_vev().values())])
     plt.xlim([0, tmax + 2])
     emass = cor.effective_mass(emass_dt)
