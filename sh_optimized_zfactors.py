@@ -83,7 +83,7 @@ def sh_optimized_zfacts():
         logging.info("Saving shopt_zfactors to {}".format(args.output_stub+".out"))
         with open(args.output_stub+".out", 'w') as outfile:
             for level,d in OptZ.iteritems():
-                outfile.write("{}, {}\n".format(level, d))
+                outfile.write("{}, {}\n".format(level, ", ".join(map(str,d))))
         logging.info("Saving shcandidates to {}".format(args.output_stub+".singleresonances"))
         with open(args.output_stub+".singleresonances", 'w') as resfile:
             for level,d in OptZ.iteritems():
