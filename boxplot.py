@@ -52,13 +52,25 @@ def determine_type(txt):
     return "space_seperated"
 
 def get_singles(singlefilename):
-    if not os.path.isfile(args.single):
+    if not os.path.isfile(singlefilename):
         logging.warn("Single file missing, ignoring")
         return []
     else:
         txt = lines_without_comments(singlefilename)
         df = pd.read_csv(txt, sep=",", delimiter=",", skipinitialspace=True, names=["index", "levelnum"])
         return list(df.levelnum.values)
+
+
+def get_colors(colorfilename):
+    if not os.path.isfile(colorfilename):
+        logging.warn("color file missing, ignoring")
+        return []
+    else:
+        txt = lines_without_comments(colorfilename)
+        df = pd.read_csv(txt, sep=",", delimiter=",", skipinitialspace=True,
+                         index_col=0, header=None)
+        return (df.transpose()/df.max(axis=1)).max(axis=1)
+
 
 
 def read_file(filename):
@@ -186,6 +198,7 @@ def boxplot_files():
     #labels = [translate(l) for l in labels]
     circles = []
     single_indecies = []
+    mycolors = []
     data = []
     f, ax = plt.subplots()
 
@@ -211,9 +224,12 @@ def boxplot_files():
         # for index, label in enumerate(labels):
         color = "b" if args.experiment else colors[index % len(colors)]
 
+
         if args.seperate:
             data.append(df.mass.values)
             levelnum=int(label)
+            if args.color is not None:
+                mycolors.append(args.color[levelnum+1])
             if levelnum in args.single:
                 logging.info("adding level{} index {} to single_index".format(levelnum, index))
                 single_indecies.append(index)
@@ -251,10 +267,15 @@ def boxplot_files():
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
         for i,b in enumerate(splot["boxes"]):
+            if args.color is not None:
+                color = (mycolors[i],0,1-mycolors[i])
+            else:
+                color = 'c'
             b.set_linewidth(2)
-            b.set_facecolor('c')
+            b.set_facecolor(color)
             b.set_linewidth(1)
-            b.set_color('c')
+            b.set_color(color)
+            # b.set_alpha(mycolors[i])
             if i in single_indecies:
                 b.set_facecolor('b')
                 b.set_color('b')
@@ -328,8 +349,10 @@ if __name__ == "__main__":
                         help="dont plot more  than this many levels")
     parser.add_argument("-p", "--prune", type=float, required=False, default=1e10,
                         help="remove levels with error above this")
-    parser.add_argument("--single", type=str, required=False, default="",
+    parser.add_argument("--single", type=str, required=False, default=[],
                         help="file with single hadron info")
+    parser.add_argument("--color", type=str, required=False, default=None,
+                        help="color code by file")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
@@ -344,6 +367,8 @@ if __name__ == "__main__":
     if args.single:
         args.single = get_singles(args.single)
 
+    if args.color:
+        args.color = get_colors(args.color)
 
     if args.experiment and args.single:
         logging.info("experiemental and single, so only ploting the singles against experiment")
