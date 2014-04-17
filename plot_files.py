@@ -108,7 +108,7 @@ def label_names_from_filelist(filelist):
 def add_fit_info(filename, ax=None):
     if not ax:
         ax = plt
-    funmap = {"two_exp": two_exp, "single_exp": single_exp}
+    funmap = {"two_exp": two_exp, "single_exp": single_exp, "periodic_two_exp": two_exp}
     try:
         fittype, function, tmin, tmax, fitparams, fiterrors = get_fit(filename)
         fun = funmap[function]()
