@@ -1,10 +1,13 @@
 import numpy as np
 from iminuit import Minuit
+import logging
 
 mass_bounds = (0.005, 5.0)
 amp_bounds = (0.0, 1.0e5)
 const_bounds = (-5.0, 1.0e8)
 
+class InvalidFit(RuntimeError):
+    pass
 
 def massamp_guess(cor, tmax, *args):
     dt = 3
@@ -48,7 +51,7 @@ def twoexp_sqr_guess(cor, tmax, tmin):
     mass_guess = np.mean(emass.values())
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     mass2_guess = np.sqrt(emass[tmin])
-    amp2_guess = ((ave[tmin] - amp_guess*np.exp(-mass_guess*tmin)) /
+    amp2_guess = (abs(ave[tmin] - amp_guess*np.exp(-mass_guess*tmin)) /
                   (amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin)))/2
     return [mass_guess, amp_guess, mass2_guess, amp2_guess]
 
@@ -75,6 +78,9 @@ class mass_amp(object):
         vect = self.aoc - self.formula((mass, amp), self.times)
         return vect.dot(self.inv_cov).dot(vect)
 
+    def valid(self, *kargs):
+        return True
+
     def custom_minuit(self, data, invmatrix, times, guess):
         self.aoc = data
         self.inv_cov = invmatrix
@@ -95,6 +101,9 @@ class mass_amp_const(object):
         vect = self.aoc - self.formula((mass, amp, const), self.times)
         return vect.dot(self.inv_cov).dot(vect)
 
+    def valid(self, *kargs):
+        return True
+
     def custom_minuit(self, data, invmatrix, times, guess):
         self.aoc = data
         self.inv_cov = invmatrix
@@ -114,6 +123,15 @@ class twice_mass_amp(object):
     def my_cov_fun(self, mass, amp, mass2, amp2):
         vect = self.aoc - self.formula((mass, amp, mass2, amp2), self.times)
         return vect.dot(self.inv_cov).dot(vect)
+
+    def valid(self, params):
+        mass, amp, mass2, amp2 = params
+        if amp2 > 10*amp:
+            logging.error("Invalid fit with paramters {}".format(repr(params)))
+            raise InvalidFit
+            return False
+        else:
+            return True
 
     def custom_minuit(self, data, invmatrix, times, guess):
         self.aoc = data

@@ -8,6 +8,7 @@ import argparse
 import os
 
 from fitfunctions import *  # noqa
+from fit_parents import InvalidFit
 import inspect
 import sys
 
@@ -31,7 +32,7 @@ NBOOTSTRAPS = 1000
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False,
         return_chi=False):
     if(tmax-tmin < len(fn.parameter_names)):
-        raise ValueError("Can not fit to less points than parameters")
+        raise InvalidFit("Can not fit to less points than parameters")
 
     results = logging.getLogger("results")
     if filestub and not results.handlers:
@@ -55,7 +56,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     y = [orig_ave_cor[t] for t in range(tmin, tmax)]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if not success:
-        raise ValueError()
+        raise InvalidFit("original exnamble leastsq failed")
     if args.first_pass:
         initial_guess = original_ensamble_params
         logging.info("initial_guess after first pass: {}".format(repr(initial_guess)))
@@ -77,7 +78,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if args.first_pass:
             uncorrelated_fit_values, success = leastsq(fun, guess, args=(x, y), maxfev=100000)
             if not success:
-                raise ValueError()
+                raise InvalidFit("leastsq failed")
             logging.debug("firstpass guess {}".format(str(uncorrelated_fit_values)))
             if guess[0] < 0.0:
                 logging.warn("first pass found mass to be negative {}, lets not use it".format(guess[0]))
@@ -124,13 +125,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                     logging.info("Fit results: f() ={}, Iterations={}".format(*fit_info))
                     logging.error("Fitter flag set to {}. Error!".format(flag))
                     logging.error("Both fitters failed")
-                    raise RuntimeError("Both fitters failed")
+                    raise InvalidFit("Both fitters failed")
                 else:
                     logging.error("Using old fitter")
         logging.debug("fit value {}".format(repr(newresults)))
         if covariant_fit[0] < 0.0:
             logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
-            raise RuntimeError("Fitter sanity failed")
+            raise InvalidFit("Fitter sanity failed")
 
         #would like to use minimize, but seems to be not installed
         # covariant_fit = minimize(cov_fun, initial_guess)
@@ -138,9 +139,12 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         logging.debug("Fit results: f() ={}, Iterations={}".format(*fit_info))
         if flag != 0:
             logging.error("Fitter flag set to {}. Error!".format(flag))
-            raise RuntimeError("Fitter failed")
+            raise InvalidFit("Fitter failed")
 
         return(covariant_fit)
+
+    original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
+    fn.valid(original_ensamble_correlatedfit)
 
     boot_params = []
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=args.write_each_boot):
@@ -151,7 +155,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         fitted_params = cov_fit(strap, newguess)
         boot_params.append(fitted_params)
 
-    original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
 
     results.info('')
     results.info('Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
@@ -175,7 +178,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                           "\nNot enough statistics for this for to be valid!!!\n")
             if not args.unsafe:
                 results.critical("Exiting! Run with --unsafe to fit anyway")
-                raise RuntimeError("Bootstrap average does not agree with ensamble average")
+                raise InvalidFit("Bootstrap average does not agree with ensamble average")
 
     for name, ave, med, std, iqr in zip(fn.parameter_names, boot_averages, medians, boot_std,
                                         inter_range):
@@ -523,8 +526,22 @@ if __name__ == "__main__":
         auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps)
         exit()
 
-    if args.plot:
-        plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub,
-                 bootstraps=args.bootstraps)
-    else:
-        fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps)
+
+    try:
+        if args.plot:
+            plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub,
+                     bootstraps=args.bootstraps)
+        else:
+            fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps)
+    except InvalidFit:
+        logging.error("Fit was invalid, trying backup")
+        if funct.fallback:
+            logging.error("function has a fallback {}".format(funct.fallback))
+            fallback = functions[funct.fallback](Nt=args.period)
+            if args.plot:
+                plot_fit(fallback, cor, tmin, tmax, filestub=args.output_stub,
+                         bootstraps=args.bootstraps)
+            else:
+                fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps)
+        else:
+            logging.error("Function does not have a fallback, fit failed")

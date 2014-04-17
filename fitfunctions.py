@@ -1,5 +1,5 @@
 import numpy as np
-from fit_parents import periodic, mass_amp, mass_amp_const, twice_mass_amp
+from fit_parents import periodic, mass_amp, mass_amp_const, twice_mass_amp, InvalidFit
 
 
 class cosh(mass_amp, periodic):
@@ -62,6 +62,7 @@ class two_exp(twice_mass_amp):
         super(two_exp, self).__init__()
         self.description = "two_exp"
         self.template = "{1: f}exp(-{0: f}*t)(1+{3: f}exp(-{2: f}^2*t)"
+        self.fallback = "single_exp"
 
     def formula(self, v, x):
         return (v[1] * np.exp((-1.0) * v[0] * x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x)))
@@ -73,6 +74,8 @@ class periodic_two_exp(twice_mass_amp, periodic):
         self.setNt(Nt)
         self.description = "periodic_two_exp"
         self.template = "{1: f}exp(-{0: f}*t)(1+{3: f}exp(-{2: f}^2*t)"
+        self.fallback = "periodic_exp"
+
 
     def formula(self, v, x):
                 return ((v[1]*np.exp((-1.0)*v[0]*x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x))) +
