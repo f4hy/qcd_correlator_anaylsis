@@ -1,8 +1,8 @@
 import numpy as np
 from iminuit import Minuit
 
-mass_bounds = (0.005, 2.0)
-amp_bounds = (0.0, 1000.0)
+mass_bounds = (0.005, 5.0)
+amp_bounds = (0.0, 1.0e5)
 const_bounds = (-5.0, 1.0e8)
 
 
