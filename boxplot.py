@@ -179,13 +179,19 @@ def add_experiment_results(experimental_results, f, ax):
             name, mass, uncertainty = [i.strip() for i in  line.split(",")]
             smass = escale(float(mass))
             suncertainty = escale(float(uncertainty))
-            rect = plt.Rectangle((-1.5, smass-suncertainty), 0.5, 2*suncertainty,
+            loc,tloc = -1.6,-1.8
+            if "_3" in name:
+                loc,tloc = -1.45, -0.9
+            rect = plt.Rectangle((loc, smass-suncertainty), 0.5, 2*suncertainty,
                                  fc='r', fill=True, linewidth=1, color='r')
             f.gca().add_artist(rect)
-            ax.annotate("${}$".format(name), xy=(-1.8, smass), fontsize=18)
+            ax.annotate("${}$".format(name), xy=(tloc, smass), fontsize=18)
     plt.xlim(-2.0, 1.0)
     plt.ylim(0, 3.0)
-
+    plt.plot([-0.5,-0.5], [0,3], 'k-', lw=2, )
+    ax.annotate("Experiment", xy=(-1.5, 0.1), fontsize=18, fontweight='bold')
+    ax.annotate("Lattice", xy=(0.2, 0.1), fontsize=18, fontweight='bold')
+    ax.set_ylabel("$5m/3m_\omega$", fontweight='bold', fontsize=18)
 
 def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
@@ -239,7 +245,7 @@ def boxplot_files():
             width = tscale(df.mass.std())
             values = tscale(df.mass.values)
 
-            offset = ((1-(index+1) % 3) * 0.33)#+(index/3)*0.05
+            offset = 0.25+((1-(index+1) % 3) * 0.33)#+(index/3)*0.05
             if index%3 == 0 and index%2==0 :
                 offset += (index/3)*0.03
             if index%3 == 2 and index%2==0:
