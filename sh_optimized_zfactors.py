@@ -74,6 +74,7 @@ def sh_optimized_zfacts():
         ax[i][j].set_title("SH-opt level{}".format(m))
         ax[i][j].set_ylim((0,max(OptZ[m])))
         ax[i][j].set_ylabel("$|Z|^2$", fontweight='bold')
+        ax[i][j].set_xlabel("Level", fontweight='bold')
 
 
     # plt.ylim((0,np.max(OptZ.values())))
