@@ -60,8 +60,11 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
         i = (plot_index-1)/cols
         j = (plot_index-1) % cols
         logging.info("making plot {} {} {}".format(plot_index, i, j))
+        if len(plots[:maxplots]) <= cols:
+            ax=layout[j]
+        else:
+            ax=layout[i][j]
 
-        ax = layout[i][j]
         indexes = [plot_index+op*1000 for op in ops]
         if j > 0:
             ax.set_yticks([])
