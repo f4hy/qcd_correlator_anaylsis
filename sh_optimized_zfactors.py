@@ -70,11 +70,15 @@ def sh_optimized_zfacts():
     for m in range(1,N+1):
         i = (m-1)/Ncols
         j = (m-1) % Ncols
-        ax[i][j].bar(range(len(OptZ[m])), OptZ[m], 1.0, color="b")
-        ax[i][j].set_title("SH-opt level{}".format(m))
-        ax[i][j].set_ylim((0,max(OptZ[m])))
-        ax[i][j].set_ylabel("$|Z|^2$", fontweight='bold')
-        ax[i][j].set_xlabel("Level", fontweight='bold')
+        if N <= Ncols:
+            axe=ax[j]
+        else:
+            axe=ax[i][j]
+        axe.bar(range(len(OptZ[m])), OptZ[m], 1.0, color="b")
+        axe.set_title("SH-opt level{}".format(m))
+        axe.set_ylim((0,max(OptZ[m])))
+        axe.set_ylabel("$|Z|^2$", fontweight='bold')
+        axe.set_xlabel("Level", fontweight='bold')
 
 
     # plt.ylim((0,np.max(OptZ.values())))
