@@ -259,7 +259,8 @@ def boxplot_files():
                                        positions=[offset])
             hide = not args.clean
             plots[label]["boxes"][0].set_facecolor(color)
-            plots[label]["boxes"][0].set_linewidth(0)
+            plots[label]["boxes"][0].set_linewidth(1)
+            plots[label]["boxes"][0].set_color(color)
             plots[label]["boxes"][0].set_alpha(max(1.0-width*2.0, 0.1))
             plots[label]["boxes"][0].set_zorder(-1*width)
             plt.setp(plots[label]["whiskers"], color=color, visible=hide)
