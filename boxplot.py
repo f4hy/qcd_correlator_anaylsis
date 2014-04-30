@@ -64,7 +64,7 @@ def get_singles(singlefilename):
 def get_colors(colorfilename):
     if not os.path.isfile(colorfilename):
         logging.warn("color file missing, ignoring")
-        return []
+        return None
     else:
         txt = lines_without_comments(colorfilename)
         df = pd.read_csv(txt, sep=",", delimiter=",", skipinitialspace=True,
