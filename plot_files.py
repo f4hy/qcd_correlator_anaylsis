@@ -34,11 +34,13 @@ def lines_without_comments(filename, comment="#"):
     s.seek(0)
     return s
 
+
 def myconverter(s):
     try:
         return np.float(s.strip(','))
     except:
         return np.nan
+
 
 def removecomma(s):
     return int(s.strip(','))
@@ -61,7 +63,9 @@ def read_file(filename):
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"],
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
-        df = pd.read_csv(txt, sep=",", delimiter=",", names=["time", "correlator", "error", "quality"], skipinitialspace=True, delim_whitespace=True, converters={0: removecomma, 1: myconverter})
+        df = pd.read_csv(txt, sep=",", delimiter=",",
+                         names=["time", "correlator", "error", "quality"], skipinitialspace=True,
+                         delim_whitespace=True, converters={0: removecomma, 1: myconverter})
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"])
     return df
@@ -71,17 +75,17 @@ def get_fit(filename, noexcept=False):
     with open(filename) as f:
         for line in f:
             if line.startswith("#fit"):
-                logging.info("found fit info: {}".format(line))
+                logging.debug("found fit info: {}".format(line.strip()))
                 function, tmin, tmax, params, errors = line.split(",")
                 fittype = function.split(" ")[0].strip()
                 fn = function.split(" ")[1].strip()
                 tmin = int(tmin.strip(" (),."))
                 tmax = int(tmax.strip(" (),."))
-                params = [float(i) for i in params.strip(" []\n").split()  ]
-                errors = [float(i) for i in errors.strip(" []\n").split()  ]
+                params = [float(i) for i in params.strip(" []\n").split()]
+                errors = [float(i) for i in errors.strip(" []\n").split()]
                 return (fittype, fn, tmin, tmax, params, errors)
     if noexcept:
-        return ("single_exp", 0, 1, [0.0,0.0], [0.0,0.0])
+        return ("single_exp", 0, 1, [0.0, 0.0], [0.0, 0.0])
     raise RuntimeError("No fit info")
 
 
@@ -108,24 +112,25 @@ def label_names_from_filelist(filelist):
 def add_fit_info(filename, ax=None):
     if not ax:
         ax = plt
-    funmap = {"two_exp": two_exp, "single_exp": single_exp, "periodic_two_exp": two_exp, "fwd-back-exp": single_exp}
+    funmap = {"two_exp": two_exp, "single_exp": single_exp, "periodic_two_exp": two_exp,
+              "fwd-back-exp": single_exp}
     try:
         fittype, function, tmin, tmax, fitparams, fiterrors = get_fit(filename)
         fun = funmap[function]()
         if fittype == "#fit":
             logging.info("correlator fit info")
-            xpoints=np.arange(tmin,tmax,0.3)
-            fitpoints = fun.formula(fitparams, xpoints )
+            xpoints = np.arange(tmin, tmax, 0.3)
+            fitpoints = fun.formula(fitparams, xpoints)
             ax.plot(xpoints, fitpoints, ls="dashed", color="r", lw=2, zorder=5)
             return fun.template.format(*fitparams)
         if fittype == "#fit_emass":
             massindex = fun.parameter_names.index("mass")
-            mass= fitparams[massindex]
+            mass = fitparams[massindex]
             masserror = fiterrors[massindex]
-            xpoints=np.arange(tmin,tmax,1.0)
-            fitpoints = fun.formula(fitparams, xpoints )
+            xpoints = np.arange(tmin, tmax, 1.0)
+            fitpoints = fun.formula(fitparams, xpoints)
             emassfit = []
-            dt=3
+            dt = 3
             for i in range(len(fitpoints))[:-dt]:
                 emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
                 emassfit.append(emass)
@@ -149,8 +154,9 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     tmin_plot = {}
     has_colorbar = False
     labels = label_names_from_filelist(files)
-    fontsettings= dict(fontweight='bold', fontsize=18)
-    #labels = [translate(l) for l in labels]
+    fontsettings = dict(fontweight='bold', fontsize=18)
+    if args.translate:
+        labels = [translate(l) for l in labels]
     seperate = cols > 0
     ymin, ymax = 0, None
     xmin, xmax = 100, None
@@ -166,13 +172,12 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         i = (index)/cols
         j = (index) % cols
         if seperate:
-            axe=layout[i][j]
-        if j==0:
+            axe = layout[i][j]
+        if j == 0:
             if "cor" in filename:
                 axe.set_ylabel("Correlator", **fontsettings)
             if "emass" in filename:
                 axe.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$", **fontsettings)
-
 
         if fit:
             if seperate:
@@ -191,10 +196,11 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         df = read_file(filename)
         time_offset = df.time.values+(index*0.1)
         if seperate:
-            time_offset=df.time.values
+            time_offset = df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
 
-        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=12, elinewidth=3, capsize=5, capthick=2, mec=color, aa=True)
+        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=12, elinewidth=3, capsize=5,
+                            capthick=2, mec=color, aa=True)
         if seperate:
             logging.info("plotting {}  {}, {}".format(label, i, j))
             axe.set_title(label)
@@ -203,9 +209,10 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
             cmap = mpl.cm.cool
-            plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, fmt=None, zorder=0, **plotsettings)
+            plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, fmt=None,
+                                        zorder=0, **plotsettings)
             tmin_plot[label] = axe.scatter(time_offset, df.correlator.values, c=df.quality.values,
-                                          s=50, cmap=cmap, marker=mark)
+                                           s=50, cmap=cmap, marker=mark)
             tmin_plot[label].set_clim(0, 1)
             if seperate:
                 has_colorbar = True
@@ -215,27 +222,28 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
 
         else:                   # Not a tmin plot!
             if np.iscomplexobj(df.correlator.values):
-                plots[label] = axe.errorbar(time_offset, np.real(df.correlator.values), yerr=np.real(df.error.values), **plotsettings)
+                plots[label] = axe.errorbar(time_offset, np.real(df.correlator.values), yerr=np.real(df.error.values),
+                                            **plotsettings)
                 if not real:
-                    plots["imag"+label] = axe.errorbar(time_offset, np.imag(df.correlator.values), yerr=np.imag(df.error.values),
-                                                       markerfacecolor='none', **plotsettings)
+                    plots["imag"+label] = axe.errorbar(time_offset, np.imag(df.correlator.values),
+                                                       yerr=np.imag(df.error.values), markerfacecolor='none',
+                                                       **plotsettings)
             else:
                 plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, **plotsettings)
 
-        # axe.set_xlabel("Time", **fontsettings)
         if not yrange:
-            ymin = min(ymin,min(df.correlator))
-            ymax = max(ymax,max(df.correlator)*1.1)
-            logging.debug("ymin {} ymax {}".format(ymin,ymax))
+            ymin = min(ymin, min(df.correlator))
+            ymax = max(ymax, max(df.correlator)*1.1)
+            logging.debug("ymin {} ymax {}".format(ymin, ymax))
         if not yrange:
-            xmin = min(xmin,min(df.time)-1)
-            xmax = max(xmax,max(df.time)+1)
-            logging.debug("xmin {} xmax {}".format(xmin,xmax))
+            xmin = min(xmin, min(df.time)-1)
+            xmax = max(xmax, max(df.time)+1)
+            logging.debug("xmin {} xmax {}".format(xmin, xmax))
 
     if yrange:
         plt.ylim(yrange)
     else:
-        plt.ylim(max(ymin,0), ymax)
+        plt.ylim(max(ymin, 0), ymax)
     if xrang:
         plt.xlim(xrang)
     else:
@@ -254,12 +262,12 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             f.colorbar(tmin_plot[label], cax=cbar_ax)
 
     if(output_stub):
-        f.set_size_inches(18.5,10.5)
+        f.set_size_inches(18.5, 10.5)
         plt.rcParams.update({'font.size': 20})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         plt.tight_layout()
         logging.info("Saving plot to {}".format(output_stub+".png"))
-        plt.savefig(output_stub+".png",dpi=100)
+        plt.savefig(output_stub+".png", dpi=100)
         # logging.info("Saving plot to {}".format(output_stub+".eps"))
         # plt.savefig(output_stub+".eps")
         return
@@ -302,6 +310,8 @@ if __name__ == "__main__":
                         help="number of correlators to include per plot", default=10000)
     parser.add_argument("-t", "--title", type=str, required=False,
                         help="plot title", default=None)
+    parser.add_argument("-tr", "--translate", action="store_true", required=False,
+                        help="Attempt to translate the names (of operators)")
     parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
                         help="set the yrange of the plot", default=None)
     parser.add_argument("-x", "--xrang", type=float, required=False, nargs=2,
@@ -320,14 +330,14 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-
     if args.sort:
         try:
             if args.fit_only:
-                fitvalues =[get_fit(i, noexcept=True)[4][0] for i in args.files]
+                fitvalues = [get_fit(i, noexcept=True)[4][0] for i in args.files]
                 s = [x[1] for x in sorted(zip(fitvalues, args.files), key=lambda t: float(t[0]))]
             else:
-                s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files), key=lambda t: int(t[0]))]
+                s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files),
+                                          key=lambda t: int(t[0]))]
             args.files = s
         except Exception as e:
             logging.warn("sorting failed")
@@ -342,14 +352,14 @@ if __name__ == "__main__":
         for i in xrange(0, len(l), n):
             yield l[i:i+n]
 
-    for index,chunk in enumerate(chunks(args.files, args.number)):
-        ostub=args.output_stub
+    for index, chunk in enumerate(chunks(args.files, args.number)):
+        ostub = args.output_stub
         if args.output_stub and index > 0:
-            ostub="{}_{}".format(args.output_stub, index)
+            ostub = "{}_{}".format(args.output_stub, index)
         if args.columns:
             logging.info("Plotting each file as a seperate plot")
-            plot_files(chunk, output_stub=ostub,
-                       cols=args.columns, yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
+            plot_files(chunk, output_stub=ostub, cols=args.columns, yrange=args.yrange, xrang=args.xrang,
+                       fit=args.include_fit, real=args.real, title=args.title)
         else:
             plot_files(chunk, output_stub=ostub,
                        yrange=args.yrange, xrang=args.xrang, fit=args.include_fit, real=args.real, title=args.title)
