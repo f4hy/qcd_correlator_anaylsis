@@ -91,6 +91,11 @@ def get_fit(filename, noexcept=False):
 
 def label_names_from_filelist(filelist):
     names = filelist
+    logging.debug("first going to try matching level??")
+    levelsearch = [re.search("level\d+", filename) for filename in names]
+    if all(levelsearch):
+        return [s.group(0) for s in levelsearch]
+
     basenames = [os.path.basename(filename) for filename in names]
     names = basenames
     if any(basenames.count(x) > 1 for x in basenames):
@@ -117,16 +122,17 @@ def add_fit_info(filename, ax=None):
     try:
         fittype, function, tmin, tmax, fitparams, fiterrors = get_fit(filename)
         fun = funmap[function]()
+        massindex = fun.parameter_names.index("mass")
+        mass = fitparams[massindex]
+        masserror = fiterrors[massindex]
         if fittype == "#fit":
             logging.info("correlator fit info")
             xpoints = np.arange(tmin, tmax, 0.3)
             fitpoints = fun.formula(fitparams, xpoints)
             ax.plot(xpoints, fitpoints, ls="dashed", color="r", lw=2, zorder=5)
-            return fun.template.format(*fitparams)
+            if args.fitfunction:
+                return fun.template.format(*fitparams)
         if fittype == "#fit_emass":
-            massindex = fun.parameter_names.index("mass")
-            mass = fitparams[massindex]
-            masserror = fiterrors[massindex]
             xpoints = np.arange(tmin, tmax, 1.0)
             fitpoints = fun.formula(fitparams, xpoints)
             emassfit = []
@@ -137,10 +143,10 @@ def add_fit_info(filename, ax=None):
             ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r", lw=2, zorder=5)
             ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
             ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
-            digits = -1.0*round(math.log10(masserror))
-            formated_error = int(round(masserror * (10**(digits + 1))))
-            formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
-            return "{m}({e})".format(m=formated_mass, e=formated_error)
+        digits = -1.0*round(math.log10(masserror))
+        formated_error = int(round(masserror * (10**(digits + 1))))
+        formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
+        return "{m}({e})".format(m=formated_mass, e=formated_error)
     except RuntimeError:
         logging.error("File {} had no fit into".format(filename))
 
@@ -300,6 +306,8 @@ if __name__ == "__main__":
                         help="check file for fit into, add it to plots")
     parser.add_argument("-fo", "--fit_only", action="store_true",
                         help="replace_labels with fit info")
+    parser.add_argument("-ff", "--fitfunction", action="store_true",
+                        help="replace_labels with fit function")
     parser.add_argument("-r", "--real", action="store_true",
                         help="don't include the imgainry part'")
     parser.add_argument("-s", "--sort", action="store_true",
@@ -337,11 +345,11 @@ if __name__ == "__main__":
                 s = [x[1] for x in sorted(zip(fitvalues, args.files), key=lambda t: float(t[0]))]
             else:
                 s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files),
-                                          key=lambda t: int(t[0]))]
+                                          key=lambda t: int(re.search("\d+", t[0]).group(0)))]
             args.files = s
         except Exception as e:
             logging.warn("sorting failed")
-            print e
+            logging.error(e)
             exit()
         else:
             logging.info("level sorting worked")
