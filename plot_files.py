@@ -354,7 +354,7 @@ if __name__ == "__main__":
 
     for index, chunk in enumerate(chunks(args.files, args.number)):
         ostub = args.output_stub
-        if args.output_stub and index > 0:
+        if args.output_stub and len(args.files) > args.number:
             ostub = "{}_{}".format(args.output_stub, index)
         if args.columns:
             logging.info("Plotting each file as a seperate plot")
