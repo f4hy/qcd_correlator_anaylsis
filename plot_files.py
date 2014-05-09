@@ -116,7 +116,7 @@ def add_fit_info(filename, ax=None):
             logging.info("correlator fit info")
             xpoints=np.arange(tmin,tmax,0.3)
             fitpoints = fun.formula(fitparams, xpoints )
-            ax.plot(xpoints, fitpoints, ls="dashed", color="r", lw=2)
+            ax.plot(xpoints, fitpoints, ls="dashed", color="r", lw=2, zorder=5)
             return fun.template.format(*fitparams)
         if fittype == "#fit_emass":
             massindex = fun.parameter_names.index("mass")
@@ -129,9 +129,9 @@ def add_fit_info(filename, ax=None):
             for i in range(len(fitpoints))[:-dt]:
                 emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
                 emassfit.append(emass)
-            ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r")
-            ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b")
-            ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b")
+            ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r", lw=2, zorder=5)
+            ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
+            ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
             digits = -1.0*round(math.log10(masserror))
             formated_error = int(round(masserror * (10**(digits + 1))))
             formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
@@ -143,28 +143,36 @@ def add_fit_info(filename, ax=None):
 def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=False, real=False, title=None):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
-    colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"]
+    # colors = sorted([c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"])
+    colors = ['b', 'r', 'k', 'm', 'c', 'y']
     plots = {}
     tmin_plot = {}
     has_colorbar = False
     labels = label_names_from_filelist(files)
+    fontsettings= dict(fontweight='bold', fontsize=18)
     #labels = [translate(l) for l in labels]
     seperate = cols > 0
-    layout = None
+    ymin, ymax = 0, None
+    xmin, xmax = 100, None
+    rows = int(math.ceil(float(len(labels))/cols))
     if seperate:
-        f, layout = plt.subplots(nrows=int(math.ceil(float(len(labels))/cols)), ncols=cols, sharey=True, sharex=True)
+        f, layout = plt.subplots(nrows=rows, ncols=cols, sharey=True, sharex=True, squeeze=False)
     else:
-        f, layout = plt.subplots(1)
+        f, axe = plt.subplots(1)
+        axe.set_xlabel("time", **fontsettings)
+    for i in range(cols):       # Set bottom row to have xlabels
+        layout[rows-1][i].set_xlabel("time", **fontsettings)
     for index, label, filename in zip(range(len(files)), labels, files):
         i = (index)/cols
         j = (index) % cols
         if seperate:
-            if len(labels) <= cols:
-                axe=layout[j]
-            else:
-                axe=layout[i][j]
-        else:
-            axe=layout
+            axe=layout[i][j]
+        if j==0:
+            if "cor" in filename:
+                axe.set_ylabel("Correlator", **fontsettings)
+            if "emass" in filename:
+                axe.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$", **fontsettings)
+
 
         if fit:
             if seperate:
@@ -173,36 +181,30 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                 fitstring = add_fit_info(filename)
             if fitstring:
                 if args.fit_only:
-                    print "setting label to {}".format(fitstring)
+                    logging.info("setting label to {}".format(fitstring))
                     label = fitstring
                 else:
                     label += " " + fitstring
 
-        # for index, label in enumerate(labels):
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
         df = read_file(filename)
-        #print df.head(20)
-        #exit()
         time_offset = df.time.values+(index*0.1)
         if seperate:
             time_offset=df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
+
+        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=12, elinewidth=3, capsize=5, capthick=2, mec=color, aa=True)
+        if seperate:
+            logging.info("plotting {}  {}, {}".format(label, i, j))
+            axe.set_title(label)
+
+        # Do a Tmin plot
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
             cmap = mpl.cm.cool
-            #print df.correlator.values
-            if seperate:
-                logging.info("plotting {}  {}, {}".format(label, i, j))
-                ax = axe
-                ax.set_title(label)
-                pass
-            else:
-                ax = plt
-            plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                       linestyle="none", c=color, marker=mark, label=label,
-                                       fmt=None, zorder=0)
-            tmin_plot[label] = ax.scatter(time_offset, df.correlator.values, c=df.quality.values,
+            plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, fmt=None, zorder=0, **plotsettings)
+            tmin_plot[label] = axe.scatter(time_offset, df.correlator.values, c=df.quality.values,
                                           s=50, cmap=cmap, marker=mark)
             tmin_plot[label].set_clim(0, 1)
             if seperate:
@@ -210,51 +212,37 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             if not has_colorbar and not seperate:
                 cb = plt.colorbar(tmin_plot[label])  # noqa
                 has_colorbar = True
-            if yrange:
-                plt.ylim(yrange)
-            if xrang:
-                plt.xlim(xrang)
 
-        else:
-            if seperate:
-                logging.info("plotting {}  {}, {}".format(label, i, j))
-                ax = axe
-                ax.set_title(label)
-            else:
-                ax = plt
+        else:                   # Not a tmin plot!
             if np.iscomplexobj(df.correlator.values):
-                plots[label] = ax.errorbar(time_offset, np.real(df.correlator.values),
-                                           yerr=np.real(df.error.values),
-                                           linestyle="none", c=color, marker=mark, label=label, ms=10)
+                plots[label] = axe.errorbar(time_offset, np.real(df.correlator.values), yerr=np.real(df.error.values), **plotsettings)
                 if not real:
-                    plots["imag"+label] = ax.errorbar(time_offset, np.imag(df.correlator.values),
-                                                      yerr=np.imag(df.error.values),
-                                                      markerfacecolor='none',
-                                                      linestyle="none", c=color, marker=mark, label=None, ms=10)
+                    plots["imag"+label] = axe.errorbar(time_offset, np.imag(df.correlator.values), yerr=np.imag(df.error.values),
+                                                       markerfacecolor='none', **plotsettings)
             else:
-                #print df.correlator.values, df.error.values
-                plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                           linestyle="none", c=color, marker=mark, label=label, ms=12,
-                                           elinewidth=3, capsize=3, capthick=3 )
+                plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, **plotsettings)
 
-            if yrange:
-                plt.ylim(yrange)
-            else:
-                axe.set_ylim(min(df.correlator), max(df.correlator))
-            if xrang:
-                plt.xlim(xrang)
-            else:
-                plt.xlim(min(df.time), max(df.time))
-            axe.set_xlabel("Time", fontweight='bold', fontsize=18)
-            if "cor" in filename:
-                axe.set_ylabel("Correlator", fontweight='bold', fontsize=18)
-            if "emass" in filename:
-                axe.set_ylabel("$\mathrm{m_{eff}}$", fontweight='bold', fontsize=18)
+        # axe.set_xlabel("Time", **fontsettings)
+        if not yrange:
+            ymin = min(ymin,min(df.correlator))
+            ymax = max(ymax,max(df.correlator)*1.1)
+            logging.debug("ymin {} ymax {}".format(ymin,ymax))
+        if not yrange:
+            xmin = min(xmin,min(df.time)-1)
+            xmax = max(xmax,max(df.time)+1)
+            logging.debug("xmin {} xmax {}".format(xmin,xmax))
 
-
+    if yrange:
+        plt.ylim(yrange)
+    else:
+        plt.ylim(max(ymin,0), ymax)
+    if xrang:
+        plt.xlim(xrang)
+    else:
+        plt.xlim(xmin, xmax)
 
     if title:
-        f.suptitle(title, fontsize=18, fontweight='bold')
+        f.suptitle(title, **fontsettings)
 
     if not seperate:
         leg = plt.legend(fancybox=True, shadow=True)
