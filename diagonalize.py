@@ -8,6 +8,7 @@ import determine_operators
 import argparse
 import pandas_reader
 import os.path
+from level_identifier import readops
 
 DIAGTOL = 0.009
 
@@ -25,6 +26,7 @@ def hermitionize(M):
 def diagonalize(correlator_pannel, t0, td, generalized=False):
     length = correlator_pannel.shape[0]
     n = int(np.sqrt(length))
+    assert t0 is not None
     # Here we access the pannel major_xs gives time(n), mean incase it
     # was a multi correlator should have no effect on an already averaged one
     A = np.matrix(np.reshape(correlator_pannel.major_xs(td).mean().values, (n, n)))
@@ -171,10 +173,15 @@ if __name__ == "__main__":
                         help="time diagonalization was done")
     parser.add_argument("-to", "--tnaught", type=int, required=False,
                         help="t naught, reference time")
-    parser.add_argument("-r", "--operators", action='append', required=False,
-                        help="operator to make e.g. -r etap000DDL7Egp1")
+    parser.add_argument("-r", "--operators", type=str, required=False,
+                        help="file with operators to use")
     parser.add_argument("-i", "--input-dir", type=str, required=True,
                         help="directory to read files from")
+    parser.add_argument("-e", "--write_eigenvalues", type=str, required=False,
+                        help="just write the eigenvalues")
+    parser.add_argument("-m", "--returnmaxeigen", action="store_true", required=False,
+                        help="return max eigenvalue")
+
     parser.add_argument("-o", "--outputformat", type=str, required=False,
                         help="format to write output")
     args = parser.parse_args()
@@ -194,12 +201,16 @@ if __name__ == "__main__":
             parser.print_help()
             parser.exit()
         args.operators = ops
+    else:
+        ops = readops(args.operators)
+        logging.debug("found operators: {}".format(','.join(ops)))
+        args.operators = ops
 
     if not args.principle and not args.tstar:
         logging.error("tstar required, unless doing princple")
         parser.print_help()
-        parser.exit()        
-        
+        parser.exit()
+
     cor_matrix = {}
     cor_matrix_multi = {}
     cor_matrix_ave = {}
@@ -210,9 +221,18 @@ if __name__ == "__main__":
             cor_matrix[snk+src] = pandas_reader.read_configcols_paraenformat(filename)
 
     p = pd.Panel(cor_matrix)
+
+    if args.returnmaxeigen:
+        logging.info("just returning the max eigen")
+        print diagonalize(p, args.tnaught, args.tstar, generalized=args.generalized)
+
     if args.principle:
         diag = principle(p, args.tnaught, args.tstar, generalized=args.generalized)
     else:
+        if args.tnaught is None:
+            parser.print_help()
+            logging.error("Must have tnaught if not principle")
+            parser.exit()
         diag = diagonalize(p, args.tnaught, args.tstar, generalized=args.generalized)
     diagave = diag.mean(2)
 
