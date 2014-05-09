@@ -158,8 +158,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     if args.translate:
         labels = [translate(l) for l in labels]
     seperate = cols > 0
-    ymin, ymax = 0, None
-    xmin, xmax = 100, None
+    ymin, ymax = 1000, None
+    xmin, xmax = 1000, None
     rows = int(math.ceil(float(len(labels))/cols))
     if seperate:
         f, layout = plt.subplots(nrows=rows, ncols=cols, sharey=True, sharex=True, squeeze=False)
