@@ -116,7 +116,7 @@ def add_fit_info(filename, ax=None):
             logging.info("correlator fit info")
             xpoints=np.arange(tmin,tmax,0.3)
             fitpoints = fun.formula(fitparams, xpoints )
-            ax.plot(xpoints, fitpoints, ls="dashed", color="r")
+            ax.plot(xpoints, fitpoints, ls="dashed", color="r", lw=2)
             return fun.template.format(*fitparams)
         if fittype == "#fit_emass":
             massindex = fun.parameter_names.index("mass")
@@ -130,8 +130,8 @@ def add_fit_info(filename, ax=None):
                 emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
                 emassfit.append(emass)
             ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r")
-            ax.plot(range(tmin, tmax+1), [mass+masserror]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-            ax.plot(range(tmin, tmax+1), [mass-masserror]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+            ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b")
+            ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b")
             digits = -1.0*round(math.log10(masserror))
             formated_error = int(round(masserror * (10**(digits + 1))))
             formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
@@ -153,6 +153,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     layout = None
     if seperate:
         f, layout = plt.subplots(nrows=int(math.ceil(float(len(labels))/cols)), ncols=cols, sharey=True, sharex=True)
+    else:
+        f, layout = plt.subplots(1)
     for index, label, filename in zip(range(len(files)), labels, files):
         i = (index)/cols
         j = (index) % cols
@@ -161,6 +163,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                 axe=layout[j]
             else:
                 axe=layout[i][j]
+        else:
+            axe=layout
 
         if fit:
             if seperate:
@@ -230,7 +234,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             else:
                 #print df.correlator.values, df.error.values
                 plots[label] = ax.errorbar(time_offset, df.correlator.values, yerr=df.error.values,
-                                           linestyle="none", c=color, marker=mark, label=label, ms=12)
+                                           linestyle="none", c=color, marker=mark, label=label, ms=12,
+                                           elinewidth=3, capsize=3, capthick=3 )
 
             if yrange:
                 plt.ylim(yrange)
@@ -239,8 +244,17 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             if xrang:
                 plt.xlim(xrang)
             else:
-                axe.set_xlim(min(df.time), max(df.time))
+                plt.xlim(min(df.time), max(df.time))
+            axe.set_xlabel("Time", fontweight='bold', fontsize=18)
+            if "cor" in filename:
+                axe.set_ylabel("Correlator", fontweight='bold', fontsize=18)
+            if "emass" in filename:
+                axe.set_ylabel("$\mathrm{m_{eff}}$", fontweight='bold', fontsize=18)
 
+
+
+    if title:
+        f.suptitle(title, fontsize=18, fontweight='bold')
 
     if not seperate:
         leg = plt.legend(fancybox=True, shadow=True)
@@ -252,8 +266,6 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             f.colorbar(tmin_plot[label], cax=cbar_ax)
 
     if(output_stub):
-        if title:
-            f.suptitle(title)
         f.set_size_inches(18.5,10.5)
         plt.rcParams.update({'font.size': 20})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
@@ -324,7 +336,7 @@ if __name__ == "__main__":
     if args.sort:
         try:
             if args.fit_only:
-                fitvalues =[get_fit(i, noexcept=True)[2] for i in args.files]
+                fitvalues =[get_fit(i, noexcept=True)[4][0] for i in args.files]
                 s = [x[1] for x in sorted(zip(fitvalues, args.files), key=lambda t: float(t[0]))]
             else:
                 s = [x[1] for x in sorted(zip(label_names_from_filelist(args.files), args.files), key=lambda t: int(t[0]))]
