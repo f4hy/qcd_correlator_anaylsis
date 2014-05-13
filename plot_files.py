@@ -65,7 +65,7 @@ def read_file(filename):
     if filetype == "comma":
         df = pd.read_csv(txt, sep=",", delimiter=",",
                          names=["time", "correlator", "error", "quality"], skipinitialspace=True,
-                         delim_whitespace=True, converters={0: removecomma, 1: myconverter})
+                         delim_whitespace=True, converters={0: removecomma, 1: myconverter, 2: myconverter})
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"])
     return df
@@ -238,8 +238,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                 plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, **plotsettings)
 
         if not yrange:
-            ymin = min(ymin, min(df.correlator))
-            ymax = max(ymax, max(df.correlator)*1.1)
+            ymin = min(ymin, min(df.correlator)-min(df.correlator)*0.05)
+            ymax = max(ymax, max(df.correlator)*1.05)
             logging.debug("ymin {} ymax {}".format(ymin, ymax))
         if not yrange:
             xmin = min(xmin, min(df.time)-1)
