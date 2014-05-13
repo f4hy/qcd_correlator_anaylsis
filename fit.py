@@ -7,7 +7,7 @@ import build_corr
 import argparse
 import os
 
-from fitfunctions import *  # noqa
+from parser_fit import fitparser, functions
 from fit_parents import InvalidFit
 import inspect
 import sys
@@ -30,7 +30,7 @@ NBOOTSTRAPS = 1000
 
 
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False,
-        return_chi=False):
+        return_chi=False, options=None):
     if(tmax-tmin < len(fn.parameter_names)):
         raise InvalidFit("Can not fit to less points than parameters")
 
@@ -57,7 +57,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if not success:
         raise InvalidFit("original exnamble leastsq failed")
-    if args.first_pass:
+    if options.first_pass:
         initial_guess = original_ensamble_params
         logging.info("initial_guess after first pass: {}".format(repr(initial_guess)))
         # return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
@@ -75,7 +75,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             """ Function to be minizied. computed using matrix mult"""
             vect = aoc - fn.formula(g, x)
             return vect.dot(inv_cov).dot(vect)
-        if args.first_pass:
+        if options.first_pass:
             uncorrelated_fit_values, success = leastsq(fun, guess, args=(x, y), maxfev=100000)
             if not success:
                 raise InvalidFit("leastsq failed")
@@ -101,7 +101,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         results = newresults
         covariant_fit, fit_info, flag = results[0], results[1:3], results[3]
 
-        if args.minuit:
+        if options.minuit:
             m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
             #m.set_strategy(2)
             migradinfo = m.migrad()
@@ -147,8 +147,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     fn.valid(original_ensamble_correlatedfit)
 
     boot_params = []
-    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=args.write_each_boot):
-        if args.reguess:
+    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=options.write_each_boot):
+        if options.reguess:
             newguess = fn.starting_guess(strap, tmax-1, tmin)
         else:
             newguess = initial_guess
@@ -176,7 +176,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             results.error('Bootstrap Bias in {:<10}: {:.3%}'.format(name, percent_bias))
             results.error("Bootstrap average does not agree with ensamble average!"
                           "\nNot enough statistics for this for to be valid!!!\n")
-            if not args.unsafe:
+            if not options.unsafe:
                 results.critical("Exiting! Run with --unsafe to fit anyway")
                 raise InvalidFit("Bootstrap average does not agree with ensamble average")
 
@@ -221,9 +221,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         valid = False
 
 
-    if args.write_each_boot and valid:
-        results.info("writing each bootstrap to {}.boot".format(args.write_each_boot))
-        with open(args.write_each_boot+".boot", 'w') as bootfile:
+    if options.write_each_boot and valid:
+        results.info("writing each bootstrap to {}.boot".format(options.write_each_boot))
+        with open(options.write_each_boot+".boot", 'w') as bootfile:
             str_ensamble_params = ", ".join([str(p) for p in original_ensamble_params])
             bootfile.write("#bootstrap, {}, \t ensamble mean: {}\n".format(", ".join(fn.parameter_names), str_ensamble_params))
             for i, params in enumerate(boot_params):
@@ -243,12 +243,12 @@ def quality_of_fit(degrees_of_freedom, chi_sqr):
     return gammaincc(dof/2.0, chi_sqr / 2.0)
 
 
-def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
+def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options=None):
     emass_dt = 3
 
     X = np.linspace(tmin, tmax, 200 * 5)
     massX = np.linspace(tmin, tmax-emass_dt, 200 * 5)
-    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps)
+    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps, options=options)
 
     plt.figure()
     corplot = plt.subplot(211)
@@ -348,7 +348,7 @@ def CholeskyInverse(t):
     return B
 
 
-def best_fit_range(fn, cor):
+def best_fit_range(fn, cor, options=None):
     logging.info("Finding best fit range")
     logging.debug("Temporarily setting the logger to warnings only")
     logger = logging.getLogger()
@@ -359,7 +359,7 @@ def best_fit_range(fn, cor):
     for tmin in cor.times:
         for tmax in range(tmin + 4, max(cor.times)):
             try:
-                _, _, chi = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=True)
+                _, _, chi = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=True, options=options)
                 metric = abs(chi-1.0)
                 # if metric < best:
                 best = metric
@@ -376,13 +376,13 @@ def best_fit_range(fn, cor):
     return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges)]
 
 
-def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False):
-    fit_ranges = best_fit_range(funct, cor)
+def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, options=None):
+    fit_ranges = best_fit_range(funct, cor, options=options)
     for tmin, tmax in fit_ranges:
         logging.info("Trying fit range {}, {}".format(tmin, tmax))
         try:
             results = fit(funct, cor, tmin, tmax, filestub=filestub,
-                          bootstraps=bootstraps, return_quality=return_quality)
+                          bootstraps=bootstraps, return_quality=return_quality, options=options)
             logging.info("Auto Fit sucessfully!")
             return (tmin, tmax) + results  # Need to return what fit range was done
         except RuntimeError:
@@ -430,52 +430,10 @@ def bestInverse(M):
             logging.debug("Using standard inverse")
     return inv
 
-args = None
-
 
 if __name__ == "__main__":
 
-    function_list = inspect.getmembers(sys.modules["fitfunctions"], inspect.isclass)
-    functions = {name: f for name, f in function_list}
-
-    parser = argparse.ArgumentParser(description="compute fits")
-    parser.add_argument("-i", "--inputfile", type=str, required=True,
-                        help="Correlator file to read from")
-    parser.add_argument("-o", "--output_stub", type=str, required=False,
-                        help="stub of name to write output to")
-    parser.add_argument("-wb", "--write_each_boot", default=None, type=str, required=False,
-                        help="stub of name to write each bootstrap output to")
-    parser.add_argument("-v1", "--vev", type=str, required=False,
-                        help="vev file to read from")
-    parser.add_argument("-v2", "--vev2", type=str, required=False,
-                        help="vev2 file to read from")
-    parser.add_argument("-ts", "--time-start", type=int, required=False,
-                        help="first time slice to start a fit, can be a list of times")
-    parser.add_argument("-te", "--time-end", type=int, required=False,
-                        help="last time slice to fit, can be a list of times")
-    parser.add_argument("-max", "--maxrange", action="store_true", required=False,
-                        help="fit over the full valid range")
-    parser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
-                        help="Number of straps")
-    parser.add_argument("-p", "--plot", action="store_true", required=False,
-                        help="Plot the resulting fit")
-    parser.add_argument("-Nt", "--period", type=int, required=False,
-                        help="Period in time direction (not required for all functions)")
-    parser.add_argument("-r", "--random", type=int, required=False,
-                        help="set the random seed")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="increase output verbosity")
-    parser.add_argument("--unsafe", action="store_true",
-                        help="Code usually exits if something goes wrong "
-                        "This option will cause the code to fit anyway.")
-    parser.add_argument("--first_pass", action="store_true",
-                        help="Do an uncorrelated chi square first, and use that as the guess")
-    parser.add_argument("--reguess", action="store_true",
-                        help="use emass on each bootstrap to set inital guess, otherwise use full ensamble as guess")
-    parser.add_argument("-m", "--minuit", action="store_true",
-                        help="use the minuit fitter")
-    parser.add_argument("-f", "--function", choices=functions.keys(),
-                        required=False, default="periodic_exp", help="function to fit to")
+    parser = argparse.ArgumentParser(description="compute fits", parents=[fitparser])
 
     args = parser.parse_args()
 
@@ -523,7 +481,7 @@ if __name__ == "__main__":
     fit_ranges = [(tmin, tmax)]
     if not args.time_start:
         print args.output_stub
-        auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps)
+        auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         exit()
 
 
@@ -532,7 +490,7 @@ if __name__ == "__main__":
             plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub,
                      bootstraps=args.bootstraps)
         else:
-            fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps)
+            fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
     except InvalidFit:
         logging.error("Fit was invalid, trying backup")
         if funct.fallback:
@@ -540,8 +498,8 @@ if __name__ == "__main__":
             fallback = functions[funct.fallback](Nt=args.period)
             if args.plot:
                 plot_fit(fallback, cor, tmin, tmax, filestub=args.output_stub,
-                         bootstraps=args.bootstraps)
+                         bootstraps=args.bootstraps, options=args)
             else:
-                fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps)
+                fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         else:
             logging.error("Function does not have a fallback, fit failed")
