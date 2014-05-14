@@ -241,7 +241,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             ymin = min(ymin, min(df.correlator)-min(df.correlator)*0.05)
             ymax = max(ymax, max(df.correlator)*1.05)
             logging.debug("ymin {} ymax {}".format(ymin, ymax))
-        if not yrange:
+        if not xrang:
             xmin = min(xmin, min(df.time)-1)
             xmax = max(xmax, max(df.time)+1)
             logging.debug("xmin {} xmax {}".format(xmin, xmax))
