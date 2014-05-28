@@ -1,22 +1,16 @@
 #!/usr/bin/env python
 import argparse
 import logging
-import readinput
-import os
-import re
-import irreps
-import sys
 import primary_operators
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
 operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
-#operators_path = "/latticeQCD/raid6/bfahy/operators"
 coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_000"
 
 
 def component_ops(opline):
     logging.debug("Computing components of {}".format(opline))
-    if not "iso" in line:
+    if "iso" not in line:
         logging.debug("line is not a multiop directive")
         return
     types, totalirrep, p1, irrep1, disp1, p2, irrep2, disp2 = line.split()
@@ -30,21 +24,25 @@ def component_ops(opline):
     comment1 = "# Lowest state in channel not expected to be a single hadron"
     comment2 = comment1
     try:
-        if check_lowest(type1,p1,irrep1): comment1 = ""
-        if not duplicate(type1,p1,irrep1):
+        if check_lowest(type1, p1, irrep1):
+            comment1 = ""
+        if not duplicate(type1, p1, irrep1):
             print '@oplist.push("{} P={} {}_1 {}"){}'.format(type1, p1, irrep1, disp1, comment1)
     except NotImplementedError as e:
         logging.error("{}".format(e))
     try:
-        if check_lowest(type2,p2,irrep2): comment2 = ""
-        if not duplicate(type2,p2,irrep2):
+        if check_lowest(type2, p2, irrep2):
+            comment2 = ""
+        if not duplicate(type2, p2, irrep2):
             print '@oplist.push("{} P={} {}_1 {}"){}'.format(type2, p2, irrep2, disp2, comment2)
     except NotImplementedError as e:
         logging.error("{}".format(e))
 
+
 def infer_strangeness_and_isospin(optype):
-    namemap = {"kaon": (1, "1h"), "pion": (0, 1), "eta": (0, 0), "phi": (0, 0) }
+    namemap = {"kaon": (1, "1h"), "pion": (0, 1), "eta": (0, 0), "phi": (0, 0)}
     return namemap[optype]
+
 
 def mommap(mom):
     zeroes = mom.count("0")
@@ -62,6 +60,7 @@ def mommap(mom):
         return "002"
     raise NotImplementedError("unsupported momentum {}".format(mom))
 
+
 def check_lowest(optype, mom, irrep):
     logging.debug("checking if lowest in channel for {} {} {}".format(optype, mom, irrep))
 
@@ -77,8 +76,9 @@ duplist = []
 
 
 def compute_psq(mom):
-    nums =  mom.strip("()").split(",")
+    nums = mom.strip("()").split(",")
     return sum((int(i)**2 for i in nums))
+
 
 def duplicate(optype, mom, irrep):
     psq = compute_psq(mom)
@@ -91,9 +91,9 @@ def duplicate(optype, mom, irrep):
         return False
 
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="determine the single hadrons we want to know for a multihadron channel")
+    parser = argparse.ArgumentParser(description="determine the single hadrons we want"
+                                     "to know for a multihadron channel")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
     parser.add_argument('oplist', nargs='?', type=argparse.FileType('r'), help="operator list file")
@@ -105,7 +105,6 @@ if __name__ == "__main__":
         logging.debug("Verbose debuging mode activated")
     else:
         logging.basicConfig(format='# %(levelname)s: %(message)s', level=logging.WARN)
-
 
     for line in args.oplist:
         if line.startswith("@") and "CG_1" not in line:
