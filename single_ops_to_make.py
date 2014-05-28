@@ -6,6 +6,7 @@ import os
 import re
 import irreps
 import sys
+import primary_operators
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
 operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
@@ -22,13 +23,73 @@ def component_ops(opline):
     _, type1, type2 = types.split("_")
     p1, p2 = p1.strip("[]P="), p2.strip("[]P=")
     disp1, disp2 = disp1.strip("[]\'()"), disp2.strip("[]\"()")
-    print '@oplist.push("{} P={} {}_1 {}")'.format(type1, p1, irrep1, disp1)
-    print '@oplist.push("{} P={} {}_1 {}")'.format(type2, p2, irrep2, disp2)
-    #exit()
+    if type1 == "kbar":
+        type1 = "kaon"
+    if type2 == "kbar":
+        type2 = "kaon"
+    comment1 = "# Lowest state in channel not expected to be a single hadron"
+    comment2 = comment1
+    try:
+        if check_lowest(type1,p1,irrep1): comment1 = ""
+        if not duplicate(type1,p1,irrep1):
+            print '@oplist.push("{} P={} {}_1 {}"){}'.format(type1, p1, irrep1, disp1, comment1)
+    except NotImplementedError as e:
+        logging.error("{}".format(e))
+    try:
+        if check_lowest(type2,p2,irrep2): comment2 = ""
+        if not duplicate(type2,p2,irrep2):
+            print '@oplist.push("{} P={} {}_1 {}"){}'.format(type2, p2, irrep2, disp2, comment2)
+    except NotImplementedError as e:
+        logging.error("{}".format(e))
+
+def infer_strangeness_and_isospin(optype):
+    namemap = {"kaon": (1, "1h"), "pion": (0, 1), "eta": (0, 0), "phi": (0, 0) }
+    return namemap[optype]
+
+def mommap(mom):
+    zeroes = mom.count("0")
+    ones = mom.count("1")
+    twos = mom.count("2")
+    if zeroes == 3:
+        return "000"
+    if ones == 3:
+        return "111"
+    if ones == 2 and zeroes == 1:
+        return "011"
+    if ones == 1 and zeroes == 2:
+        return "001"
+    if twos == 1 and zeroes == 2:
+        return "002"
+    raise NotImplementedError("unsupported momentum {}".format(mom))
+
+def check_lowest(optype, mom, irrep):
+    logging.debug("checking if lowest in channel for {} {} {}".format(optype, mom, irrep))
+
+    strangeness, isospin = infer_strangeness_and_isospin(optype)
+    momstring = mommap(mom)
+    elevels = primary_operators.read_expected_levels(strangeness, isospin, irrep, mom=momstring)
+    if "PSQ" in elevels[0]:
+        logging.warning("lowest state is not expected to be a single hadron!!")
+        return False
+    return True
+
+duplist = []
 
 
-def check_lowest(op):
-    pass
+def compute_psq(mom):
+    nums =  mom.strip("()").split(",")
+    return sum((int(i)**2 for i in nums))
+
+def duplicate(optype, mom, irrep):
+    psq = compute_psq(mom)
+    o = (optype, psq, irrep)
+    if o in duplist:
+        logging.warning("{} already used!".format(o))
+        return True
+    else:
+        duplist.append((optype, psq, irrep))
+        return False
+
 
 
 if __name__ == "__main__":
@@ -47,5 +108,5 @@ if __name__ == "__main__":
 
 
     for line in args.oplist:
-        if line.startswith("@"):
+        if line.startswith("@") and "CG_1" not in line:
             component_ops(line)
