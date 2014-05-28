@@ -23,20 +23,20 @@ def component_ops(opline):
         type2 = "kaon"
     comment1 = "# Lowest state in channel not expected to be a single hadron"
     comment2 = comment1
-    try:
-        if check_lowest(type1, p1, irrep1):
-            comment1 = ""
-        if not duplicate(type1, p1, irrep1):
-            print '@oplist.push("{} P={} {}_1 {}"){}'.format(type1, p1, irrep1, disp1, comment1)
-    except NotImplementedError as e:
-        logging.error("{}".format(e))
-    try:
-        if check_lowest(type2, p2, irrep2):
-            comment2 = ""
-        if not duplicate(type2, p2, irrep2):
-            print '@oplist.push("{} P={} {}_1 {}"){}'.format(type2, p2, irrep2, disp2, comment2)
-    except NotImplementedError as e:
-        logging.error("{}".format(e))
+    def print_op(ptype, p, irrep, disp):
+        try:
+            lowest_single_index = check_lowest(ptype, p, irrep)
+            if lowest_single_index:
+                comment = "# There are {} states below the single hadron in this channel".format(lowest_single_index)
+            else:
+                comment = ""
+            if not duplicate(ptype, p, irrep):
+                print '@oplist.push("{} P={} {}_1 {}"){}'.format(ptype, p, irrep, disp, comment)
+        except NotImplementedError as e:
+            logging.error("{}".format(e))
+
+    print_op(type1, p1, irrep1, disp1)
+    print_op(type2, p2, irrep2, disp2)
 
 
 def infer_strangeness_and_isospin(optype):
@@ -67,10 +67,8 @@ def check_lowest(optype, mom, irrep):
     strangeness, isospin = infer_strangeness_and_isospin(optype)
     momstring = mommap(mom)
     elevels = primary_operators.read_expected_levels(strangeness, isospin, irrep, mom=momstring)
-    if "PSQ" in elevels[0]:
-        logging.warning("lowest state is not expected to be a single hadron!!")
-        return False
-    return True
+    index_first_single = next(i for (i,e) in enumerate(elevels) if "PSQ" not in e)
+    return index_first_single
 
 duplist = []
 
