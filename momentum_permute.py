@@ -8,21 +8,21 @@ psqr_map = {0: [0,0,0], 1: [0,0,1], 2: [0,1,1], 3: [1,1,1], 4: [0,0,2],
            5: [0,1,2], 6: [1,1,2], 8: [0,2,2], 9: [0,0,3], -9: [1,2,2]}
 
 
-def all_permutations(psqr):
+def all_permutations(psqr, outputformat="{}{}{}"):
     if psqr == 9:
         logging.warn("There are two ways of making psqr=9, 003 and 122, use -9 for the 122 case")
-    
+
     reference = psqr_map[psqr]
     all = set(itertools.permutations(reference))
     for i in itertools.product([1,-1], repeat=3):
         flipped = [a*b for a,b in zip(i,reference)]
         all.update(set(itertools.permutations(flipped)))
 
-    joined = ["{}{}{}".format(*mom) for mom in all]
-    print " ".join(joined)
-    
-    
-        
+    joined = [outputformat.format(*mom) for mom in all]
+    return joined
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="average data files")
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -39,4 +39,4 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    all_permutations(args.psqr)
+    print " ".join(all_permutations(args.psqr))

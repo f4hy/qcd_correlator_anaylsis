@@ -125,25 +125,26 @@ def get_unspecified_parameters(args):
     args.opsdir = os.path.join(channeldir, args.channel)
 
 
-def read_expected_levels(args):
-    if args.thirtytwo:
-        basedir = os.path.join(expected_levels_path, "32^3_phys/mom_000")
+def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="000"):
+    logging.debug("{} {} {} {} {}".format(strangeness, isospin, channel, thirtytwo, mom))
+    if thirtytwo:
+        basedir = os.path.join(expected_levels_path, "32^3_phys/mom_{}".format(mom))
     else:
-        basedir = os.path.join(expected_levels_path, "24^3_phys/mom_000")
+        basedir = os.path.join(expected_levels_path, "24^3_phys/mom_{}".format(mom))
 
-    if args.isospin == "1h":
-        filename = "bosonic_2I=1_S={}_levels.txt".format(args.strangeness)
+    if isospin == "1h":
+        filename = "bosonic_2I=1_S={}_levels.txt".format(strangeness)
     else:
-        filename = "bosonic_I={}_S={}_levels.txt".format(args.isospin, args.strangeness)
+        filename = "bosonic_I={}_S={}_levels.txt".format(isospin, strangeness)
 
     filepath = os.path.join(basedir, filename)
     logging.info("opening {}".format(filepath))
     expected_level_file = open(filepath, "r")
-    chan = args.channel.split("_")[0]
+    chan = channel.split("_")[0]
     start = False
     expectedleveltxt = ""
     for line in expected_level_file:
-        if chan in line:
+        if " " + chan in line:
             start = True
         if start:
             expectedleveltxt += line
@@ -322,7 +323,7 @@ if __name__ == "__main__":
 
     single_hadrons()
 
-    expected_levels = read_expected_levels(args)
+    expected_levels = read_expected_levels(args.strangeness, args.isospin, args.channel, args.thirtytwo)
     ops = get_ops(args, expected_levels)
     if args.secondary:
         secondary(ops, args.secondary)
