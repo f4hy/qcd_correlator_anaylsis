@@ -144,7 +144,7 @@ def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="00
     start = False
     expectedleveltxt = ""
     for line in expected_level_file:
-        if chan in line:
+        if " " + chan in line:
             start = True
         if start:
             expectedleveltxt += line
