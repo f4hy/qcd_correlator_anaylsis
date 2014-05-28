@@ -2,11 +2,13 @@
 import argparse
 import logging
 import primary_operators
+from momentum_permute import all_permutations
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
 operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
 coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_000"
 
+rows = {"A": 1, "B": 1, "E": 2, "T": 3}
 
 def component_ops(opline):
     logging.debug("Computing components of {}".format(opline))
@@ -27,16 +29,21 @@ def component_ops(opline):
         try:
             lowest_single_index = check_lowest(ptype, p, irrep)
             if lowest_single_index:
-                comment = "# There are {} states below the single hadron in this channel".format(lowest_single_index)
+                comment = " # There are {} states below the single hadron in this channel".format(lowest_single_index)
             else:
                 comment = ""
             if not duplicate(ptype, p, irrep):
-                print '@oplist.push("{} P={} {}_1 {}"){}'.format(ptype, p, irrep, disp, comment)
+                for row in range(1,rows[irrep[0]]+1):
+                    print '@oplist.push("{} P={} {}_{} {}"){}'.format(ptype, p, irrep, row, disp, comment)
         except NotImplementedError as e:
             logging.error("{}".format(e))
 
-    print_op(type1, p1, irrep1, disp1)
-    print_op(type2, p2, irrep2, disp2)
+    psq1 = compute_psq(p1)
+    psq2 = compute_psq(p2)
+    for m1 in all_permutations(psq1, outputformat="({},{},{})"):
+        print_op(type1, m1, irrep1, disp1)
+    for m2 in all_permutations(psq2, outputformat="({},{},{})"):
+        print_op(type2, m2, irrep2, disp2)
 
 
 def infer_strangeness_and_isospin(optype):
@@ -79,13 +86,12 @@ def compute_psq(mom):
 
 
 def duplicate(optype, mom, irrep):
-    psq = compute_psq(mom)
-    o = (optype, psq, irrep)
+    o = (optype, mom, irrep)
     if o in duplist:
         logging.warning("{} already used!".format(o))
         return True
     else:
-        duplist.append((optype, psq, irrep))
+        duplist.append((optype, mom, irrep))
         return False
 
 
