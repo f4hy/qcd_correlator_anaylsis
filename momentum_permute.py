@@ -19,7 +19,7 @@ def all_permutations(psqr, outputformat="{}{}{}"):
         all.update(set(itertools.permutations(flipped)))
 
     joined = [outputformat.format(*mom) for mom in all]
-    return " ".join(joined)
+    return joined
 
 
 
@@ -39,4 +39,4 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    print all_permutations(args.psqr)
+    print " ".join(all_permutations(args.psqr))
