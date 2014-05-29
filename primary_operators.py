@@ -6,6 +6,8 @@ import os
 import re
 import irreps
 import sys
+from prunedops import getprunedops
+from momentum_permute import all_permutations
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
 operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
@@ -27,25 +29,20 @@ readinput.askoperator = not_implemented
 def single_hadrons():
     logging.info("Include all the single hadrons")
     args.outfile.write("# start with all the single hadrons\n") #beyonce
-    if args.isospin == "1":
-        singlepath = os.path.join(args.opsdir, "pion/SH")
-        with open(singlepath, 'r') as singlefile:
-            for line in singlefile:
-                args.outfile.write(line)
-    if args.isospin == "1h":
-        singlepath = os.path.join(args.opsdir, "kaon/SH")
-        with open(singlepath, 'r') as singlefile:
-            for line in singlefile:
-                args.outfile.write(line)
-    if args.isospin == "0":     # if I=0 we need eta ops and phi ops
-        singlepath = os.path.join(args.opsdir, "eta/SH")
-        with open(singlepath, 'r') as singlefile:
-            for line in singlefile:
-                args.outfile.write(line)
-        singlepath = os.path.join(args.opsdir, "phi/SH")
-        with open(singlepath, 'r') as singlefile:
-            for line in singlefile:
-                args.outfile.write(line)
+    isomap = {"1": ["pion"], "1h": ["kaon"], "0": ["eta", "phi"]}
+
+    sh = getprunedops(args.isospin, "sh")
+    atrest = getprunedops(args.isospin, "atrest")
+    basechan = args.channel.split("_")[0]
+    ops = sh[basechan] + atrest[basechan]
+    print ops
+    isomap = {"1": ["pion"], "1h": ["kaon"], "0": ["eta", "phi"]}
+    psqr = sum(int(i)**2 for i in args.momentum)
+    for disp in ops:
+        for name in isomap[args.isospin]:
+            for p in all_permutations(psqr, outputformat="({},{},{})"):
+                print '@oplist.push("{} P={} {} {}")'.format(name, p, args.channel, disp)
+
 
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
@@ -72,7 +69,7 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
 
     if not found:
         logging.critical("Could not find psqr{} coeffs for this level".format(psqr))
-        args.outfile.write("# Could not find psqr{} coeffs for this level".format(psqr))
+        args.outfile.write("# Could not find psqr{} coeffs for this level {}]".format(psqr,level))
 
 def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
@@ -84,12 +81,16 @@ def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outf
     expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
     print expression
     found = False
+
     for c in coeffs:
         if re.match(expression, c):
             mom1 = c.split("_")[1]
             mom2 = c.split("_")[3]
             cg = c.split("_")[-1]
-            if sum(mom_map[m]**2 for m in mom1) == int(psqr1) and sum(mom_map[m]**2 for m in mom2) == int(psqr2):
+            matches = (sum(mom_map[m]**2 for m in mom1) == int(psqr1) and sum(mom_map[m]**2 for m in mom2) == int(psqr2))
+            matchesscaled2 = (sum((mom_map[m]*2)**2 for m in mom1) == int(psqr1) and sum((mom_map[m]*2)**2 for m in mom2) == int(psqr2))
+            matchesscaled3 = (sum((mom_map[m]*3)**2 for m in mom1) == int(psqr1) and sum((mom_map[m]*3)**2 for m in mom2) == int(psqr2))
+            if matches or matchesscaled2 or matchesscaled3:
                 m1 = "({},{},{})".format(*[mom_map[m] for m in mom1])
                 m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
                 logging.info("Found coeff with psqr{}, psqr{} {}".format(psqr1, psqr2, c))
@@ -100,8 +101,8 @@ def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outf
 
     if not found:
         logging.critical("Could not find psqr{}, psqr{} coeffs for this level\n".format(psqr1, psqr2))
-        args.outfile.write("# Could not find psqr{} ,psqr{} coeffs for this level\n".format(psqr1, psqr2))
-        exit()
+        args.outfile.write("# Could not find psqr{} ,psqr{} coeffs for this level {}\n]".format(psqr1, psqr2,level))
+        return None
 
 def flavor_type(particle):
     if particle.I is 1:
@@ -197,6 +198,7 @@ def get_ops(args, expected_levels):
             logging.warn("This level {} is not supported {}, skipping".format(level, e))
             args.outfile.write("# level is not supported: {}, skipping \n".format(e))
             continue
+        found_one = False
         for op in opset:
             p1, p2 = op
             if p1[3] is None or p2[3] is None:
@@ -229,7 +231,11 @@ def get_ops(args, expected_levels):
             # filepath = os.path.join(opdir, filename)
             # logging.info("opening {}".format(filepath))
             opline = custom_opline(level, mom1, mom2, p1, p2, flavor1, flavor2, args.channel, args.outfile)
-            testfile.write(opline)
+            if opline is None:
+                logging.warn("failed to make this op {} {}".format(p1, p2))
+                continue
+            logging.debug("success on making op {} {}".format(p1, p2))
+            found_one = True
             if opline in already_added:
                 logging.warn("This operator already added!")
                 args.outfile.write("# This operator already added! \n")
@@ -237,7 +243,7 @@ def get_ops(args, expected_levels):
             else:
                 args.outfile.write(opline)
                 already_added.append(opline)
-            if "eta" in line:
+            if "eta" in opline:
                 args.outfile.write("# put in ss operators for every uu operator\n")
                 philine = opline.replace("eta", "phi")
                 if philine in already_added:
@@ -247,6 +253,9 @@ def get_ops(args, expected_levels):
                 else:
                     args.outfile.write(philine)
                     already_added.append(philine)
+        if not found_one:
+            logging.critical("Did not find any for this level ABORT!!")
+            exit()
     return already_added
 
 
