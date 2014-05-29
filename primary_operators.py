@@ -74,6 +74,34 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
         logging.critical("Could not find psqr{} coeffs for this level".format(psqr))
         args.outfile.write("# Could not find psqr{} coeffs for this level".format(psqr))
 
+def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outfile):
+    cg_map = {"0": "", "1": "CG_1 "}
+    isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
+    isoterm = isomap[args.isospin]
+    coeffsdir = os.path.join(coeffs_path, channel)
+    logging.info("Looking for coeffs in {}".format(coeffsdir))
+    coeffs = os.listdir(coeffsdir)
+    expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
+    print expression
+    found = False
+    for c in coeffs:
+        if re.match(expression, c):
+            mom1 = c.split("_")[1]
+            mom2 = c.split("_")[3]
+            cg = c.split("_")[-1]
+            if sum(mom_map[m]**2 for m in mom1) == int(psqr1) and sum(mom_map[m]**2 for m in mom2) == int(psqr2):
+                m1 = "({},{},{})".format(*[mom_map[m] for m in mom1])
+                m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
+                logging.info("Found coeff with psqr{}, psqr{} {}".format(psqr1, psqr2, c))
+                found = True
+                temp = '@oplist.push("{}_{}_{} {} {}[P={} {} {}] [P={} {} {}]")\n'
+                opline = temp.format(isoterm, p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], p1[3], m2, p2[2], p2[3])
+                return opline
+
+    if not found:
+        logging.critical("Could not find psqr{}, psqr{} coeffs for this level\n".format(psqr1, psqr2))
+        args.outfile.write("# Could not find psqr{} ,psqr{} coeffs for this level\n".format(psqr1, psqr2))
+        exit()
 
 def flavor_type(particle):
     if particle.I is 1:
@@ -196,47 +224,29 @@ def get_ops(args, expected_levels):
                 logging.warn("PSQ6 level, running custom write")
                 custom_psqlevel(level, 6, p1, p2, flavor1, flavor2, args.channel, args.outfile)
                 continue
+            mom1,mom2 = re.findall("PSQ([0-9])", level)
             filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
-            filepath = os.path.join(opdir, filename)
-            logging.info("opening {}".format(filepath))
-            try:
-                opfile = open(filepath, 'r')
-                opexpression = ".*{} {}.*{} {}.*".format(p1[2], p1[3], p2[2], p2[3])
-                momexpression = ".*"
-                if "PSQ1" in level or "PSQ2" in level:
-                    momexpression = ".*(,1|1,).*"
-                if "PSQ4" in level:
-                    momexpression = ".*(,2|2,).*"
-                if "PSQ9" in level:
-                    momexpression = ".*(,3|3,).*"
-                found_something = False
-                for line in opfile:
-                    if re.match(opexpression, line) and re.match(momexpression, line):
-                        found_something = True
-                        if line in already_added:
-                            logging.warn("This operator already added!")
-                            args.outfile.write("# This operator already added! \n")
-                            args.outfile.write("# {}".format(line))
-                        else:
-                            args.outfile.write(line)
-                            already_added.append(line)
-                        if "eta" in line:
-                            args.outfile.write("# put in ss operators for every uu operator\n")
-                            philine = line.replace("eta", "phi")
-                            if philine in already_added:
-                                logging.warn("This operator already added!")
-                                args.outfile.write("# This operator already added! \n")
-                                args.outfile.write("# {}".format(philine))
-                            else:
-                                args.outfile.write(philine)
-                                already_added.append(philine)
-                if not found_something:
-                    logging.critical("Found no operators for this level!!")
-                    logging.critical("Quitting prematurely")
-                    exit(-1)
-            except IOError:
-                logging.info("{} didn't exist".format(filename))
-                args.outfile.write("# {} didn't exist\n".format(filename))
+            # filepath = os.path.join(opdir, filename)
+            # logging.info("opening {}".format(filepath))
+            opline = custom_opline(level, mom1, mom2, p1, p2, flavor1, flavor2, args.channel, args.outfile)
+            testfile.write(opline)
+            if opline in already_added:
+                logging.warn("This operator already added!")
+                args.outfile.write("# This operator already added! \n")
+                args.outfile.write("# {}".format(opline))
+            else:
+                args.outfile.write(opline)
+                already_added.append(opline)
+            if "eta" in line:
+                args.outfile.write("# put in ss operators for every uu operator\n")
+                philine = opline.replace("eta", "phi")
+                if philine in already_added:
+                    logging.warn("This operator already added!")
+                    args.outfile.write("# This operator already added! \n")
+                    args.outfile.write("# {}".format(philine))
+                else:
+                    args.outfile.write(philine)
+                    already_added.append(philine)
     return already_added
 
 
@@ -303,6 +313,8 @@ if __name__ == "__main__":
                         help="select strangeness")
     parser.add_argument("-C", "--channel", type=str,
                         help="select channel e.g. A1up_1")
+    parser.add_argument("-m", "--momentum", choices=["000", "001", "002", "011", "111"],
+                        default="000", help="momentum")
     parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
                         default=sys.stdout)
     parser.add_argument("-32", "--thirtytwo", action="store_true",
@@ -322,8 +334,7 @@ if __name__ == "__main__":
     get_unspecified_parameters(args)
 
     single_hadrons()
-
-    expected_levels = read_expected_levels(args.strangeness, args.isospin, args.channel, args.thirtytwo)
+    expected_levels = read_expected_levels(args.strangeness, args.isospin, args.channel, args.thirtytwo, mom=args.momentum)
     ops = get_ops(args, expected_levels)
     if args.secondary:
         secondary(ops, args.secondary)
