@@ -10,9 +10,8 @@ from prunedops import getprunedops
 from momentum_permute import all_permutations
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
-operators_path = "/latticeQCD/raid6/yjhang/multi_hadron_pruning_operators"
 #operators_path = "/latticeQCD/raid6/bfahy/operators"
-coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_000"
+coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_{}"
 
 mom_map = {"#": 2, "+": 1, "0": 0, "-": -1, "=": -2}
 
@@ -48,7 +47,7 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
     isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
     isoterm = isomap[args.isospin]
-    coeffsdir = os.path.join(coeffs_path, channel)
+    coeffsdir = os.path.join(coeffs_path.format(args.momentum), channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
     expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
@@ -75,7 +74,7 @@ def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outf
     cg_map = {"0": "", "1": "CG_1 "}
     isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
     isoterm = isomap[args.isospin]
-    coeffsdir = os.path.join(coeffs_path, channel)
+    coeffsdir = os.path.join(coeffs_path.format(args.momentum), channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
     expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
@@ -138,10 +137,7 @@ def get_unspecified_parameters(args):
         print("Select strangeness")
         args.strangeness = readinput.selectchoices(["0", "1", "2"], default="0")
 
-    channeldir = os.path.join(operators_path, "BI{I}S{S}".format(I=args.isospin,
-                                                                 S=args.strangeness))
-    logging.debug("channel dir is {}".format(channeldir))
-    channel_list = os.listdir(channeldir)
+    channel_list = os.listdir(coeffs_path.format(args.momentum))
     if args.channel:
         if args.channel not in channel_list:
             logging.critical("format of input channel is not correct!"
@@ -150,8 +146,6 @@ def get_unspecified_parameters(args):
     else:
         print("Select Channel")
         args.channel = readinput.selectchoices(sorted(channel_list))
-
-    args.opsdir = os.path.join(channeldir, args.channel)
 
 
 def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="000"):
@@ -215,22 +209,11 @@ def get_ops(args, expected_levels):
             if (flavor1,p1[2]) == ("eta","A1gp") or (flavor2,p2[2]) == ("eta","A1gp"):
                 print "OZI SUPRESSED"
                 args.outfile.write("# {} SHOULD BE OZI SUPRESSED!! \n".format(level))
-                continue
-            flavor_folder = "_".join((flavor1, flavor2))
-            opdir = os.path.join(args.opsdir, flavor_folder)
-            if "PSQ5" in level:
-                logging.warn("PSQ5 level, running custom write")
-                custom_psqlevel(level, 5, p1, p2, flavor1, flavor2, args.channel, args.outfile)
-                continue
-            if "PSQ6" in level:
-                logging.warn("PSQ6 level, running custom write")
-                custom_psqlevel(level, 6, p1, p2, flavor1, flavor2, args.channel, args.outfile)
+                found_one = True
                 continue
             mom1,mom2 = re.findall("PSQ([0-9])", level)
-            filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
-            # filepath = os.path.join(opdir, filename)
-            # logging.info("opening {}".format(filepath))
             opline = custom_opline(level, mom1, mom2, p1, p2, flavor1, flavor2, args.channel, args.outfile)
+            print opline
             if opline is None:
                 logging.warn("failed to make this op {} {}".format(p1, p2))
                 continue
@@ -255,7 +238,7 @@ def get_ops(args, expected_levels):
                     already_added.append(philine)
         if not found_one:
             logging.critical("Did not find any for this level ABORT!!")
-            exit()
+            #exit()
     return already_added
 
 
@@ -267,26 +250,13 @@ def secondary(ops, count):
         base, chan, mom1, irrep1, op1, mom2, irrep2, op2 = words
         op1, op2 = op1.strip(']")'), op2.strip(']")')
         _, type1, type2 = base.split("_")
-        d = os.path.join(args.opsdir, "_".join((type1, type2)))
         psqr_1 = sum([int(i)**2 for i in mom1[4:-1].split(",")])
         psqr_2 = sum([int(i)**2 for i in mom2[4:-1].split(",")])
         m1 = irreps.momentums[psqr_1]
         m2 = irreps.momentums[psqr_2]
-        filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, m1, irrep1, m2, irrep2)
-        #filename = "S={}_{}_{}_{}_{}_0".format(args.strangeness, p1[1], p1[2], p2[1], p2[2])
-        filepath = os.path.join(d, filename)
-        irrepexpression = ".*{}.*{}.*".format(irrep1, irrep2)
-        op1_choices = set()
-        op2_choices = set()
-        with open(filepath, "r") as f:
-            for line in f:
-                if re.match(irrepexpression, line):
-                    split = line.split()
-                    newop1, newop2 = split[4], split[7]
-                    op1_choices.add(newop1.strip("]"))
-                    op2_choices.add(newop2.strip(']")'))
-        # op1_choices.remove(op1)
-        # op2_choices.remove(op2)
+        isomap = {"pion": "1", "kaon": "1h", "eta": "0", "phi": "0"}
+        op1_choices = getprunedops(isomap[type1], m1)[irrep1]
+        op2_choices = getprunedops(isomap[type2], m2)[irrep2]
         print "op1 choices {}".format(" ".join(op1_choices))
         print "op2 choices {}".format(" ".join(op2_choices))
         while True:

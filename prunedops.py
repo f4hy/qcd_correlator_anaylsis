@@ -1076,11 +1076,12 @@ def getprunedops(isospin, optype):
 
     if optype == "sh":
         return sh[isospin]
-    if optype == "atrest":
+    if optype == "atrest" or optype == "AR":
         return atrest[isospin]
-    if optype == "onaxis":
+    if optype == "onaxis" or optype == "OA":
         return onaxis[isospin]
-    if optype == "planar":
+    if optype == "planar" or optype == "PD":
         return planar[isospin]
-    if optype == "cubic":
+    if optype == "cubic" or optype == "CD":
         return cubic[isospin]
+    raise RuntimeError("Invalid optype/isospin")
