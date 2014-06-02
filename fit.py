@@ -55,12 +55,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in range(tmin, tmax)]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
+    #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
+    #return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
     if not success:
         raise InvalidFit("original exnamble leastsq failed")
     if options.first_pass:
         initial_guess = original_ensamble_params
         logging.info("initial_guess after first pass: {}".format(repr(initial_guess)))
-        # return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
 
     def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
