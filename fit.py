@@ -143,7 +143,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
         return(covariant_fit)
 
-    original_ensamble_correlatedfit = cov_fit(cor, original_ensamble_params)
+    original_ensamble_correlatedfit = cov_fit(cor, initial_guess)
     fn.valid(original_ensamble_correlatedfit)
 
     boot_params = []
