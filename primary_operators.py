@@ -25,29 +25,38 @@ def not_implemented(description, default=""):
 readinput.askoperator = not_implemented
 
 
-def single_hadrons():
+def single_hadrons(mom):
     logging.info("Include all the single hadrons")
     args.outfile.write("# start with all the single hadrons\n") #beyonce
     isomap = {"1": ["pion"], "1h": ["kaon"], "0": ["eta", "phi"]}
 
-    sh = getprunedops(args.isospin, "sh")
-    atrest = getprunedops(args.isospin, "atrest")
     basechan = args.channel.split("_")[0]
-    ops = sh[basechan] + atrest[basechan]
-    print ops
+
+    psqr = sum(int(i)**2 for i in args.momentum)
+    if psqr == 0:
+        sh = getprunedops(args.isospin, "sh")
+        atrest = getprunedops(args.isospin, "atrest")
+        ops = sh[basechan] + atrest[basechan]
+    if psqr == 1 or psqr == 4:
+        ops = getprunedops(args.isospin, "OA")[basechan]
+    if psqr == 2:
+        ops = getprunedops(args.isospin, "PD")[basechan]
+    if psqr == 3:
+        ops = getprunedops(args.isospin, "CD")[basechan]
     isomap = {"1": ["pion"], "1h": ["kaon"], "0": ["eta", "phi"]}
     psqr = sum(int(i)**2 for i in args.momentum)
     for disp in ops:
         for name in isomap[args.isospin]:
-            for p in all_permutations(psqr, outputformat="({},{},{})"):
-                print '@oplist.push("{} P={} {} {}")'.format(name, p, args.channel, disp)
+            p = "({},{},{})".format(*[mom_map[i] for i in mom])
+            singleopline = '@oplist.push("{} P={} {} {}")\n'.format(name, p, args.channel, disp)
+            args.outfile.write(singleopline)
 
 
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
     isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
     isoterm = isomap[args.isospin]
-    coeffsdir = os.path.join(coeffs_path.format(args.momentum), channel)
+    coeffsdir = os.path.join(coeffs_path.format(args.momray), channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
     expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
@@ -68,40 +77,86 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
 
     if not found:
         logging.critical("Could not find psqr{} coeffs for this level".format(psqr))
-        args.outfile.write("# Could not find psqr{} coeffs for this level {}]".format(psqr,level))
+        args.outfile.write("# Could not find psqr{} coeffs for this level {}]\n".format(psqr,level))
+
+
+def read_coeffs(momray, channel):
+    coeffsdir = os.path.join(coeffs_path.format(momray), channel)
+    logging.info("Looking for coeffs in {}".format(coeffsdir))
+    coeffs = os.listdir(coeffsdir)
+    logging.info("Found {} coeffs".format(len(coeffs)))
+    return coeffs
+
 
 def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
     isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
     isoterm = isomap[args.isospin]
-    coeffsdir = os.path.join(coeffs_path.format(args.momentum), channel)
-    logging.info("Looking for coeffs in {}".format(coeffsdir))
-    coeffs = os.listdir(coeffsdir)
-    expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
-    print expression
-    found = False
 
+    coeffs = read_coeffs(args.momray, channel)
+    if "#" in args.momray:
+        down_scaled_coeffs = read_coeffs(args.momray.replace("#","+"), channel)
+        coeffs += down_scaled_coeffs
+    if p1flavor[0] == p2flavor[0]: # just check fist char for kaon == kbar
+        expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
+    else:
+        expression = ".*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
+    logging.info("searching for {}".format(expression))
+    found = False
+    oplines = []
+    print [c for c in coeffs if p1[2] in c and p2[2] in c]
     for c in coeffs:
         if re.match(expression, c):
-            mom1 = c.split("_")[1]
-            mom2 = c.split("_")[3]
-            cg = c.split("_")[-1]
-            matches = (sum(mom_map[m]**2 for m in mom1) == int(psqr1) and sum(mom_map[m]**2 for m in mom2) == int(psqr2))
-            matchesscaled2 = (sum((mom_map[m]*2)**2 for m in mom1) == int(psqr1) and sum((mom_map[m]*2)**2 for m in mom2) == int(psqr2))
-            matchesscaled3 = (sum((mom_map[m]*3)**2 for m in mom1) == int(psqr1) and sum((mom_map[m]*3)**2 for m in mom2) == int(psqr2))
-            if matches or matchesscaled2 or matchesscaled3:
-                m1 = "({},{},{})".format(*[mom_map[m] for m in mom1])
-                m2 = "({},{},{})".format(*[mom_map[m] for m in mom2])
+            S, mom1, i1, mom2, i2, cg = c.split("_")
+            coeffpsq1 = sum(mom_map[m]**2 for m in mom1)
+            coeffpsq1_2 = sum((mom_map[m]*2)**2 for m in mom1)
+            coeffpsq1_3 = sum((mom_map[m]*3)**2 for m in mom1)
+            coeffpsq2 = sum(mom_map[m]**2 for m in mom2)
+            coeffpsq2_2 = sum((mom_map[m]*2)**2 for m in mom2)
+            coeffpsq2_3 = sum((mom_map[m]*3)**2 for m in mom2)
+            matches = (coeffpsq1 == int(psqr1) and coeffpsq2 == int(psqr2))
+            check_swapped = p1flavor == p2flavor
+            swapped = False
+            scale = 1
+            if (coeffpsq1_2 == int(psqr1) and coeffpsq2_2 == int(psqr2)):
+                matches = True
+                scale = 2
+            elif (coeffpsq1_3 == int(psqr1) and coeffpsq2_3 == int(psqr2)):
+                matches = True
+                scale = 3
+            elif check_swapped and (coeffpsq1 == int(psqr2) and coeffpsq2 == int(psqr1)):
+                matches = True
+                swapped = True
+            elif check_swapped and (coeffpsq1_2 == int(psqr2) and coeffpsq2_2 == int(psqr1)):
+                matches = True
+                swapped = True
+                scale = 2
+            elif check_swapped and (coeffpsq1_3 == int(psqr2) and coeffpsq2_2 == int(psqr1)):
+                matches = True
+                swapped = True
+                scale = 3
+
+            if matches:
+                print "{} matched irreps and moms".format(c)
+                if swapped:
+                    print "SWITCHING BECAUSE SWAPMATCH !!!!!!!!!!!!!!!!!!!!!!!!!1"
+                    p1, p2 = p2, p1
+                m1 = "({},{},{})".format(*[mom_map[m]*scale for m in mom1])
+                m2 = "({},{},{})".format(*[mom_map[m]*scale for m in mom2])
                 logging.info("Found coeff with psqr{}, psqr{} {}".format(psqr1, psqr2, c))
                 found = True
                 temp = '@oplist.push("{}_{}_{} {} {}[P={} {} {}] [P={} {} {}]")\n'
                 opline = temp.format(isoterm, p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], p1[3], m2, p2[2], p2[3])
-                return opline
+                oplines.append(opline)
+            else:
+                print "{} matched irreps but not mom".format(c)
 
     if not found:
         logging.critical("Could not find psqr{}, psqr{} coeffs for this level\n".format(psqr1, psqr2))
-        args.outfile.write("# Could not find psqr{} ,psqr{} coeffs for this level {}\n]".format(psqr1, psqr2,level))
+        args.outfile.write("# Could not find psqr{},{} ,psqr{},{} coeffs for this level {}]\n".format(psqr1, p1[2], psqr2, p2[2],level))
         return None
+    else:
+        return oplines
 
 def flavor_type(particle):
     if particle.I is 1:
@@ -137,7 +192,7 @@ def get_unspecified_parameters(args):
         print("Select strangeness")
         args.strangeness = readinput.selectchoices(["0", "1", "2"], default="0")
 
-    channel_list = os.listdir(coeffs_path.format(args.momentum))
+    channel_list = os.listdir(coeffs_path.format(args.momray))
     if args.channel:
         if args.channel not in channel_list:
             logging.critical("format of input channel is not correct!"
@@ -197,11 +252,15 @@ def get_ops(args, expected_levels):
             p1, p2 = op
             if p1[3] is None or p2[3] is None:
                 args.outfile.write("# {} contains particle which primary operator"
-                                   " was never defined! \n".format(level))
+                                   " was never defined! \n\n\n".format(level))
+                return
+                found_one = True
                 continue
+            mom1,mom2 = re.findall("PSQ([0-9])", level)
             if swap(p1[0], p2[0]):
                 logging.info("swapping")
                 p1, p2 = p2, p1
+                mom1, mom2 = mom2, mom1
             flavor1 = flavor_type(p1[0])
             flavor2 = flavor_type(p2[0])
             if flavor2 == "kaon":
@@ -211,34 +270,38 @@ def get_ops(args, expected_levels):
                 args.outfile.write("# {} SHOULD BE OZI SUPRESSED!! \n".format(level))
                 found_one = True
                 continue
-            mom1,mom2 = re.findall("PSQ([0-9])", level)
-            opline = custom_opline(level, mom1, mom2, p1, p2, flavor1, flavor2, args.channel, args.outfile)
-            print opline
-            if opline is None:
+            oplines = custom_opline(level, mom1, mom2, p1, p2, flavor1, flavor2, args.channel, args.outfile)
+            print oplines
+            if oplines is None:
                 logging.warn("failed to make this op {} {}".format(p1, p2))
                 continue
             logging.debug("success on making op {} {}".format(p1, p2))
             found_one = True
-            if opline in already_added:
-                logging.warn("This operator already added!")
-                args.outfile.write("# This operator already added! \n")
-                args.outfile.write("# {}".format(opline))
-            else:
-                args.outfile.write(opline)
-                already_added.append(opline)
-            if "eta" in opline:
-                args.outfile.write("# put in ss operators for every uu operator\n")
-                philine = opline.replace("eta", "phi")
-                if philine in already_added:
+            for opline in oplines:
+                if opline in already_added:
                     logging.warn("This operator already added!")
                     args.outfile.write("# This operator already added! \n")
-                    args.outfile.write("# {}".format(philine))
+                    args.outfile.write("# {}".format(opline))
                 else:
-                    args.outfile.write(philine)
-                    already_added.append(philine)
+                    args.outfile.write(opline)
+                    already_added.append(opline)
+                if "eta" in opline:
+                    args.outfile.write("# put in ss operators for every uu operator\n")
+                    philine = opline.replace("eta", "phi")
+                    if philine in already_added:
+                        logging.warn("This operator already added!")
+                        args.outfile.write("# This operator already added! \n")
+                        args.outfile.write("# {}".format(philine))
+                    else:
+                        args.outfile.write(philine)
+                        already_added.append(philine)
         if not found_one:
-            logging.critical("Did not find any for this level ABORT!!")
-            #exit()
+            logging.critical("Did not find any for this level {} ABORT!!".format(level))
+            print flavor1, flavor2
+            if (flavor1, flavor2) == ("eta", "pion"):
+                logging.critical("This is an eta_pion state we have no ops for!!")
+            else:
+                exit()
     return already_added
 
 
@@ -294,8 +357,12 @@ if __name__ == "__main__":
                         help="select channel e.g. A1up_1")
     parser.add_argument("-m", "--momentum", choices=["000", "001", "002", "011", "111"],
                         default="000", help="momentum")
-    parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
-                        default=sys.stdout)
+    parser.add_argument("-N", "--number", type=int, required=False,
+                        help="number of expected levels to make")
+    # parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
+    #                     default=sys.stdout)
+    parser.add_argument('outstub', nargs='?', type=str,
+                        default=None)
     parser.add_argument("-32", "--thirtytwo", action="store_true",
                         default=False, help="use 32^3 expected levels")
     parser.add_argument("--secondary", type=int, default=0,
@@ -310,10 +377,25 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='# %(levelname)s: %(message)s', level=logging.WARN)
 
+    args.momray = args.momentum.replace("1","+").replace("2","#")
+    print args.momray
+
     get_unspecified_parameters(args)
 
-    single_hadrons()
-    expected_levels = read_expected_levels(args.strangeness, args.isospin, args.channel, args.thirtytwo, mom=args.momentum)
-    ops = get_ops(args, expected_levels)
-    if args.secondary:
-        secondary(ops, args.secondary)
+
+    psqr = sum(int(i)**2 for i in args.momentum)
+    for p in all_permutations(psqr, nobackies=True):
+        if args.outstub is None:
+            args.outfile = sys.stdout
+        else:
+            args.outfile = open("{}_{}.txt".format(args.outstub, p), 'w')
+        args.momray = p.replace("-1", "-").replace("-2","=").replace("1","+").replace("2","#")
+        single_hadrons(args.momray)
+
+        args.outfile.write("# using mom={}".format(p))
+
+        get_unspecified_parameters(args)
+        expected_levels = read_expected_levels(args.strangeness, args.isospin, args.channel, args.thirtytwo, mom=args.momentum)
+        ops = get_ops(args, expected_levels[:args.number])
+        if args.secondary:
+            secondary(ops, args.secondary)
