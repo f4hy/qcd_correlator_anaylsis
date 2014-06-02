@@ -488,7 +488,7 @@ if __name__ == "__main__":
     try:
         if args.plot:
             plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub,
-                     bootstraps=args.bootstraps)
+                     bootstraps=args.bootstraps, options=args)
         else:
             fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
     except InvalidFit:
