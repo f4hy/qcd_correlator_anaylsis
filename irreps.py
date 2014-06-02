@@ -104,8 +104,12 @@ def irrep_rest_particle(p):
         return ["{}{}".format(rep, parity[p.P]) for rep in reps_meson[p.spin]]
 
 
+def getmomint(s):
+    return int(s.strip("PSQAB"))
+
+
 def irrep_moving_particle(p, momentum):
-    mom = int(momentum[-1])
+    mom = getmomint(momentum)
     if mom < 1:
         return irrep_rest_particle(p)
     subs = []
@@ -136,8 +140,9 @@ def translate_name_to_irrep(name):
         raise NotImplementedError("3 or more hadrons")
 
     particle1, momentum1, particle2, momentum2, _, _ = name.split("_")
-    mom1 = int(momentum1[-1])
-    mom2 = int(momentum2[-1])
+    mom1 = getmomint(momentum1)
+    print momentum2
+    mom2 = getmomint(momentum2)
     try:
         p1 = particle_name(particle1)
         p2 = particle_name(particle2)
