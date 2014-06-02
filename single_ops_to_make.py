@@ -28,8 +28,12 @@ def component_ops(opline):
     def print_op(ptype, p, irrep, disp):
         try:
             lowest_single_index = check_lowest(ptype, p, irrep)
+
             if lowest_single_index:
-                comment = " # There are {} states below the single hadron in this channel".format(lowest_single_index)
+                if lowest_single_index < 0:
+                    comment = " # No expected levels for this mom"
+                else:
+                    comment = " # There are {} states below the single hadron in this channel".format(lowest_single_index)
             else:
                 comment = ""
             if not duplicate(ptype, p, irrep):
@@ -65,6 +69,12 @@ def mommap(mom):
         return "001"
     if twos == 1 and zeroes == 2:
         return "002"
+    if ones == 1 and twos == 1 and zeroes == 1: #psq 5
+        return "nocheck"
+    if ones == 2 and twos == 1: #psq 6
+        return "nocheck"
+    print "not valid mom??"
+    exit()
     raise NotImplementedError("unsupported momentum {}".format(mom))
 
 
@@ -73,6 +83,8 @@ def check_lowest(optype, mom, irrep):
 
     strangeness, isospin = infer_strangeness_and_isospin(optype)
     momstring = mommap(mom)
+    if momstring == "nocheck":
+        return -1
     elevels = primary_operators.read_expected_levels(strangeness, isospin, irrep, mom=momstring)
     index_first_single = next(i for (i,e) in enumerate(elevels) if "PSQ" not in e)
     return index_first_single
@@ -111,5 +123,5 @@ if __name__ == "__main__":
         logging.basicConfig(format='# %(levelname)s: %(message)s', level=logging.WARN)
 
     for line in args.oplist:
-        if line.startswith("@") and "CG_1" not in line:
+        if line.startswith("@") and "CG_1" not in line and "#" not in line:
             component_ops(line)
