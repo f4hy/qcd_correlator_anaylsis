@@ -382,10 +382,14 @@ def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=F
     for tmin, tmax in fit_ranges:
         logging.info("Trying fit range {}, {}".format(tmin, tmax))
         try:
-            results = fit(funct, cor, tmin, tmax, filestub=filestub,
-                          bootstraps=bootstraps, return_quality=return_quality, options=options)
+            if args.plot:
+                results = plot_fit(funct, cor, tmin, tmax, filestub=filestub,
+                                   bootstraps=bootstraps, options=options)
+            else:
+                results = fit(funct, cor, tmin, tmax, filestub=filestub,
+                              bootstraps=bootstraps, options=options)
             logging.info("Auto Fit sucessfully!")
-            return (tmin, tmax) + results  # Need to return what fit range was done
+            return #(tmin, tmax) + results  # Need to return what fit range was done
         except RuntimeError:
             logging.warn("Fit range {} {} failed, trying next best".format(tmin, tmax))
             continue
