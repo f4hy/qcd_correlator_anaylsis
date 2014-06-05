@@ -35,6 +35,18 @@ class periodic_exp(mass_amp, periodic):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
 
 
+class periodic_exp_subtracted(mass_amp, periodic):
+    def __init__(self, Nt=None):
+        super(periodic_exp_subtracted, self).__init__()
+        self.setNt(Nt)
+        self.description = "fwd-back-exp subtracted"
+        self.subtract = 3
+        self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d)) - {1: f}(exp(-{0: f}*%d)+exp(-{0: f}*(%d-%d)) - " % (self.Nt, self.subtract, self.subtract, self.Nt)
+
+    def formula(self, v, x):
+        return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt))))) - (v[1] * (np.exp((-1.0) * v[0] * self.subtract) + np.exp(v[0] * (self.subtract-(self.Nt)))))
+
+
 class periodic_exp_const(mass_amp_const, periodic):
     def __init__(self, Nt=None):
         super(periodic_exp_const, self).__init__()

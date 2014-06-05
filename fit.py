@@ -11,6 +11,7 @@ from parser_fit import fitparser, functions
 from fit_parents import InvalidFit
 import inspect
 import sys
+from copy import deepcopy
 
 from scipy import linalg
 from scipy import stats
@@ -45,15 +46,37 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
+
+
+
     tmax = tmax+1  # I use ranges, so this needs to be offset by one
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
-
+    print "tmin wtf", tmin
     initial_guess = fn.starting_guess(cor, tmax-1, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
     # return initial_guess, [0.1, 0.1, 0.1, 0.1] # For testing initila guess in plot
+
     x = np.array(range(tmin, tmax))
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in range(tmin, tmax)]
+
+    if fn.subtract:
+        # print correlator.effective_mass(1)
+        print cor.average_sub_vev()
+        ccor = deepcopy(cor)
+        cor = ccor
+        cor.subtract(3)
+        # print correlator.effective_mass(1)
+        print cor.average_sub_vev()
+        # exit()
+
+    print sum(f**2 for f in fun(initial_guess, x, y))
+
+
+    orig_ave_cor = cor.average_sub_vev()
+    y = [orig_ave_cor[t] for t in range(tmin, tmax)]
+    print sum(f**2 for f in fun(initial_guess, x, y))
+    #exit()
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
     #return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
@@ -62,6 +85,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     if options.first_pass:
         initial_guess = original_ensamble_params
         logging.info("initial_guess after first pass: {}".format(repr(initial_guess)))
+
+
+
 
     def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
@@ -251,21 +277,28 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     massX = np.linspace(tmin, tmax-emass_dt, 200 * 5)
     fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps, options=options)
 
-    plt.figure()
+    fig = plt.figure()
     corplot = plt.subplot(211)
     cordata = corplot.errorbar(cor.times, cor.average_sub_vev().values(),
                                yerr=cor.jackknifed_errors().values(), fmt='o')
     corfit, = corplot.plot(X, fn.formula(fitted_params, X), lw=2.0)
     single_fit = None
-    if fn.description != "exp":
+    if fn.description == "exp" or "subtract" in fn.description:
+        corplot.legend([cordata, corfit], ["Correlator data", fn.template.format(*fitted_params)])
+    else:
         single = functions["single_exp"]()
         single_fit, = corplot.plot(X, single.formula(fitted_params[:2], X), ls="-.", lw=2.0)
-    corplot.legend([cordata, corfit,single_fit], ["data", fn.template.format(*fitted_params), "single_exp with these numbers"])
-    plt.ylim([0, max(cor.average_sub_vev().values())])
+        corplot.legend([cordata, corfit,single_fit], ["Correlator data", fn.template.format(*fitted_params), "single_exp with these values"])
+
+    corplot.set_ylabel("Fit Correlator")
+
+    corvals = cor.average_sub_vev().values()
+    plt.ylim([min(min(corvals),0), max(corvals)])
     plt.xlim([0, tmax + 2])
     emass = cor.effective_mass(emass_dt)
     emass_errors = cor.effective_mass_errors(emass_dt).values()
     emassplot = plt.subplot(212)
+    emassplot.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$")
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
     named_params = {n: (m, e) for n, m, e in zip(fn.parameter_names, fitted_params, fitted_errors)}
     mass, mass_err = named_params["mass"]
@@ -280,11 +313,13 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
         emassfit.append(fitemass)
     emass_fit = emassplot.plot(range(tmin, tmax+1)[:-dt], emassfit)
 
-    plt.legend([dataplt, fitplt], ["data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
-    plt.ylim([0, max(emass.values())*1.2])
+    plt.legend([dataplt, fitplt], ["Emass of data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
+    plt.ylim([min(min(emass.values()),0), max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
+
     if(filestub):
         logging.info("Saving plot to {}".format(filestub+".png"))
+        fig.set_size_inches(18.5, 10.5)
         plt.savefig(filestub+".png")
         header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
         cor.writeasv(filestub+".fittedcor.out", header=header)
@@ -358,6 +393,10 @@ def best_fit_range(fn, cor, options=None):
     best = 100
     best_ranges = []
     for tmin in cor.times:
+        print "tmin", tmin
+        if fn.subtract and tmin <= fn.subtract:
+            print "skip"
+            continue
         for tmax in range(tmin + 4, max(cor.times)):
             try:
                 _, _, chi = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=True, options=options)
@@ -465,6 +504,8 @@ if __name__ == "__main__":
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     cor.prune_invalid(delete=True, sigma=0.5)
+
+
 
     if not args.period:
         if cor.numconfigs == 551:

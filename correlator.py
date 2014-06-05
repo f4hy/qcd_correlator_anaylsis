@@ -301,3 +301,18 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 outfile.write("\n")
             for t, e in emass.iteritems():
                 outfile.write("{!r},   {!r}, {!r}\n".format(t, e, error[t]))
+
+
+    def subtract(self, t):
+        logging.info("original times {}-{}".format( min(self.times), max(self.times) ) )
+
+        new_times = [time for time in self.times if time > t]
+
+        for time in new_times:
+            logging.info("redefinging correlator data for time {}".format(time))
+            for cfg in self.configs:
+                self.data[cfg][time] = self.data[cfg][time] - self.data[cfg][t]
+        self.asv = None
+        self.jkasv = None
+        self.sums = None
+        self.times = new_times

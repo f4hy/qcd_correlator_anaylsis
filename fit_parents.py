@@ -73,6 +73,31 @@ class mass_amp(object):
         self.starting_guess = massamp_guess
         self.bounds = [mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp"]
+        self.subtract = False
+
+    def my_cov_fun(self, mass, amp):
+        vect = self.aoc - self.formula((mass, amp), self.times)
+        return vect.dot(self.inv_cov).dot(vect)
+
+    def valid(self, *kargs):
+        return True
+
+    def custom_minuit(self, data, invmatrix, times, guess):
+        self.aoc = data
+        self.inv_cov = invmatrix
+        self.times = times
+        m = Minuit(self.my_cov_fun, mass=guess[0], amp=guess[1],
+                   print_level=0, pedantic=False)
+        return m
+
+
+class mass_amp_subtracted(object):
+    """Parent class for functions which take a mass and an amplitude"""
+    def __init__(self):
+        self.starting_guess = subtracted_guess
+        self.bounds = [mass_bounds, amp_bounds]
+        self.parameter_names = ["mass", "amp"]
+        self.subtract = True
 
     def my_cov_fun(self, mass, amp):
         vect = self.aoc - self.formula((mass, amp), self.times)
@@ -96,6 +121,7 @@ class mass_amp_const(object):
         self.starting_guess = const_guess
         self.bounds = [mass_bounds, amp_bounds, const_bounds]
         self.parameter_names = ["mass", "amp", "const"]
+        self.subtract = False
 
     def my_cov_fun(self, mass, amp, const):
         vect = self.aoc - self.formula((mass, amp, const), self.times)
@@ -119,6 +145,7 @@ class twice_mass_amp(object):
         self.starting_guess = twoexp_sqr_guess
         self.bounds = [mass_bounds, amp_bounds, mass_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp", "mass2", "amp2"]
+        self.subtract = False
 
     def my_cov_fun(self, mass, amp, mass2, amp2):
         vect = self.aoc - self.formula((mass, amp, mass2, amp2), self.times)
