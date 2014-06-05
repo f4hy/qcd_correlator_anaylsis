@@ -6,6 +6,7 @@ import os
 import re
 import irreps
 import sys
+import particle_operators
 from prunedops import getprunedops
 from momentum_permute import all_permutations
 
@@ -24,8 +25,15 @@ def not_implemented(description, default=""):
 
 readinput.askoperator = not_implemented
 
+def single_hadron(ops):
+    p = "({},{},{})".format(*[mom_map[i] for i in args.momray])
+    isomap = {"1": ["pion"], "1h": ["kaon"], "0": ["eta", "phi"]}
+    disp = ops[args.channel.split("_")[0]]
+    for name in isomap[args.isospin]:
+        singleopline = '@oplist.push("{} P={} {} {}")\n'.format(name, p, args.channel, disp)
+        args.outfile.write(singleopline)
 
-def single_hadrons(mom):
+def all_single_hadrons(mom):
     logging.info("Include all the single hadrons")
     args.outfile.write("# start with all the single hadrons\n") #beyonce
     isomap = {"1": ["pion"], "1h": ["kaon"], "0": ["eta", "phi"]}
@@ -44,8 +52,12 @@ def single_hadrons(mom):
     if psqr == 3:
         ops = getprunedops(args.isospin, "CD")[basechan]
     isomap = {"1": ["pion"], "1h": ["kaon"], "0": ["eta", "phi"]}
+    namemap = {"1": "pi", "1h": "K", "0": "eta"}
     psqr = sum(int(i)**2 for i in args.momentum)
+    operators = particle_operators.particleDatabase()
+    op = operators.read_op(namemap[args.isospin], basechan, psqr)
     for disp in ops:
+
         for name in isomap[args.isospin]:
             p = "({},{},{})".format(*[mom_map[i] for i in mom])
             singleopline = '@oplist.push("{} P={} {} {}")\n'.format(name, p, args.channel, disp)
@@ -104,7 +116,6 @@ def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outf
     logging.info("searching for {}".format(expression))
     found = False
     oplines = []
-    print [c for c in coeffs if p1[2] in c and p2[2] in c]
     for c in coeffs:
         if re.match(expression, c):
             S, mom1, i1, mom2, i2, cg = c.split("_")
@@ -115,7 +126,8 @@ def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outf
             coeffpsq2_2 = sum((mom_map[m]*2)**2 for m in mom2)
             coeffpsq2_3 = sum((mom_map[m]*3)**2 for m in mom2)
             matches = (coeffpsq1 == int(psqr1) and coeffpsq2 == int(psqr2))
-            check_swapped = p1flavor == p2flavor
+            check_swapped = p1flavor[0] == p2flavor[0]
+            check_swapped = False
             swapped = False
             scale = 1
             if (coeffpsq1_2 == int(psqr1) and coeffpsq2_2 == int(psqr2)):
@@ -137,9 +149,9 @@ def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outf
                 scale = 3
 
             if matches:
-                print "{} matched irreps and moms".format(c)
+                logging.info("{} matched irreps and moms".format(c))
                 if swapped:
-                    print "SWITCHING BECAUSE SWAPMATCH !!!!!!!!!!!!!!!!!!!!!!!!!1"
+                    logging.warn("SWITCHING BECAUSE SWAPMATCH !!!!!!!!!!!!!!!!!!!!!!!!!1")
                     p1, p2 = p2, p1
                 m1 = "({},{},{})".format(*[mom_map[m]*scale for m in mom1])
                 m2 = "({},{},{})".format(*[mom_map[m]*scale for m in mom2])
@@ -149,7 +161,7 @@ def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outf
                 opline = temp.format(isoterm, p1flavor, p2flavor, channel, cg_map[cg], m1, p1[2], p1[3], m2, p2[2], p2[3])
                 oplines.append(opline)
             else:
-                print "{} matched irreps but not mom".format(c)
+                logging.info("{} matched irreps but not mom".format(c))
 
     if not found:
         logging.critical("Could not find psqr{}, psqr{} coeffs for this level\n".format(psqr1, psqr2))
@@ -236,18 +248,36 @@ def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="00
 def get_ops(args, expected_levels):
     level_num = 1
     already_added = []
+    threshold = 10000
+    logging.debug(repr(expected_levels))
     for level in expected_levels:
+        logging.info(level)
         if args.review:
             raw_input("Look OK?")
-        args.outfile.write("\n# level {} {} \n".format(level_num, level))
         level_num += 1
+        if level_num > threshold+3:
+            logging.info("at threshold+3, stopping")
+            args.outfile.write("\n# level {} is >3levels above thredhold stopping\n".format(level_num))
+            break
+        args.outfile.write("\n# level {} {} \n".format(level_num, level))
         try:
             opset = irreps.translate_name_to_irrep(level)
         except NotImplementedError, e:
             logging.warn("This level {} is not supported {}, skipping".format(level, e))
             args.outfile.write("# level is not supported: {}, skipping \n".format(e))
+            # if threshold > 1000:
+            #     print "threshold", level_num
+            #     args.outfile.write("# Setting threshold to level {}\n".format(level_num))
+            #     threshold = level_num
+            continue
+        except ValueError, e:
+            logging.info("level is a single hadron")
+            if args.notallsingles:
+                ops = irreps.operator_for_singlehadron(level, "PSQ{}".format(sum(int(i)**2 for i in args.momentum)))
+                single_hadron(ops)
             continue
         found_one = False
+        print opset
         for op in opset:
             p1, p2 = op
             if p1[3] is None or p2[3] is None:
@@ -263,6 +293,10 @@ def get_ops(args, expected_levels):
                 mom1, mom2 = mom2, mom1
             flavor1 = flavor_type(p1[0])
             flavor2 = flavor_type(p2[0])
+            if threshold > 1000 and (flavor1 != "pion" or flavor2 != "pion"):
+                print "threshold", level_num
+                args.outfile.write("# Setting threshold to level {}\n".format(level_num))
+                threshold = level_num
             if flavor2 == "kaon":
                 flavor2 = "kbar"
             if (flavor1,p1[2]) == ("eta","A1gp") or (flavor2,p2[2]) == ("eta","A1gp"):
@@ -300,6 +334,8 @@ def get_ops(args, expected_levels):
             print flavor1, flavor2
             if (flavor1, flavor2) == ("eta", "pion"):
                 logging.critical("This is an eta_pion state we have no ops for!!")
+                args.outfile.write("# This is an eta_pion state we have no coeffs for!!\n".format(level_num))
+                raw_input("WTF")
             else:
                 exit()
     return already_added
@@ -365,6 +401,8 @@ if __name__ == "__main__":
                         default=None)
     parser.add_argument("-32", "--thirtytwo", action="store_true",
                         default=False, help="use 32^3 expected levels")
+    parser.add_argument("--notallsingles", action="store_true",
+                        default=False, help="don't include all single hadrons, just the ones in the elevels")
     parser.add_argument("--secondary", type=int, default=0,
                         help="Prompt user for seconday operators,"
                         " the number is how many operators to make secondaries for")
@@ -390,7 +428,8 @@ if __name__ == "__main__":
         else:
             args.outfile = open("{}_{}.txt".format(args.outstub, p), 'w')
         args.momray = p.replace("-1", "-").replace("-2","=").replace("1","+").replace("2","#")
-        single_hadrons(args.momray)
+        if not args.notallsingles:
+            all_single_hadrons(args.momray)
 
         args.outfile.write("# using mom={}".format(p))
 

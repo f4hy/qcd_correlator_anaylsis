@@ -126,14 +126,33 @@ def particle_name(name):
     return names[name.split("-")[0]]
 
 
+def operator_for_singlehadron(name, psqr):
+    logging.info("Translating {}".format(name))
+    operators = particle_operators.particleDatabase()
+    p1 = particle_name(name)
+    try:
+        irreps = irrep_moving_particle(p1, psqr)
+    except KeyError:
+        logging.critical("I don't know how to do subductions for this momenta")
+        raise NotImplementedError("Unsupported momenta")
+    print irreps
+    ops = {}
+    for irrep in irreps:
+        op = operators.read_op(name, irrep, getmomint(psqr))
+        logging.info("particle1 %s in %s, primary operator is %s", name, irrep, op)
+        ops[irrep] = op
+    return ops
+
+
 def translate_name_to_irrep(name):
     logging.info("Translating {}".format(name))
     name = name.replace("KB","K")
+    operators = particle_operators.particleDatabase()
     if "_" not in name:
         logging.info("Is a single hadron?")
         p1 = particle_name(name)
         logging.info("particle %s at rest irreps: %s", name, " ".join(irrep_rest_particle(p1)))
-        raise NotImplementedError("is a single hadron")
+        raise ValueError("is a single hadron")
 
     if name.count("_") > 5:
         logging.info("Is a three or four hadron state?")
@@ -154,7 +173,6 @@ def translate_name_to_irrep(name):
 
     iso = [i for i in name.split("_") if i.startswith("iso")][0]
 
-    operators = particle_operators.particleDatabase()
 
     try:
         irreps1 = irrep_moving_particle(p1, momentum1)
