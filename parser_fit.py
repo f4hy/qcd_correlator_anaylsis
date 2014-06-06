@@ -44,5 +44,9 @@ fitparser.add_argument("--reguess", action="store_true",
                     help="use emass on each bootstrap to set inital guess, otherwise use full ensamble as guess")
 fitparser.add_argument("-m", "--minuit", action="store_true",
                     help="use the minuit fitter")
+fitparser.add_argument("--debugguess", action="store_true",
+                       help="don't fit, just show the intial guess")
+fitparser.add_argument("--nofallback", action="store_true",
+                       help="don't fall back, for testing")
 fitparser.add_argument("-f", "--function", choices=functions.keys(),
                     required=False, default="periodic_exp", help="function to fit to")

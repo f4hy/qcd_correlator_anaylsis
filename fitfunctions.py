@@ -1,5 +1,5 @@
 import numpy as np
-from fit_parents import periodic, mass_amp, mass_amp_const, twice_mass_amp, InvalidFit
+from fit_parents import periodic, mass_amp, mass_amp_const, twice_mass_amp, twice_mass_amp_const, InvalidFit
 
 
 class cosh(mass_amp, periodic):
@@ -40,7 +40,7 @@ class periodic_exp_subtracted(mass_amp, periodic):
         super(periodic_exp_subtracted, self).__init__()
         self.setNt(Nt)
         self.description = "fwd-back-exp subtracted"
-        self.subtract = 3
+        self.subtract = 1
         self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d)) - {1: f}(exp(-{0: f}*%d)+exp(-{0: f}*(%d-%d)) - " % (self.Nt, self.subtract, self.subtract, self.Nt)
 
     def formula(self, v, x):
@@ -92,6 +92,20 @@ class periodic_two_exp(twice_mass_amp, periodic):
     def formula(self, v, x):
                 return ((v[1]*np.exp((-1.0)*v[0]*x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x))) +
                         (v[1]*np.exp(v[0]*(x-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(x-(self.Nt))))))  # noqa
+
+
+class periodic_two_exp_const(twice_mass_amp_const, periodic):
+    def __init__(self, Nt=None):
+        super(periodic_two_exp_const, self).__init__()
+        self.setNt(Nt)
+        self.description = "periodic_two_exp_const"
+        self.template = "{1: f}exp(-{0: f}*t)(1+{3: f}exp(-{2: f}^2*t)+{4: f}"
+        self.fallback = "periodic_exp_const"
+
+
+    def formula(self, v, x):
+                return ((v[1]*np.exp((-1.0)*v[0]*x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x))) +
+                        (v[1]*np.exp(v[0]*(x-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(x-(self.Nt))))))+v[4]  # noqa
 
 
 # def pade_guess(*args, **kargs):

@@ -309,7 +309,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         new_times = [time for time in self.times if time > t]
 
         for time in new_times:
-            logging.info("redefinging correlator data for time {}".format(time))
+            logging.info("redefinging correlator data for time {0} as C'({0}) = C({0}) - C({1})".format(time, t))
             for cfg in self.configs:
                 self.data[cfg][time] = self.data[cfg][time] - self.data[cfg][t]
         self.asv = None

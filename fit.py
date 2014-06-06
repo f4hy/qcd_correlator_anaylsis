@@ -54,39 +54,32 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     print "tmin wtf", tmin
     initial_guess = fn.starting_guess(cor, tmax-1, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
-    # return initial_guess, [0.1, 0.1, 0.1, 0.1] # For testing initila guess in plot
 
     x = np.array(range(tmin, tmax))
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in range(tmin, tmax)]
 
     if fn.subtract:
-        # print correlator.effective_mass(1)
-        print cor.average_sub_vev()
+        logging.debug("before suctracted correlator is:")
+        logging.debug(cor.average_sub_vev())
         ccor = deepcopy(cor)
         cor = ccor
-        cor.subtract(3)
-        # print correlator.effective_mass(1)
-        print cor.average_sub_vev()
-        # exit()
-
-    print sum(f**2 for f in fun(initial_guess, x, y))
-
+        fn.subtract = tmin -1
+        cor.subtract(tmin-1)
+        logging.debug("subtracted correlator is:")
+        logging.debug(cor.average_sub_vev())
 
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in range(tmin, tmax)]
-    print sum(f**2 for f in fun(initial_guess, x, y))
-    #exit()
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
-    #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
-    #return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
+    if options.debugguess:
+        #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
+        return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
     if not success:
         raise InvalidFit("original exnamble leastsq failed")
     if options.first_pass:
         initial_guess = original_ensamble_params
         logging.info("initial_guess after first pass: {}".format(repr(initial_guess)))
-
-
 
 
     def cov_fit(correlator, guess):
@@ -95,7 +88,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         cov = covariance_matrix(correlator, tmin, tmax)
         inv_cov = bestInverse(cov)
         start_time = correlator.times[0]
-        aoc = np.fromiter(ave_cor.values(), np.float)[tmin-start_time:tmax-start_time]
+        aoc = np.array([ave_cor[t] for t in range(tmin,tmax)])
         logging.debug("guess {}".format(str(guess)))
 
         def cov_fun(g):
@@ -393,8 +386,7 @@ def best_fit_range(fn, cor, options=None):
     best = 100
     best_ranges = []
     for tmin in cor.times:
-        print "tmin", tmin
-        if fn.subtract and tmin <= fn.subtract:
+        if fn.subtract and tmin == min(cor.times):
             print "skip"
             continue
         for tmax in range(tmin + 4, max(cor.times)):
@@ -539,7 +531,7 @@ if __name__ == "__main__":
             fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
     except InvalidFit:
         logging.error("Fit was invalid, trying backup")
-        if funct.fallback:
+        if funct.fallback and not args.nofallback:
             logging.error("function has a fallback {}".format(funct.fallback))
             fallback = functions[funct.fallback](Nt=args.period)
             if args.plot:
