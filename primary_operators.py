@@ -66,7 +66,7 @@ def all_single_hadrons(mom):
 
 def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
-    isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
+    isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet", "2": "isoquintet"}
     isoterm = isomap[args.isospin]
     coeffsdir = os.path.join(coeffs_path.format(args.momray), channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
@@ -102,7 +102,7 @@ def read_coeffs(momray, channel):
 
 def custom_opline(level, psqr1, psqr2, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
-    isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet"}
+    isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet", "2": "isoquintet"}
     isoterm = isomap[args.isospin]
 
     coeffs = read_coeffs(args.momray, channel)
@@ -198,7 +198,7 @@ def get_unspecified_parameters(args):
 
     if not args.isospin:
         print("Select isospin")
-        args.isospin = readinput.selectchoices(["0", "1", "1h"], default="1")
+        args.isospin = readinput.selectchoices(["0", "1", "1h", "2"], default="1")
 
     if not args.strangeness:
         print("Select strangeness")
@@ -218,9 +218,9 @@ def get_unspecified_parameters(args):
 def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="000"):
     logging.debug("{} {} {} {} {}".format(strangeness, isospin, channel, thirtytwo, mom))
     if thirtytwo:
-        basedir = os.path.join(expected_levels_path, "32^3_phys/mom_{}".format(mom))
+        basedir = os.path.join(expected_levels_path, "32^3_240/mom_{}".format(mom))
     else:
-        basedir = os.path.join(expected_levels_path, "24^3_phys/mom_{}".format(mom))
+        basedir = os.path.join(expected_levels_path, "24^3_390/mom_{}".format(mom))
 
     if isospin == "1h":
         filename = "bosonic_2I=1_S={}_levels.txt".format(strangeness)
@@ -246,7 +246,7 @@ def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="00
 
 
 def get_ops(args, expected_levels):
-    level_num = 1
+    level_num = 0
     already_added = []
     threshold = 10000
     logging.debug(repr(expected_levels))
@@ -293,7 +293,8 @@ def get_ops(args, expected_levels):
                 mom1, mom2 = mom2, mom1
             flavor1 = flavor_type(p1[0])
             flavor2 = flavor_type(p2[0])
-            if threshold > 1000 and (flavor1 != "pion" or flavor2 != "pion"):
+            #if threshold > 1000 and ((flavor1 != "pion" or flavor2 != "pion") or "rho" in level):
+            if threshold > 1000 and level.count("pi") != 2:
                 print "threshold", level_num
                 args.outfile.write("# Setting threshold to level {}\n".format(level_num))
                 threshold = level_num
@@ -385,7 +386,7 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-r", "--review", action="store_true",
                         help="review each operator")
-    parser.add_argument("-I", "--isospin", choices=["0", "1", "1h"],
+    parser.add_argument("-I", "--isospin", choices=["0", "1", "1h", "2"],
                         help="select isospin")
     parser.add_argument("-S", "--strangeness", choices=["0", "1", "2"],
                         help="select strangeness")
@@ -420,8 +421,8 @@ if __name__ == "__main__":
 
     get_unspecified_parameters(args)
 
-
     psqr = sum(int(i)**2 for i in args.momentum)
+    print all_permutations(psqr, nobackies=True)
     for p in all_permutations(psqr, nobackies=True):
         if args.outstub is None:
             args.outfile = sys.stdout
@@ -435,6 +436,7 @@ if __name__ == "__main__":
 
         get_unspecified_parameters(args)
         expected_levels = read_expected_levels(args.strangeness, args.isospin, args.channel, args.thirtytwo, mom=args.momentum)
+        logging.info(repr(expected_levels))
         ops = get_ops(args, expected_levels[:args.number])
         if args.secondary:
             secondary(ops, args.secondary)
