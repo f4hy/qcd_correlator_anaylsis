@@ -42,6 +42,7 @@ class periodic_exp_subtracted(mass_amp, periodic):
         self.description = "fwd-back-exp subtracted"
         self.subtract = 1
         self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d)) - {1: f}(exp(-{0: f}*%d)+exp(-{0: f}*(%d-%d)) - " % (self.Nt, self.subtract, self.subtract, self.Nt)
+        self.fallback = None
 
     def formula(self, v, x):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt))))) - (v[1] * (np.exp((-1.0) * v[0] * self.subtract) + np.exp(v[0] * (self.subtract-(self.Nt)))))
@@ -92,6 +93,23 @@ class periodic_two_exp(twice_mass_amp, periodic):
     def formula(self, v, x):
                 return ((v[1]*np.exp((-1.0)*v[0]*x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x))) +
                         (v[1]*np.exp(v[0]*(x-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(x-(self.Nt))))))  # noqa
+
+
+class periodic_two_exp_subtracted(twice_mass_amp, periodic):
+    def __init__(self, Nt=None):
+        super(periodic_two_exp_subtracted, self).__init__()
+        self.setNt(Nt)
+        self.description = "periodic_two_exp_subtracted"
+        self.subtract = 1
+        self.template = "{1: f}exp(-{0: f}*t)(1+{3: f}exp(-{2: f}^2*t)"
+        self.fallback = None
+
+
+    def formula(self, v, x):
+                return (((v[1]*np.exp((-1.0)*v[0]*x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x))) +
+                        (v[1]*np.exp(v[0]*(x-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(x-(self.Nt)))))) -
+                ((v[1]*np.exp((-1.0)*v[0]*self.subtract)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*self.subtract))) +
+                 (v[1]*np.exp(v[0]*(self.subtract-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(self.subtract-(self.Nt)))))))  # noqa
 
 
 class periodic_two_exp_const(twice_mass_amp_const, periodic):
