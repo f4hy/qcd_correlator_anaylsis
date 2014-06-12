@@ -15,8 +15,8 @@ def format_fit_results(filewild):
 
                 txt = infile.read()
                 #print txt
-                mass, masserror = re.findall("mass.*(\d+\.\d+).*(\d+\.\d+)", txt)[0]
-                amp, amperror = re.findall("amp.*(\d+\.\d+).*(\d+\.\d+)", txt)[0]
+                mass, masserror = re.findall("mass .*?(\d+\.\d+).*?(\d+\.\d+)", txt)[0]
+                amp, amperror = re.findall("amp .*?(\d+\.\d+).*?(\d+\.\d+)", txt)[0]
                 print "{}, {}, {}, {}, {}".format(level, amp, amperror, mass, masserror)
 
         except IOError:
