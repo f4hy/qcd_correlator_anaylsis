@@ -10,6 +10,7 @@ from cStringIO import StringIO
 import re
 import numpy as np
 from matplotlib.patches import Ellipse
+from matplotlib.patches import Rectangle
 
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
 
@@ -198,6 +199,7 @@ def boxplot_files():
     # colors, white sucks
     mpl.rcParams['axes.linewidth'] = 5.0
     colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "k"]
+    cm = plt.get_cmap("winter_r") # colormap to use
     colors.append("#ffa500")
     plots = {}
     labels = label_names_from_filelist(args.files)
@@ -235,7 +237,12 @@ def boxplot_files():
             data.append(df.mass.values)
             levelnum=int(label)
             if args.color is not None:
-                mycolors.append(args.color[levelnum+1])
+                if args.splitbox:
+                    lower = df.mass.quantile(q=0.25)
+                    upper = df.mass.quantile(q=0.75)
+                    circles.append(Rectangle((index+0.75, lower), width=0.5, height=(upper-lower)*args.color[levelnum+1], color='b', fill=True))
+                else:
+                    mycolors.append(args.color[levelnum+1])
             if levelnum in args.single:
                 logging.info("adding level{} index {} to single_index".format(levelnum, index))
                 single_indecies.append(index)
@@ -274,8 +281,8 @@ def boxplot_files():
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
         for i,b in enumerate(splot["boxes"]):
-            if args.color is not None:
-                color = (mycolors[i],0,1-mycolors[i])
+            if args.color is not None and not args.splitbox:
+                color = cm(mycolors[i]) # colormap
             else:
                 color = 'c'
             b.set_linewidth(2)
@@ -360,6 +367,8 @@ if __name__ == "__main__":
                         help="file with single hadron info")
     parser.add_argument("--color", type=str, required=False, default=None,
                         help="color code by file")
+    parser.add_argument("--splitbox", action="store_true", required=False,
+                        help="split the box into color rather than graidant the boxes")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
