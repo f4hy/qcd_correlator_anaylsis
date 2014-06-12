@@ -18,7 +18,7 @@ def all_permutations(psqr, outputformat="{}{}{}", nobackies=False):
         flipped = [a*b for a,b in zip(i,reference)]
         all.update(set(itertools.permutations(flipped)))
 
-    if nobackies:
+    if nobackies and psqr>0:
         for i in sorted(list(all), key=sum, reverse=True):
             if i not in all:
                 continue
