@@ -206,6 +206,7 @@ def boxplot_files():
     #labels = [translate(l) for l in labels]
     circles = []
     single_indecies = []
+    outline_single = []
     mycolors = []
     data = []
     f, ax = plt.subplots()
@@ -241,6 +242,12 @@ def boxplot_files():
                     lower = df.mass.quantile(q=0.25)
                     upper = df.mass.quantile(q=0.75)
                     circles.append(Rectangle((index+0.75, lower), width=0.5, height=(upper-lower)*args.color[levelnum+1], color='b', fill=True))
+                elif args.outline:
+                    if args.color[levelnum+1] == 1.0:
+                        single_indecies.append(index)
+                    if 1.0 > args.color[levelnum+1] > 0.5:
+                        outline_single.append(index)
+
                 else:
                     mycolors.append(args.color[levelnum+1])
             if levelnum in args.single:
@@ -281,18 +288,21 @@ def boxplot_files():
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
         for i,b in enumerate(splot["boxes"]):
-            if args.color is not None and not args.splitbox:
+            if args.color is not None and not args.splitbox and not args.outline:
                 color = cm(mycolors[i]) # colormap
             else:
                 color = 'c'
             b.set_linewidth(2)
             b.set_facecolor(color)
-            b.set_linewidth(1)
+            b.set_linewidth(3)
             b.set_color(color)
             # b.set_alpha(mycolors[i])
             if i in single_indecies:
                 b.set_facecolor('b')
                 b.set_color('b')
+            if i in outline_single:
+                b.set_color('b')
+                b.set_facecolor('c')
         if args.clean:
             plt.setp(splot["whiskers"], visible=False)
             plt.setp(splot["fliers"], visible=False)
@@ -369,6 +379,8 @@ if __name__ == "__main__":
                         help="color code by file")
     parser.add_argument("--splitbox", action="store_true", required=False,
                         help="split the box into color rather than graidant the boxes")
+    parser.add_argument("--outline", action="store_true", required=False,
+                        help="have color outline")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
