@@ -12,6 +12,7 @@ import math
 from level_identifier import readops
 from level_identifier import read_file
 from zfactor import read_coeffs_file
+from plot_helpers import ncols
 
 
 class overlaps(object):
@@ -65,27 +66,32 @@ def sh_optimized_zfacts():
 
 
     N = len(OptZ.keys())
-    Ncols=args.columns
+    if args.number:
+        N = min(N,args.number)
+    if args.columns:
+        Ncols = args.columns
+    else:
+        Ncols = ncols(N)
     rows = int(math.ceil(float(N)/Ncols))
     fig, ax = plt.subplots(ncols=Ncols, nrows=rows)
-    # print OptZ.keys(), range(1,N+1)
-    for m in range(1,N+1):
-        i = (m-1)/Ncols
-        j = (m-1) % Ncols
+    with open(args.SHordering) as SHorderfile:
+        SHordering = [int(i.strip()) for i in SHorderfile.readlines()]
+    for index, m in enumerate(SHordering):
+        if index >= N:
+            break
+        i = (index)/Ncols
+        j = (index) % Ncols
         if N <= Ncols:
             axe=ax[j]
         else:
             axe=ax[i][j]
-        reordered = [OptZ[m][reorderedlevel] for reorderedlevel in ordering]
+        reordered = [OptZ[m+1][reorderedlevel] for reorderedlevel in ordering]
 
         axe.bar(range(len(reordered)), reordered, 1.0, color="b")
-        axe.set_title("SH-opt level{}".format(m))
+        axe.set_title("SH-opt level{}".format(index))
         axe.set_ylim((0,max(reordered)))
         axe.set_ylabel("$|Z|^2$", fontweight='bold')
         axe.set_xlabel("Level", fontweight='bold')
-
-
-    # plt.ylim((0,np.max(OptZ.values())))
 
 
     if args.output_stub:
@@ -118,7 +124,9 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     parser.add_argument("--ordering", type=str, required=True,
                         help="file which contains the ordering")
-    parser.add_argument("-c", "--columns", type=int, default=3, required=False,
+    parser.add_argument("--SHordering", type=str, required=True,
+                        help="file which contains the ordering")
+    parser.add_argument("-c", "--columns", type=int, required=False,
                         help="Number of columns")
     parser.add_argument("-z", "--full_zfactors", type=str, required=True,
                         help="zfactors")
@@ -128,6 +136,8 @@ if __name__ == "__main__":
                         help="full list of ops")
     parser.add_argument("-r", "--rotation_coeffs", type=str, required=True,
                         help="single hadtron rotation coeffs")
+    parser.add_argument("-N", "--number", type=int, required=False,
+                        help="max number of plots")
     args = parser.parse_args()
 
     if args.verbose:
