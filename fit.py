@@ -9,8 +9,6 @@ import os
 
 from parser_fit import fitparser, functions
 from fit_parents import InvalidFit
-import inspect
-import sys
 from copy import deepcopy
 
 from scipy import linalg
@@ -46,12 +44,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
-
-
-
     tmax = tmax+1  # I use ranges, so this needs to be offset by one
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
-    print "tmin wtf", tmin
     initial_guess = fn.starting_guess(cor, tmax-1, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
 
@@ -64,7 +58,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         logging.debug(cor.average_sub_vev())
         ccor = deepcopy(cor)
         cor = ccor
-        fn.subtract = tmin -1
+        fn.subtract = tmin - 1
         cor.subtract(tmin-1)
         logging.debug("subtracted correlator is:")
         logging.debug(cor.average_sub_vev())
@@ -74,21 +68,19 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if options.debugguess:
         #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
-        return initial_guess, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
+        return initial_guess, [0.01, 0.01, 0.01, 0.01]  # For testing initila guess in plot
     if not success:
         raise InvalidFit("original exnamble leastsq failed")
     if options.first_pass:
         initial_guess = original_ensamble_params
         logging.info("initial_guess after first pass: {}".format(repr(initial_guess)))
 
-
     def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
         y = [ave_cor[t] for t in range(tmin, tmax)]
         cov = covariance_matrix(correlator, tmin, tmax)
         inv_cov = bestInverse(cov)
-        start_time = correlator.times[0]
-        aoc = np.array([ave_cor[t] for t in range(tmin,tmax)])
+        aoc = np.array([ave_cor[t] for t in range(tmin, tmax)])
         logging.debug("guess {}".format(str(guess)))
 
         def cov_fun(g):
@@ -135,7 +127,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 else:
                     if m.fval > newresults[1] and m.fval - newresults[1] > 0.01:
                         logging.error("other fitter worked better than minuit!")
-                        logging.error("minuit: {}, old: {}".format(m.fval , newresults[1]))
+                        logging.error("minuit: {}, old: {}".format(m.fval, newresults[1]))
                         logging.error("Using other fitter")
                         # raise RuntimeError("Other Fitter did better")
             else:
@@ -153,9 +145,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
             raise InvalidFit("Fitter sanity failed")
 
-        #would like to use minimize, but seems to be not installed
+        # would like to use minimize, but seems to be not installed
         # covariant_fit = minimize(cov_fun, initial_guess)
-        #logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))  # noqa
+        # logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))  # noqa
         logging.debug("Fit results: f() ={}, Iterations={}".format(*fit_info))
         if flag != 0:
             logging.error("Fitter flag set to {}. Error!".format(flag))
@@ -174,7 +166,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             newguess = initial_guess
         fitted_params = cov_fit(strap, newguess)
         boot_params.append(fitted_params)
-
 
     results.info('')
     results.info('Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
@@ -220,7 +211,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.log(OUTPUT, "Full esamble fitted parameters t=%2d to %2d---------------------", tmin, tmax)
     results.log(OUTPUT, "Name      : Average,        STD,           (1st Quart, Median, 3rd Quart, IQR)")
     for name, ave, std, low, med, up, iqr in zip(fn.parameter_names, original_ensamble_correlatedfit, boot_std,
-                                            upper_quartiles, medians, lower_quartiles, inter_range):
+                                                 upper_quartiles, medians, lower_quartiles, inter_range):
         results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}   ({:<9.6f}, {:<9.6f}, {:<9.6f}, {:<9.6f})".format(name, ave, std, low, med, up, iqr))
     results.log(OUTPUT, "--------------------------------------------------------")
 
@@ -240,7 +231,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                                                                                   min(cor.effective_mass(3).values())))
         valid = False
 
-
     if options.write_each_boot and valid:
         results.info("writing each bootstrap to {}.boot".format(options.write_each_boot))
         with open(options.write_each_boot+".boot", 'w') as bootfile:
@@ -251,7 +241,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 bootfile.write("{}, {}\n".format(i, strparams))
 
     if return_chi:
-        return original_ensamble_correlatedfit , boot_std, chi_sqr/dof
+        return original_ensamble_correlatedfit, boot_std, chi_sqr/dof
     if return_quality:
         return original_ensamble_correlatedfit, boot_std, quality_of_fit(dof, chi_sqr)
     else:
@@ -267,7 +257,6 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     emass_dt = 3
 
     X = np.linspace(tmin, tmax, 200 * 5)
-    massX = np.linspace(tmin, tmax-emass_dt, 200 * 5)
     fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps, options=options)
 
     fig = plt.figure()
@@ -281,12 +270,12 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     else:
         single = functions["single_exp"]()
         single_fit, = corplot.plot(X, single.formula(fitted_params[:2], X), ls="-.", lw=2.0)
-        corplot.legend([cordata, corfit,single_fit], ["Correlator data", fn.template.format(*fitted_params), "single_exp with these values"])
+        corplot.legend([cordata, corfit, single_fit], ["Correlator data", fn.template.format(*fitted_params), "single_exp with these values"])
 
     corplot.set_ylabel("Fit Correlator")
 
     corvals = cor.average_sub_vev().values()
-    plt.ylim([min(min(corvals),0), max(corvals)])
+    plt.ylim([min(min(corvals), 0), max(corvals)])
     plt.xlim([0, tmax + 2])
     emass = cor.effective_mass(emass_dt)
     emass_errors = cor.effective_mass_errors(emass_dt).values()
@@ -295,12 +284,12 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
     named_params = {n: (m, e) for n, m, e in zip(fn.parameter_names, fitted_params, fitted_errors)}
     mass, mass_err = named_params["mass"]
-    abovefitline = emassplot.plot(range(tmin, tmax+1), [mass+mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+    # abovefitline = emassplot.plot(range(tmin, tmax+1), [mass+mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
     fitplt = emassplot.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)), ls="dotted", color="r")
-    belowfitline = emassplot.plot(range(tmin, tmax+1), [mass-mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-    fitpoints = fn.formula(fitted_params, np.arange(tmin,tmax+1))
+    # belowfitline = emassplot.plot(range(tmin, tmax+1), [mass-mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
+    fitpoints = fn.formula(fitted_params, np.arange(tmin, tmax+1))
     emassfit = []
-    dt=emass_dt
+    dt = emass_dt
     for i in range(len(fitpoints))[:-dt]:
         fitemass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
         emassfit.append(fitemass)
@@ -316,7 +305,7 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
         plt.savefig(filestub+".png")
         header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
         cor.writeasv(filestub+".fittedcor.out", header=header)
-        header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params),np.array(fitted_errors))
+        header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
         cor.writeemass(filestub+".fittedemass.out", header=header)
     else:
         plt.show()
@@ -400,7 +389,7 @@ def best_fit_range(fn, cor, options=None):
                     logging.log(ALWAYSINFO, "Fit range ({},{})"
                                 " is good with chi/dof {}".format(tmin, tmax, chi))
             except RuntimeError:
-                logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin,tmax))
+                logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
             # except Exception:
             #     logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
@@ -420,7 +409,7 @@ def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=F
                 results = fit(funct, cor, tmin, tmax, filestub=filestub,
                               bootstraps=bootstraps, options=options)
             logging.info("Auto Fit sucessfully!")
-            return #(tmin, tmax) + results  # Need to return what fit range was done
+            return  # (tmin, tmax) + results  # Need to return what fit range was done
         except RuntimeError:
             logging.warn("Fit range {} {} failed, trying next best".format(tmin, tmax))
             continue
@@ -479,7 +468,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-
     if args.random:
         logging.info("Setting random seed to %s", args.random)
         np.random.seed(args.random)
@@ -496,8 +484,6 @@ if __name__ == "__main__":
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     cor.prune_invalid(delete=True, sigma=0.5)
-
-
 
     if not args.period:
         if cor.numconfigs == 551:
@@ -521,7 +507,6 @@ if __name__ == "__main__":
         print args.output_stub
         auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         exit()
-
 
     try:
         if args.plot:
