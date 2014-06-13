@@ -70,6 +70,10 @@ def get_colors(colorfilename):
         txt = lines_without_comments(colorfilename)
         df = pd.read_csv(txt, sep=",", delimiter=",", skipinitialspace=True,
                          index_col=0, header=None)
+        with open(args.ordering) as orderfile:
+            ordering = [int(i.strip())+1 for i in orderfile.readlines()] # ofset by 1 so +1
+        todrop = [i for i in df.columns if i not in ordering]
+        df = df.drop(todrop, axis=1)
         return (df.transpose()/df.max(axis=1)).max(axis=1)
 
 
