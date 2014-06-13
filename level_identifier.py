@@ -73,7 +73,10 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
             ax.set_yticks([0, 1])
 
         if mode == "ops":
-            indexes = [plot_index*1000+level for level in levels]
+            with open(args.ordering) as orderfile:
+                ordering = [int(i.strip())+1 for i in orderfile.readlines()] # orderings have levels indexed from 0, but these are indexed from 1
+
+            indexes = [plot_index*1000+level for level in ordering]
             ticklabelpad = plt.rcParams['xtick.major.pad']
             ax.set_xticks(np.array(levels)+1.5)
             ax.set_xticklabels([n if n % 5 == 0 else "" for n in levels])
@@ -117,8 +120,8 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
         plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         logging.info("Saving plot to {}".format(output_stub+".png"))
         plt.savefig(output_stub+".png")
-        logging.info("Saving plot to {}".format(output_stub+".eps"))
-        plt.savefig(output_stub+".eps")
+        # logging.info("Saving plot to {}".format(output_stub+".eps"))
+        # plt.savefig(output_stub+".eps")
     else:
         plt.tight_layout()
         plt.show()
@@ -131,6 +134,8 @@ if __name__ == "__main__":
                         help="Correlator file to read from")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("--ordering", type=str, required=True,
+                        help="file which contains the ordering")
     parser.add_argument("-c", "--columns", type=int, required=False,
                         help="number of columns to make the plot", default=2)
     parser.add_argument("-m", "--mode", type=str, required=False, choices=["level", "ops"],

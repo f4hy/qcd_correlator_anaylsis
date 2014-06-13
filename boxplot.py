@@ -216,7 +216,10 @@ def boxplot_files():
     for label, filename in zip(labels, args.files):
         dfs[label] = read_file(filename)
 
-    sdfs = sorted(dfs.iteritems(), key=lambda s: s[1].mass.median())
+    with open(args.ordering) as orderfile:
+        ordering = [i.strip() for i in orderfile.readlines()]
+
+    sdfs = [(i,dfs[i]) for i in ordering]
     sdfs = [i for i in sdfs if i[1].mass.std() < args.prune]
     if args.maxlevels:
         sdfs = sdfs[:args.maxlevels]
@@ -359,6 +362,8 @@ if __name__ == "__main__":
                         help="plot title", default=None)
     parser.add_argument("-s", "--seperate", action="store_true", required=False,
                         help="plot one column or multi columns")
+    parser.add_argument("--ordering", type=str, required=True,
+                        help="file which contains the ordering")
     parser.add_argument("-o", "--output-stub", type=str, required=False,
                         help="stub of name to write output to")
     parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
