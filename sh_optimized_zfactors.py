@@ -60,6 +60,8 @@ def sh_optimized_zfacts():
             break
         OptZ[m] = value
 
+    with open(args.ordering) as orderfile:
+        ordering = [int(i.strip()) for i in orderfile.readlines()]
 
 
     N = len(OptZ.keys())
@@ -74,9 +76,11 @@ def sh_optimized_zfacts():
             axe=ax[j]
         else:
             axe=ax[i][j]
-        axe.bar(range(len(OptZ[m])), OptZ[m], 1.0, color="b")
+        reordered = [OptZ[m][reorderedlevel] for reorderedlevel in ordering]
+
+        axe.bar(range(len(reordered)), reordered, 1.0, color="b")
         axe.set_title("SH-opt level{}".format(m))
-        axe.set_ylim((0,max(OptZ[m])))
+        axe.set_ylim((0,max(reordered)))
         axe.set_ylabel("$|Z|^2$", fontweight='bold')
         axe.set_xlabel("Level", fontweight='bold')
 
@@ -85,7 +89,7 @@ def sh_optimized_zfacts():
 
 
     if args.output_stub:
-        logging.info("Saving shopt_zfactors to {}".format(args.output_stub+".out"))
+        logging.info("Saving unreordered shopt_zfactors to {}".format(args.output_stub+".nonreordered.out"))
         with open(args.output_stub+".out", 'w') as outfile:
             for level,d in OptZ.iteritems():
                 outfile.write("{}, {}\n".format(level, ", ".join(map(str,d))))
@@ -112,6 +116,8 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
                         help="stub of name to write output to")
+    parser.add_argument("--ordering", type=str, required=True,
+                        help="file which contains the ordering")
     parser.add_argument("-c", "--columns", type=int, default=3, required=False,
                         help="Number of columns")
     parser.add_argument("-z", "--full_zfactors", type=str, required=True,
