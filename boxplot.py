@@ -311,11 +311,12 @@ def boxplot_files():
             plt.setp(splot["fliers"], visible=False)
             plt.setp(splot["caps"], visible=False)
             plt.setp(splot["medians"], visible=False)
+            plt.setp( ax.get_xticklabels(), visible=False)
+        else:
+            xticknames = plt.setp(ax, xticklabels=sorted_labels)
+            plt.setp(xticknames, rotation=45, fontsize=8)
         for c in circles:
             f.gca().add_artist(c)
-        # xticknames = plt.setp(ax, xticklabels=sorted_labels)
-        # plt.setp(xticknames, rotation=45, fontsize=8)
-        plt.setp( ax.get_xticklabels(), visible=False)
         ax.set_ylabel("$a_t$Energy", fontweight='bold')
         ax.set_xlabel("Levels", fontweight='bold')
         ax.yaxis.set_tick_params(width=5, length=10)
