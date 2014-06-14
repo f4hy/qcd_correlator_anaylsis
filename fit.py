@@ -16,7 +16,7 @@ from scipy import stats
 from scipy.special import gammaincc
 from scipy.optimize import leastsq
 # from scipy.optimize import fmin
-from scipy.optimize import fmin_slsqp
+# from scipy.optimize import fmin_slsqp
 # from scipy.optimize import fmin_l_bfgs_b
 # from scipy.optimize import minimize
 OUTPUT = 25
@@ -50,6 +50,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
 
     x = np.array(range(tmin, tmax))
+    dof = len(x) - len(fn.parameter_names)
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in range(tmin, tmax)]
 
@@ -97,63 +98,28 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             else:
                 guess = uncorrelated_fit_values
 
-        #results = fmin(cov_fun, fn.starting_guess, ftol=1.E-7, maxfun=1000000, maxiter=1000000, full_output=1, disp=0, retall=0)  # noqa
-
-        if len(guess) > 2 and guess[2] < 0.0:
-            logging.warn("first pass found mass2 to be negative {}, lets flip it".format(guess[2]))
-            logging.info("first pass results are {}".format(repr(guess)))
-            guess[2] = -guess[2]
+            if len(guess) > 2 and guess[2] < 0.0:
+                logging.warn("first pass found mass2 to be negative {}, lets flip it".format(guess[2]))
+                logging.info("first pass results are {}".format(repr(guess)))
+                guess[2] = -guess[2]
 
         def clamp(n, minn, maxn):
                 return max(min(maxn, n), minn)
         bounded_guess = [clamp(g, b[0], b[1]) for g, b in zip(guess, fn.bounds)]
         logging.debug("guess {}, bounded guess {}".format(repr(guess), repr(bounded_guess)))
-        newresults = fmin_slsqp(cov_fun, bounded_guess, bounds=fn.bounds,
-                                full_output=1, disp=0, iter=10000)
-        results = newresults
-        covariant_fit, fit_info, flag = results[0], results[1:3], results[3]
 
-        if options.minuit:
-            m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
-            #m.set_strategy(2)
-            migradinfo = m.migrad()
-            minuit_results = [m.values[name] for name in fn.parameter_names]
-            if m.get_fmin().is_valid and flag != 0:
-                return minuit_results
-            if m.get_fmin().is_valid:
-                difference = minuit_results - covariant_fit
-                if max(difference) < 0.0001:
-                    return minuit_results
-                else:
-                    if m.fval > newresults[1] and m.fval - newresults[1] > 0.01:
-                        logging.error("other fitter worked better than minuit!")
-                        logging.error("minuit: {}, old: {}".format(m.fval, newresults[1]))
-                        logging.error("Using other fitter")
-                        # raise RuntimeError("Other Fitter did better")
-            else:
-                logging.error("minuit failed!!")
-                if flag != 0:
-                    logging.info("migradinfo: {}".format(str(migradinfo)))
-                    logging.info("Fit results: f() ={}, Iterations={}".format(*fit_info))
-                    logging.error("Fitter flag set to {}. Error!".format(flag))
-                    logging.error("Both fitters failed")
-                    raise InvalidFit("Both fitters failed")
-                else:
-                    logging.error("Using old fitter")
-        logging.debug("fit value {}".format(repr(newresults)))
-        if covariant_fit[0] < 0.0:
-            logging.error("Fitter gave negative mass {}!!! Error!".format(covariant_fit[0]))
-            raise InvalidFit("Fitter sanity failed")
+        m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
+        #m.set_strategy(2)
+        migradinfo = m.migrad()
+        minuit_results = [m.values[name] for name in fn.parameter_names]
+        if m.get_fmin().is_valid:
+            return minuit_results
+        else:
+            logging.error("minuit failed!!")
+            logging.error("was at {}".format(minuit_results))
+            return None
 
-        # would like to use minimize, but seems to be not installed
-        # covariant_fit = minimize(cov_fun, initial_guess)
-        # logging.debug("Fit results: f() ={}, Iterations={}, Function evaluations={}".format(*fit_info))  # noqa
-        logging.debug("Fit results: f() ={}, Iterations={}".format(*fit_info))
-        if flag != 0:
-            logging.error("Fitter flag set to {}. Error!".format(flag))
-            raise InvalidFit("Fitter failed")
-
-        return(covariant_fit)
+    # end cov_fit
 
     original_ensamble_correlatedfit = cov_fit(cor, initial_guess)
     fn.valid(original_ensamble_correlatedfit)
@@ -165,7 +131,15 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         else:
             newguess = initial_guess
         fitted_params = cov_fit(strap, newguess)
-        boot_params.append(fitted_params)
+        if fitted_params is not None:
+            boot_params.append(fitted_params)
+        else:
+            logging.error("bootstrap failed to converge!")
+
+    logging.warn("{} bootstraps did not converge!".format(bootstraps-len(boot_params)))
+    if len(boot_params) < bootstraps * 0.9:
+        logging.error("More that 10% of the straps failed")
+        raise InvalidFit("more than 10% of boostraps failed to converge")
 
     results.info('')
     results.info('Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
@@ -515,6 +489,10 @@ if __name__ == "__main__":
         else:
             fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
     except InvalidFit:
+        filename = args.output_stub+".log"
+        filehandler = logging.FileHandler(filename)
+        filehandler.level = OUTPUT
+        logging.addHandler(filehandler)
         logging.error("Fit was invalid, trying backup")
         if funct.fallback and not args.nofallback:
             logging.error("function has a fallback {}".format(funct.fallback))
