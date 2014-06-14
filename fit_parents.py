@@ -156,9 +156,10 @@ class twice_mass_amp(object):
 
     def valid(self, params):
         mass, amp, mass2, amp2 = params
+        return True
         if amp2 > 10*amp:
             logging.error("Invalid fit with paramters {}".format(repr(params)))
-            raise InvalidFit
+            # raise InvalidFit
             return False
         else:
             return True

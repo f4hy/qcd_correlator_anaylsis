@@ -122,7 +122,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     # end cov_fit
 
     original_ensamble_correlatedfit = cov_fit(cor, initial_guess)
-    fn.valid(original_ensamble_correlatedfit)
+    isvalidfit = fn.valid(original_ensamble_correlatedfit)
 
     boot_params = []
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=options.write_each_boot):
