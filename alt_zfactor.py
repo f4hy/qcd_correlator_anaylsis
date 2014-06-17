@@ -155,5 +155,5 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-        alt_zfactor(args.inputcorrelatorformat, args.z_rot, args.inputrotationcoeffs, args.operators,
-                    args.tnaught, args.output_stub, args.number, args.normalize, args.reconstruct_stub)
+    alt_zfactor(args.inputcorrelatorformat, args.z_rot, args.inputrotationcoeffs, args.operators,
+                args.tnaught, args.output_stub, args.number, args.normalize, args.reconstruct_stub)
