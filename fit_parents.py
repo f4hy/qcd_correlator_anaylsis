@@ -155,6 +155,8 @@ class twice_mass_amp(object):
         return vect.dot(self.inv_cov).dot(vect)
 
     def valid(self, params):
+        if params is None:
+            return False
         mass, amp, mass2, amp2 = params
         return True
         if amp2 > 10*amp:

@@ -123,6 +123,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     original_ensamble_correlatedfit = cov_fit(cor, initial_guess)
     isvalidfit = fn.valid(original_ensamble_correlatedfit)
+    if not isvalidfit:
+        raise InvalidFit("Full ensamble failed")
+
 
     boot_params = []
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=options.write_each_boot):
@@ -489,10 +492,6 @@ if __name__ == "__main__":
         else:
             fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
     except InvalidFit:
-        filename = args.output_stub+".log"
-        filehandler = logging.FileHandler(filename)
-        filehandler.level = OUTPUT
-        logging.addHandler(filehandler)
         logging.error("Fit was invalid, trying backup")
         if funct.fallback and not args.nofallback:
             logging.error("function has a fallback {}".format(funct.fallback))
