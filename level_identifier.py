@@ -53,17 +53,21 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
     plt.rcParams['xtick.major.size'] = 0
 
     rows = min(int(math.ceil(float(len(plots))/cols)), int(math.ceil(float(maxplots)/cols)))
-    f, layout = plt.subplots(nrows=rows, ncols=cols)
-    f.set_size_inches(19.2, 12.0)
-    f.set_dpi(100)
+    if not args.seperate:
+        f, layout = plt.subplots(nrows=rows, ncols=cols)
+    # f.set_size_inches(19.2, 12.0)
+    # f.set_dpi(100)
     for plot_index in plots[:maxplots]:
+        if args.seperate:
+            f, ax = plt.subplots(1)
         i = (plot_index-1)/cols
         j = (plot_index-1) % cols
         logging.info("making plot {} {} {}".format(plot_index, i, j))
-        if len(plots[:maxplots]) <= cols:
-            ax=layout[j]
-        else:
-            ax=layout[i][j]
+        if not args.seperate:
+            if len(plots[:maxplots]) <= cols:
+                ax=layout[j]
+            else:
+                ax=layout[i][j]
 
         indexes = [plot_index+op*1000 for op in ops]
         if j > 0:
@@ -110,6 +114,12 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
             plot[(i, j)] = ax.bar(levels, values, 1, color=color, yerr=errors, ecolor="r")
         ax.set_ylim([0, np.ceil(largest_zfactor)])
         ax.set_xlim(xmin=1)
+        if args.seperate:
+            outfilename = output_stub+"{}.png".format(opnames[plot_index-1])
+            logging.info("Saving plot to {}".format(outfilename))
+            plt.savefig(outfilename)
+            plt.clf()
+
     # end plot loop
 
     if args.title:
@@ -150,6 +160,8 @@ if __name__ == "__main__":
                         help="plot title", default=None)
     parser.add_argument("-ne", "--no-errors", action="store_true", default=None,
                         help="suppress the error bars")
+    parser.add_argument("-sep", "--seperate", action="store_true", default=None,
+                        help="put each on their own plot")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
 
