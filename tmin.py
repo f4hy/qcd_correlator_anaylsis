@@ -26,7 +26,11 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
     fitted_errors = []
     qualities = []
     Tpoints = range(tmin, tmax-(len(fn.parameter_names)+1))
+    if args.write_each_boot:
+        orig_write_each_boot = args.write_each_boot
     for t in Tpoints:
+        if args.write_each_boot:
+            args.write_each_boot = orig_write_each_boot+"_{}".format(t)
         try:
             params, errors, qual = fit.fit(fn, cor, t, tmax,
                                            filestub=filestub, bootstraps=bootstraps, return_quality=True, options=args)
