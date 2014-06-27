@@ -34,13 +34,14 @@ def read_file(filename):
 
 
 def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots=1000):
-    df = read_file(inputfile).apply(np.absolute)
-
+    def square(x):
+        return np.absolute(x)**2
+    df = read_file(inputfile).apply(square)
     ops = list(set([i/1000 for i in df.index]))
     levels = list(set([(i % 1000) for i in df.index]))
     N = int(np.sqrt(len(df)))
     largest_zfactor = max(df.identities)
-
+    untranslated = opnames
     if opnames:
         opnames = [translate(l) for l in opnames]
     plots = ops
@@ -70,11 +71,11 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
                 ax=layout[i][j]
 
         indexes = [plot_index+op*1000 for op in ops]
-        if j > 0:
+        if j > 0 and not args.seperate:
             ax.set_yticks([])
         else:
-            ax.set_ylabel("|Z|", fontweight='bold', rotation='horizontal')
-            ax.set_yticks([0, 1])
+            ax.set_ylabel("$|Z|^2$", fontweight='bold')
+            # ax.set_yticks([0, 1])
 
         if mode == "ops":
             with open(args.ordering) as orderfile:
@@ -115,12 +116,16 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
         ax.set_ylim([0, np.ceil(largest_zfactor)])
         ax.set_xlim(xmin=1)
         if args.seperate:
-            outfilename = output_stub+"{}.png".format(opnames[plot_index-1])
+            ax.set_ylim([0, max(values)+max(errors)])
+            outfilename = output_stub+"{}.png".format(untranslated[plot_index-1])
             logging.info("Saving plot to {}".format(outfilename))
             plt.savefig(outfilename)
             plt.clf()
 
     # end plot loop
+
+    if args.seperate:
+        return
 
     if args.title:
         f.suptitle(args.title)
