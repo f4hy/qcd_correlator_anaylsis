@@ -256,8 +256,8 @@ def get_ops(args, expected_levels):
             raw_input("Look OK?")
         level_num += 1
         if level_num > threshold+3:
-            logging.info("at threshold+3, stopping")
-            args.outfile.write("\n# level {} is >3levels above thredhold stopping\n".format(level_num))
+            logging.info("Stopping due to threshold")
+            args.outfile.write("# Stopping due to threshold\n")
             break
         args.outfile.write("\n# level {} {} \n".format(level_num, level))
         try:
@@ -265,6 +265,7 @@ def get_ops(args, expected_levels):
         except NotImplementedError, e:
             logging.warn("This level {} is not supported {}, skipping".format(level, e))
             args.outfile.write("# level is not supported: {}, skipping \n".format(e))
+            threshold = level_num
             # if threshold > 1000:
             #     print "threshold", level_num
             #     args.outfile.write("# Setting threshold to level {}\n".format(level_num))
@@ -298,6 +299,10 @@ def get_ops(args, expected_levels):
                 print "threshold", level_num
                 args.outfile.write("# Setting threshold to level {}\n".format(level_num))
                 threshold = level_num
+            if threshold < 1000 and level.count("pi") == 2:
+                args.outfile.write("# Found pi pi above threshold. stopping\n".format(level_num))
+                threshold = -10
+
             if flavor2 == "kaon":
                 flavor2 = "kbar"
             if (flavor1,p1[2]) == ("eta","A1gp") or (flavor2,p2[2]) == ("eta","A1gp"):
