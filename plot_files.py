@@ -205,7 +205,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             time_offset = df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
 
-        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=12, elinewidth=3, capsize=5,
+        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=12, elinewidth=3, capsize=8,
                             capthick=2, mec=color, aa=True)
         if seperate:
             logging.info("plotting {}  {}, {}".format(label, i, j))
@@ -225,6 +225,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             if not has_colorbar and not seperate:
                 cb = plt.colorbar(tmin_plot[label])  # noqa
                 cb.set_label("Quality of fit", **fontsettings)
+                axe.set_xlabel("tmin", **fontsettings)
+                axe.set_ylabel("Fit Value", **fontsettings)
                 has_colorbar = True
 
         else:                   # Not a tmin plot!

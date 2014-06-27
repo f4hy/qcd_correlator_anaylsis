@@ -160,43 +160,62 @@ def format_error_string(value, error):
     formated_value = "{m:.{d}}".format(d=int(digits) + 1, m=value)
     return "{m}({e})".format(m=formated_value, e=formated_error)
 
+def scale_params():
+    if args.scale == "omega":
+        return "$5m/3m_\omega$", 3
+    if args.scale == "kaon":
+        return "$m/m_K$", 6
+    else:
+        raise NotImplementedError("Have not implemented {}".format(args.scale))
 
-def escale(i):
+
+def experimental_scale(i):
     if not args.experiment:
         return i
     else:
-        return (5.0 * i) / (3.0 * 1.67245)
+        if args.scale == "omega":
+            return (5.0 * i) / (3.0 * 1.67245)
+        if args.scale == "kaon":
+            return (i) / 0.497614
+        else:
+            raise NotImplementedError("Have not implemented {}".format(args.scale))
 
-def tscale(i):
-    lattice_omegamass=0.27803
-    if not args.experiment:
-        return i
-    else:
+
+
+def lattice_scale(i):
+    if args.scale == "omega":
+        lattice_omegamass=0.27803
         return (5.0 * i) / (3.0 * lattice_omegamass)
+    if args.scale == "kaon":
+        lattice_omegamass=0.083855
+        return i / 0.083855
+    else:
+        raise NotImplementedError("Have not implemented {}".format(args.scale))
+
 
 
 def add_experiment_results(experimental_results, f, ax):
-
     with open(experimental_results, "r") as expfile:
         for line in expfile:
             if line.startswith("#"):
                 continue
             name, mass, uncertainty = [i.strip() for i in  line.split(",")]
-            smass = escale(float(mass))
-            suncertainty = escale(float(uncertainty))
+            smass = experimental_scale(float(mass))
+            suncertainty = experimental_scale(float(uncertainty))
             loc,tloc = -1.6,-1.8
             if "_3" in name:
                 loc,tloc = -1.45, -0.9
             rect = plt.Rectangle((loc, smass-suncertainty), 0.5, 2*suncertainty,
                                  fc='r', fill=True, linewidth=1, color='r')
             f.gca().add_artist(rect)
-            ax.annotate("${}$".format(name), xy=(tloc, smass), fontsize=18)
+            ax.annotate("${}$".format(name), xy=(tloc, smass), fontsize=22)
     plt.xlim(-2.0, 1.0)
-    plt.ylim(0, 3.0)
-    plt.plot([-0.5,-0.5], [0,3], 'k-', lw=2, )
-    ax.annotate("Experiment", xy=(-1.5, 0.1), fontsize=18, fontweight='bold')
-    ax.annotate("Lattice", xy=(0.2, 0.1), fontsize=18, fontweight='bold')
-    ax.set_ylabel("$5m/3m_\omega$", fontweight='bold', fontsize=18)
+    label, ymax = scale_params()
+    plt.ylim(0, ymax)
+    plt.plot([-0.5,-0.5], [0,ymax], 'k-', lw=2, )
+    ax.annotate("Experiment", xy=(-1.5, 0.1), fontsize=22, fontweight='bold')
+    ax.annotate("Lattice", xy=(0.2, 0.1), fontsize=22, fontweight='bold')
+    ax.set_ylabel(label, fontweight='bold', fontsize=22)
 
 def boxplot_files():
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
@@ -242,7 +261,7 @@ def boxplot_files():
 
 
         if args.seperate:
-            data.append(df.mass.values)
+            data.append(lattice_scale(df.mass.values))
             levelnum=int(label)
             if args.color is not None:
                 if args.splitbox:
@@ -262,9 +281,9 @@ def boxplot_files():
                 single_indecies.append(index)
                 circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r', fill=False))
         else:
-            med = tscale(df.mass.median())
-            width = tscale(df.mass.std())
-            values = tscale(df.mass.values)
+            med = lattice_scale(df.mass.median())
+            width = lattice_scale(df.mass.std())
+            values = lattice_scale(df.mass.values)
 
             offset = 0.25+((1-(index+1) % 3) * 0.33)#+(index/3)*0.05
             if index%3 == 0 and index%2==0 :
@@ -307,9 +326,13 @@ def boxplot_files():
             if i in single_indecies:
                 b.set_facecolor('b')
                 b.set_color('b')
+                singlecolor = b
             if i in outline_single:
                 b.set_color('b')
                 b.set_facecolor('c')
+                outlinecolor = b
+            if i not in outline_single and i not in single_indecies:
+                normal = b
         if args.clean:
             plt.setp(splot["whiskers"], visible=False)
             plt.setp(splot["fliers"], visible=False)
@@ -321,9 +344,11 @@ def boxplot_files():
             plt.setp(xticknames, rotation=45, fontsize=8)
         for c in circles:
             f.gca().add_artist(c)
-        ax.set_ylabel("$a_t$Energy", fontweight='bold')
-        ax.set_xlabel("Levels", fontweight='bold')
-        ax.yaxis.set_tick_params(width=5, length=10)
+        if args.scale:
+            ax.set_ylabel("$a_t$Energy", fontweight='bold', fontsize=30)
+        else:
+            ax.set_ylabel("GeV", fontweight='bold', fontsize=30)
+        ax.set_xlabel("Levels", fontweight='bold', fontsize=30)
         ax.xaxis.set_tick_params(width=2, length=6)
     if not args.seperate:
         plt.tick_params(labelbottom="off", bottom='off')
@@ -334,8 +359,14 @@ def boxplot_files():
 
     if args.yrange:
         plt.ylim(args.yrange)
+        ax.set_yticks(np.arange(int(args.yrange[0]), int(args.yrange[1]), 1))
+        
+    plt.xlim(0, 48.5)
+    if args.outline:
+        plt.legend([singlecolor, normal, outlinecolor], ["single-hadron dominated", "two-hadron dominated", "significant mixing"], fontsize=30)
+        leg = plt.legend(fancybox=True, shadow=True)
 
-
+        
     if args.title:
         f.suptitle(args.title.replace("_", " "), fontsize=24)
 
@@ -375,6 +406,8 @@ if __name__ == "__main__":
                         help="set the yrange of the plot", default=None)
     parser.add_argument("-e", "--experiment", type=str, required=False,
                         help="file with experimental results")
+    parser.add_argument("--scale",  type=str, required=False, choices=["omega", "kaon"], default="omega",
+                        help="how to set the sacle")
     parser.add_argument("-c", "--clean", action="store_true", required=False,
                         help="display without outliers or wiskers")
     parser.add_argument("-3", "--threshold", type=float, required=False,
