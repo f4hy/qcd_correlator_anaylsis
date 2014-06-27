@@ -13,7 +13,7 @@ fitparser.add_argument("-i", "--inputfile", type=str, required=True,
                     help="Correlator file to read from")
 fitparser.add_argument("-o", "--output_stub", type=str, required=False,
                     help="stub of name to write output to")
-fitparser.add_argument("-wb", "--write_each_boot", default=None, type=str, required=False,
+fitparser.add_argument("-wb", "--write_each_boot", action="store_true", required=False,
                     help="stub of name to write each bootstrap output to")
 fitparser.add_argument("-v1", "--vev", type=str, required=False,
                     help="vev file to read from")
