@@ -161,6 +161,8 @@ def format_error_string(value, error):
     return "{m}({e})".format(m=formated_value, e=formated_error)
 
 def scale_params():
+    if args.scale == "none":
+        return "$a_t$E", 0.6
     if args.scale == "omega":
         return "$5m/3m_\omega$", 3
     if args.scale == "kaon":
@@ -170,7 +172,7 @@ def scale_params():
 
 
 def experimental_scale(i):
-    if not args.experiment:
+    if not args.experiment or args.scale == "none":
         return i
     else:
         if args.scale == "omega":
@@ -183,6 +185,8 @@ def experimental_scale(i):
 
 
 def lattice_scale(i):
+    if args.scale == "none":
+        return i
     if args.scale == "omega":
         lattice_omegamass=0.27803
         return (5.0 * i) / (3.0 * lattice_omegamass)
@@ -239,10 +243,14 @@ def boxplot_files():
     for label, filename in zip(labels, args.files):
         dfs[label] = read_file(filename)
 
-    with open(args.ordering) as orderfile:
-        ordering = [i.strip() for i in orderfile.readlines()]
+    if args.ordering:
+        with open(args.ordering) as orderfile:
+            ordering = [i.strip() for i in orderfile.readlines()]
 
-    sdfs = [(i,dfs[i]) for i in ordering]
+        sdfs = [(i,dfs[i]) for i in ordering]
+    else:
+        sdfs = [(i,dfs[i]) for i in labels]
+        
     sdfs = [i for i in sdfs if i[1].mass.std() < args.prune]
     if args.maxlevels:
         sdfs = sdfs[:args.maxlevels]
@@ -344,10 +352,6 @@ def boxplot_files():
             plt.setp(xticknames, rotation=45, fontsize=8)
         for c in circles:
             f.gca().add_artist(c)
-        if args.scale:
-            ax.set_ylabel("$a_t$Energy", fontweight='bold', fontsize=30)
-        else:
-            ax.set_ylabel("GeV", fontweight='bold', fontsize=30)
         ax.set_xlabel("Levels", fontweight='bold', fontsize=30)
         ax.xaxis.set_tick_params(width=2, length=6)
     if not args.seperate:
@@ -357,11 +361,13 @@ def boxplot_files():
         else:
             plt.xlim(-1.5, 1.5)
 
+    ax.set_ylabel(scale_params()[0], fontweight='bold', fontsize=30)
+
+            
     if args.yrange:
         plt.ylim(args.yrange)
         ax.set_yticks(np.arange(int(args.yrange[0]), int(args.yrange[1]), 1))
         
-    plt.xlim(0, 48.5)
     if args.outline:
         plt.legend([singlecolor, normal, outlinecolor], ["single-hadron dominated", "two-hadron dominated", "significant mixing"], fontsize=30)
         leg = plt.legend(fancybox=True, shadow=True)
@@ -398,7 +404,7 @@ if __name__ == "__main__":
                         help="plot title", default=None)
     parser.add_argument("-s", "--seperate", action="store_true", required=False,
                         help="plot one column or multi columns")
-    parser.add_argument("--ordering", type=str, required=True,
+    parser.add_argument("--ordering", type=str, required=False,
                         help="file which contains the ordering")
     parser.add_argument("-o", "--output-stub", type=str, required=False,
                         help="stub of name to write output to")
@@ -406,7 +412,7 @@ if __name__ == "__main__":
                         help="set the yrange of the plot", default=None)
     parser.add_argument("-e", "--experiment", type=str, required=False,
                         help="file with experimental results")
-    parser.add_argument("--scale",  type=str, required=False, choices=["omega", "kaon"], default="omega",
+    parser.add_argument("--scale",  type=str, required=False, choices=["omega", "kaon", "none"], default="none",
                         help="how to set the sacle")
     parser.add_argument("-c", "--clean", action="store_true", required=False,
                         help="display without outliers or wiskers")
@@ -435,6 +441,12 @@ if __name__ == "__main__":
         parser.print_help()
         parser.exit()
 
+    if args.seperate and not args.ordering:
+        logging.error("seperate mode requires an ordering")
+        parser.print_help()
+        parser.exit()
+        
+        
     if args.single:
         args.single = get_singles(args.single)
 
