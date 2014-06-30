@@ -25,10 +25,14 @@ fitparser.add_argument("-te", "--time-end", type=int, required=False,
                     help="last time slice to fit, can be a list of times")
 fitparser.add_argument("-max", "--maxrange", action="store_true", required=False,
                     help="fit over the full valid range")
+fitparser.add_argument("-tmax", "--tmax", action="store_true", required=False,
+                       help="set end of fit range to max")
 fitparser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
                     help="Number of straps")
 fitparser.add_argument("-p", "--plot", action="store_true", required=False,
                     help="Plot the resulting fit")
+fitparser.add_argument("--prune", type=float, required=False, default=0.5,
+                       help="number of sigma to prune at")
 fitparser.add_argument("-Nt", "--period", type=int, required=False,
                     help="Period in time direction (not required for all functions)")
 fitparser.add_argument("-r", "--random", type=int, required=False,

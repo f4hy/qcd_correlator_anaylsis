@@ -469,7 +469,7 @@ if __name__ == "__main__":
         args.output_stub = os.path.splitext(args.output_stub)[0]
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
-    cor.prune_invalid(delete=True, sigma=0.5)
+    cor.prune_invalid(delete=True, sigma=args.prune)
 
     if not args.period:
         if cor.numconfigs == 551:
@@ -485,7 +485,10 @@ if __name__ == "__main__":
         logging.info("setting trange to the all of the data")
         args.time_start = min(cor.times)
         args.time_end = max(cor.times)
-
+    if args.tmax:
+        logging.info("setting tmax to {}".format(max(cor.times)))
+        args.time_end = max(cor.times)
+        
     tmin = args.time_start
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]
