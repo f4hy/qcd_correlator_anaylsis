@@ -13,7 +13,7 @@ fitparser.add_argument("-i", "--inputfile", type=str, required=True,
                     help="Correlator file to read from")
 fitparser.add_argument("-o", "--output_stub", type=str, required=False,
                     help="stub of name to write output to")
-fitparser.add_argument("-wb", "--write_each_boot", default=None, type=str, required=False,
+fitparser.add_argument("-wb", "--write_each_boot", action="store_true", required=False,
                     help="stub of name to write each bootstrap output to")
 fitparser.add_argument("-v1", "--vev", type=str, required=False,
                     help="vev file to read from")
@@ -25,10 +25,14 @@ fitparser.add_argument("-te", "--time-end", type=int, required=False,
                     help="last time slice to fit, can be a list of times")
 fitparser.add_argument("-max", "--maxrange", action="store_true", required=False,
                     help="fit over the full valid range")
+fitparser.add_argument("-tmax", "--tmax", action="store_true", required=False,
+                       help="set end of fit range to max")
 fitparser.add_argument("-b", "--bootstraps", type=int, required=False, default=NBOOTSTRAPS,
                     help="Number of straps")
 fitparser.add_argument("-p", "--plot", action="store_true", required=False,
                     help="Plot the resulting fit")
+fitparser.add_argument("--prune", type=float, required=False, default=0.5,
+                       help="number of sigma to prune at")
 fitparser.add_argument("-Nt", "--period", type=int, required=False,
                     help="Period in time direction (not required for all functions)")
 fitparser.add_argument("-r", "--random", type=int, required=False,

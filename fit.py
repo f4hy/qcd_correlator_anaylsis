@@ -44,15 +44,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
-    tmax = tmax+1  # I use ranges, so this needs to be offset by one
+    #tmax = tmax+1  # I use ranges, so this needs to be offset by one
+    fitrange = range(tmin, tmax+1)
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
-    initial_guess = fn.starting_guess(cor, tmax-1, tmin)
+    initial_guess = fn.starting_guess(cor, tmax, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
 
-    x = np.array(range(tmin, tmax))
+    x = np.array(fitrange)
     dof = len(x) - len(fn.parameter_names)
     orig_ave_cor = cor.average_sub_vev()
-    y = [orig_ave_cor[t] for t in range(tmin, tmax)]
+    y = [orig_ave_cor[t] for t in fitrange]
 
     if fn.subtract:
         logging.debug("before suctracted correlator is:")
@@ -65,7 +66,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         logging.debug(cor.average_sub_vev())
 
     orig_ave_cor = cor.average_sub_vev()
-    y = [orig_ave_cor[t] for t in range(tmin, tmax)]
+    y = [orig_ave_cor[t] for t in fitrange]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if options.debugguess:
         #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
@@ -78,10 +79,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
-        y = [ave_cor[t] for t in range(tmin, tmax)]
-        cov = covariance_matrix(correlator, tmin, tmax)
+        y = [ave_cor[t] for t in fitrange]
+        cov = covariance_matrix(correlator, tmin, tmax+1)
         inv_cov = bestInverse(cov)
-        aoc = np.array([ave_cor[t] for t in range(tmin, tmax)])
+        aoc = np.array([ave_cor[t] for t in fitrange])
         logging.debug("guess {}".format(str(guess)))
 
         def cov_fun(g):
@@ -128,9 +129,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
 
     boot_params = []
-    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=options.write_each_boot):
+    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub):
         if options.reguess:
-            newguess = fn.starting_guess(strap, tmax-1, tmin)
+            newguess = fn.starting_guess(strap, tmax, tmin)
         else:
             newguess = initial_guess
         fitted_params = cov_fit(strap, newguess)
@@ -175,11 +176,17 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if skew > 1.0:
             results.error("{}: diff of bstrap average and bstrap med is {:.3%}".format(name, skew))
             results.error("Bootstrap distrubtion is skewed!!")
+            if not options.unsafe:
+                results.critical("Exiting! Run with --unsafe to fit anyway")
+                raise InvalidFit("Bootstrap average does not agree with ensamble average")
         else:
             results.info("{}: diff of bstrap average and bstrap med is {:.3%}".format(name, skew))
         if dist_skew > 1.0:
             results.error("for {} diff of stddev and IQR is {:.3%}".format(name, dist_skew))
             results.error("Large outliers present in bootstrap fits!!")
+            if not options.unsafe:
+                results.critical("Exiting! Run with --unsafe to fit anyway")
+                raise InvalidFit("Bootstrap average does not agree with ensamble average")
         else:
             results.info("for {} diff of standard deviation"
                          " and interquartile range is {:.3%}".format(name, dist_skew))
@@ -193,10 +200,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.log(OUTPUT, "--------------------------------------------------------")
 
     v = original_ensamble_correlatedfit
-    cov = covariance_matrix(cor, tmin, tmax)
+    cov = covariance_matrix(cor, tmin, tmax+1)
     inv_cov = bestInverse(cov)
     chi_sqr = np.sum(((orig_ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (orig_ave_cor[tp] - fn.formula(v, tp))
-                      for t in range(tmin, tmax) for tp in range(tmin, tmax)))
+                      for t in fitrange for tp in fitrange))
 
     dof = len(x) - len(fn.parameter_names)
     results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
@@ -208,14 +215,15 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                                                                                   min(cor.effective_mass(3).values())))
         valid = False
 
-    if options.write_each_boot and valid:
-        results.info("writing each bootstrap to {}.boot".format(options.write_each_boot))
-        with open(options.write_each_boot+".boot", 'w') as bootfile:
+    if options.write_each_boot and valid and filestub:
+        results.info("writing each bootstrap to {}.boot".format(filestub))
+        with open(filestub+".boot", 'w') as bootfile:
             str_ensamble_params = ", ".join([str(p) for p in original_ensamble_params])
             bootfile.write("#bootstrap, {}, \t ensamble mean: {}\n".format(", ".join(fn.parameter_names), str_ensamble_params))
             for i, params in enumerate(boot_params):
                 strparams = ", ".join([str(p) for p in params])
                 bootfile.write("{}, {}\n".format(i, strparams))
+
 
     if return_chi:
         return original_ensamble_correlatedfit, boot_std, chi_sqr/dof
@@ -349,29 +357,30 @@ def best_fit_range(fn, cor, options=None):
     logger = logging.getLogger()
     previous_loglevel = logger.level
     logger.setLevel(ALWAYSINFO)
-    best = 100
+    best = 0
     best_ranges = []
     for tmin in cor.times:
         if fn.subtract and tmin == min(cor.times):
-            print "skip"
             continue
-        for tmax in range(tmin + 4, max(cor.times)):
+        tmaxes = [options.time_end] if options.time_end else range(tmin + 4, max(cor.times))
+        for tmax in tmaxes:
             try:
-                _, _, chi = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=True, options=options)
-                metric = abs(chi-1.0)
-                # if metric < best:
-                best = metric
+                _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=False, return_quality=True, options=options)
+                #metric = abs(chi-1.0)
+                metric = qual
+                #if metric > best:
+                # best = metric
                 best_ranges.append((metric, tmin, tmax))
-                if best < 1.0:
+                if metric > 0.2:
                     logging.log(ALWAYSINFO, "Fit range ({},{})"
-                                " is good with chi/dof {}".format(tmin, tmax, chi))
+                                " is good with chi/dof {}".format(tmin, tmax, qual))
             except RuntimeError:
                 logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
             # except Exception:
             #     logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
     logging.debug("Restored logging state to original")
-    return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges)]
+    return [(tmin, tmax) for _, tmin, tmax in sorted(best_ranges, reverse=True)]
 
 
 def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, options=None):
@@ -460,7 +469,7 @@ if __name__ == "__main__":
         args.output_stub = os.path.splitext(args.output_stub)[0]
 
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
-    cor.prune_invalid(delete=True, sigma=0.5)
+    cor.prune_invalid(delete=True, sigma=args.prune)
 
     if not args.period:
         if cor.numconfigs == 551:
@@ -476,7 +485,10 @@ if __name__ == "__main__":
         logging.info("setting trange to the all of the data")
         args.time_start = min(cor.times)
         args.time_end = max(cor.times)
-
+    if args.tmax:
+        logging.info("setting tmax to {}".format(max(cor.times)))
+        args.time_end = max(cor.times)
+        
     tmin = args.time_start
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]
