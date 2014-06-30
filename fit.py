@@ -44,15 +44,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
-    tmax = tmax+1  # I use ranges, so this needs to be offset by one
+    #tmax = tmax+1  # I use ranges, so this needs to be offset by one
+    fitrange = range(tmin, tmax+1)
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
-    initial_guess = fn.starting_guess(cor, tmax-1, tmin)
+    initial_guess = fn.starting_guess(cor, tmax, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
 
-    x = np.array(range(tmin, tmax))
+    x = np.array(fitrange)
     dof = len(x) - len(fn.parameter_names)
     orig_ave_cor = cor.average_sub_vev()
-    y = [orig_ave_cor[t] for t in range(tmin, tmax)]
+    y = [orig_ave_cor[t] for t in fitrange]
 
     if fn.subtract:
         logging.debug("before suctracted correlator is:")
@@ -65,7 +66,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         logging.debug(cor.average_sub_vev())
 
     orig_ave_cor = cor.average_sub_vev()
-    y = [orig_ave_cor[t] for t in range(tmin, tmax)]
+    y = [orig_ave_cor[t] for t in fitrange]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if options.debugguess:
         #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
@@ -78,10 +79,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
-        y = [ave_cor[t] for t in range(tmin, tmax)]
-        cov = covariance_matrix(correlator, tmin, tmax)
+        y = [ave_cor[t] for t in fitrange]
+        cov = covariance_matrix(correlator, tmin, tmax+1)
         inv_cov = bestInverse(cov)
-        aoc = np.array([ave_cor[t] for t in range(tmin, tmax)])
+        aoc = np.array([ave_cor[t] for t in fitrange])
         logging.debug("guess {}".format(str(guess)))
 
         def cov_fun(g):
@@ -130,7 +131,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     boot_params = []
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub):
         if options.reguess:
-            newguess = fn.starting_guess(strap, tmax-1, tmin)
+            newguess = fn.starting_guess(strap, tmax, tmin)
         else:
             newguess = initial_guess
         fitted_params = cov_fit(strap, newguess)
@@ -199,10 +200,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.log(OUTPUT, "--------------------------------------------------------")
 
     v = original_ensamble_correlatedfit
-    cov = covariance_matrix(cor, tmin, tmax)
+    cov = covariance_matrix(cor, tmin, tmax+1)
     inv_cov = bestInverse(cov)
     chi_sqr = np.sum(((orig_ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (orig_ave_cor[tp] - fn.formula(v, tp))
-                      for t in range(tmin, tmax) for tp in range(tmin, tmax)))
+                      for t in fitrange for tp in fitrange))
 
     dof = len(x) - len(fn.parameter_names)
     results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
