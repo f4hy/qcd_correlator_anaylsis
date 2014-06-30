@@ -270,7 +270,11 @@ def boxplot_files():
 
         if args.seperate:
             data.append(lattice_scale(df.mass.values))
-            levelnum=int(label)
+            try:
+                levelnum=int(label)
+            except ValueError:
+                logging.error("Can not level order, inputs are not levels")
+                continue
             if args.color is not None:
                 if args.splitbox:
                     lower = df.mass.quantile(q=0.25)
@@ -441,10 +445,11 @@ if __name__ == "__main__":
         parser.print_help()
         parser.exit()
 
-    if args.seperate and not args.ordering:
-        logging.error("seperate mode requires an ordering")
-        parser.print_help()
-        parser.exit()
+    if args.seperate and  args.color:
+        if not args.ordering:
+            logging.error("seperate color mode requires an ordering")
+            parser.print_help()
+            parser.exit()
         
         
     if args.single:
