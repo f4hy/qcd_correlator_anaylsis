@@ -365,18 +365,21 @@ def boxplot_files():
         else:
             plt.xlim(-1.5, 1.5)
 
-    ax.set_ylabel(scale_params()[0], fontweight='bold', fontsize=30)
+    ylabel, ymax = scale_params()
+    ax.set_ylabel(ylabel, fontweight='bold', fontsize=30)
 
-            
     if args.yrange:
         plt.ylim(args.yrange)
-        ax.set_yticks(np.arange(int(args.yrange[0]), int(args.yrange[1]), 1))
-        
+    else:
+        plt.ylim((0,ymax))
+    ax.set_yticks(np.arange(int(ax.get_ylim()[0]), int(ax.get_ylim()[1]), 1))
+
     if args.outline:
-        plt.legend([singlecolor, normal, outlinecolor], ["single-hadron dominated", "two-hadron dominated", "significant mixing"], fontsize=30)
+        plt.legend([singlecolor, normal, outlinecolor], ["single-hadron dominated", "two-hadron dominated", "significant mixing"],
+                   fontsize=30, loc=2)
         leg = plt.legend(fancybox=True, shadow=True)
 
-        
+
     if args.title:
         f.suptitle(args.title.replace("_", " "), fontsize=24)
 
