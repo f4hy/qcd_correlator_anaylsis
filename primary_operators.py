@@ -222,10 +222,12 @@ def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="00
     else:
         basedir = os.path.join(expected_levels_path, "24^3_390/mom_{}".format(mom))
 
-    if isospin == "1h":
-        filename = "bosonic_2I=1_S={}_levels.txt".format(strangeness)
-    else:
-        filename = "bosonic_I={}_S={}_levels.txt".format(isospin, strangeness)
+    statistics = "bosonic"
+    if args.baryons:
+        statistics = "fermionic"
+
+    expected_isomap = {"0": "I=0", "1": "I=1", "1h": "2I=1", "2": "I=2", "3h": "2h=3", "5h": "2h=5"}
+    filename = "{}_{}_S={}_levels.txt".format(statistics, expected_isomap[isospin], strangeness)
 
     filepath = os.path.join(basedir, filename)
     logging.info("opening {}".format(filepath))
@@ -255,7 +257,7 @@ def get_ops(args, expected_levels):
         if args.review:
             raw_input("Look OK?")
         level_num += 1
-        if level_num > threshold+3:
+        if args.threshold and level_num > threshold+3:
             logging.info("Stopping due to threshold")
             args.outfile.write("# Stopping due to threshold\n")
             break
@@ -401,8 +403,10 @@ if __name__ == "__main__":
                         default="000", help="momentum")
     parser.add_argument("-N", "--number", type=int, required=False,
                         help="number of expected levels to make")
-    # parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
-    #                     default=sys.stdout)
+    parser.add_argument("-t", "--threshold", action="store_true", required=False,
+                        help="stop after threshold")
+    parser.add_argument("-b", "--baryons", action="store_true", required=False,
+                        help="make baryons instead of mesons")
     parser.add_argument('outstub', nargs='?', type=str,
                         default=None)
     parser.add_argument("-32", "--thirtytwo", action="store_true",

@@ -46,7 +46,7 @@ baryon_reps = {"G1": ("1/2", "7/2"), "G2": ("5/2", "7/2"), "H": ("3/2", "5/2", "
 
 parity = {-1: "u", 1: "g"}
 gparity = {-1: "m", 1: "p"}
-momentums = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA", 5: "PSQ5", 6: "PSQ6"}
+momentums = {0: "AR", 1: "OA", 2: "PD", 3: "CD", 4: "OA", 5: "PSQ5", 6: "PSQ6", 7: "PSQ7", 8: "PSQ8"}
 
 subductions = {}
 subductions[("A1", "g", 1)] = ["A1"]
