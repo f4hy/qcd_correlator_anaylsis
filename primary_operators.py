@@ -12,7 +12,7 @@ from momentum_permute import all_permutations
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
 #operators_path = "/latticeQCD/raid6/bfahy/operators"
-coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_meson_operators/mom_ray_{}"
+coeffs_path = "/latticeQCD/raid1/laph/qcd_operators/meson_{}_operators/mom_ray_{}"
 
 mom_map = {"#": 2, "+": 1, "0": 0, "-": -1, "=": -2}
 
@@ -68,7 +68,7 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
     cg_map = {"0": "", "1": "CG_1 "}
     isomap = {"0": "isosinglet", "1": "isotriplet", "1h": "isodoublet", "2": "isoquintet"}
     isoterm = isomap[args.isospin]
-    coeffsdir = os.path.join(coeffs_path.format(args.momray), channel)
+    coeffsdir = os.path.join(coeffs_path.format(args.hadrontype, args.momray), channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
     expression = ".*{}_.*{}_.*|.*{}_.*{}_.*".format(p1[2], p2[2], p2[2], p1[2])
@@ -93,7 +93,7 @@ def custom_psqlevel(level, psqr, p1, p2, p1flavor, p2flavor, channel, outfile):
 
 
 def read_coeffs(momray, channel):
-    coeffsdir = os.path.join(coeffs_path.format(momray), channel)
+    coeffsdir = os.path.join(coeffs_path.format(args.hadrontype, momray), channel)
     logging.info("Looking for coeffs in {}".format(coeffsdir))
     coeffs = os.listdir(coeffsdir)
     logging.info("Found {} coeffs".format(len(coeffs)))
@@ -196,6 +196,12 @@ def swap(particle1, particle2):
 
 def get_unspecified_parameters(args):
 
+    if not args.baryon:
+        print("Select hadron type")
+        args.hadrontype = readinput.selectchoices(["meson", "baryon"], default="meson")
+    else:
+        args.hadrontype = "baryon"
+
     if not args.isospin:
         print("Select isospin")
         args.isospin = readinput.selectchoices(["0", "1", "1h", "2"], default="1")
@@ -204,7 +210,8 @@ def get_unspecified_parameters(args):
         print("Select strangeness")
         args.strangeness = readinput.selectchoices(["0", "1", "2"], default="0")
 
-    channel_list = os.listdir(coeffs_path.format(args.momray))
+
+    channel_list = os.listdir(coeffs_path.format(args.hadrontype, args.momray))
     if args.channel:
         if args.channel not in channel_list:
             logging.critical("format of input channel is not correct!"
@@ -223,7 +230,7 @@ def read_expected_levels(strangeness, isospin, channel, thirtytwo=False, mom="00
         basedir = os.path.join(expected_levels_path, "24^3_390/mom_{}".format(mom))
 
     statistics = "bosonic"
-    if args.baryons:
+    if args.hadrontype is "baryon":
         statistics = "fermionic"
 
     expected_isomap = {"0": "I=0", "1": "I=1", "1h": "2I=1", "2": "I=2", "3h": "2h=3", "5h": "2h=5"}
@@ -405,7 +412,7 @@ if __name__ == "__main__":
                         help="number of expected levels to make")
     parser.add_argument("-t", "--threshold", action="store_true", required=False,
                         help="stop after threshold")
-    parser.add_argument("-b", "--baryons", action="store_true", required=False,
+    parser.add_argument("--baryon", action="store_true", required=False,
                         help="make baryons instead of mesons")
     parser.add_argument('outstub', nargs='?', type=str,
                         default=None)
