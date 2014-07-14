@@ -53,6 +53,25 @@ names_baryons["N-1680"]   = properties("1/2", 1, None, "5/2")
 names_baryons["N-1700"]   = properties("1/2", -1, None, "3/2")
 names_baryons["N-1710"]   = properties("1/2", 1, None, "1/2")
 names_baryons["N-1720"]   = properties("1/2", 1, None, "3/2")
+names_baryons["N-1860"]   = properites("1/2", 1, None, "5/2")
+names_baryons["N-1875"]   = properties("1/2", -1, None, "3/2")
+names_baryons["N-1880"]   = properties("1/2", 1, None, "1/2")
+names_baryons["N-1895"]   = properties("1/2", -1, None, "1/2")
+names_baryons["N-1900"]   = properties("1/2", 1, None, "3/2")
+names_baryons["N-1990"]   = properties("1/2", 1, None, "7/2")
+names_baryons["N-2000"]   = properties("1/2", 1, None, "5/2")
+names_baryons["N-2040"]   = properties("1/2", 1, None, "3/2")
+names_baryons["N-2060"]   = properties("1/2", -1, None, "5/2")
+names_baryons["N-2100"]   = properties("1/2", 1, None, "1/2")
+names_baryons["N-2120"]   = properties("1/2", -1, None, "3/2")
+names_baryons["N-2190"]   = properties("1/2", -1, None, "7/2")
+names_baryons["N-2220"]   = properties("1/2", 1, None, "9/2")
+names_baryons["N-2250"]   = properties("1/2", -1, None, "9/2")
+names_baryons["N-2300"]   = properties("1/2", 1, None, "1/2")
+names_baryons["N-2570"]   = properties("1/2", -1, None, "5/2")
+names_baryons["N-2600"]   = properties("1/2", -1, None, "11/2")
+names_baryons["N-2700"]   = properties("1/2", 1, None, "13/2")
+
 # properties of lambdas
 names_baryons["Lambda"]   = properties(0, 1, None, "1/2")
 names_baryons["Lambda-1405"] = properties(0, -1, None, "1/2")
@@ -65,34 +84,62 @@ names_baryons["Lambda-1810"] = properties(0, 1, None, "1/2")
 names_baryons["Lambda-1820"] = properties(0, 1, None, "5/2")
 names_baryons["Lambda-1830"] = properties(0, -1, None, "5/2")
 names_baryons["Lambda-1890"] = properties(0, 1, None, "3/2")
+names_baryons["Lambda-2020"] = properties(0, 1, None, "7/2")
 names_baryons["Lambda-2100"] = properties(0, -1, None, "7/2")
 names_baryons["Lambda-2110"] = properties(0, 1, None, "5/2")
+names_baryons["Lambda-2325"] = properties(0, -1, None, "3/2")
+names_baryons["Lambda-2350"] = properties(0, 1, None, "9/2")
+
 # properties of deltas
 names_baryons["Delta-1232"] = properties("3/2", 1, None, "3/2")
 names_baryons["Delta-1600"] = properties("3/2", 1, None, "3/2")
 names_baryons["Delta-1620"] = properties("3/2", -1, None, "1/2")
 names_baryons["Delta-1700"] = properties("3/2", -1, None, "3/2")
+names_baryons["Delta-1750"] = properties("3/2", 1, None, "1/2")
+names_baryons["Delta-1900"] = properties("3/2", -1, None, "1/2")
 names_baryons["Delta-1905"] = properties("3/2", 1, None, "5/2")
 names_baryons["Delta-1910"] = properties("3/2", 1, None, "1/2")
 names_baryons["Delta-1920"] = properties("3/2", 1, None, "3/2")
 names_baryons["Delta-1930"] = properties("3/2", -1, None, "5/2")
+names_baryons["Delta-1940"] = properties("3/2", -1, None, "3/2")
 names_baryons["Delta-1950"] = properties("3/2", 1, None, "7/2")
+names_baryons["Delta-2000"] = properties("3/2", 1, None, "5/2")
+names_baryons["Delta-2150"] = properties("3/2", -1, None, "1/2")
+names_baryons["Delta-2200"] = properties("3/2", -1, None, "7/2")
+names_baryons["Delta-2300"] = properties("3/2", 1, None, "9/2")
+names_baryons["Delta-2350"] = properties("3/2", -1, None, "5/2")
+names_baryons["Delta-2390"] = properties("3/2", 1, None, "7/2")
+names_baryons["Delta-2400"] = properties("3/2", -1, None, "9/2")
+names_baryons["Delta-2420"] = properties("3/2", 1, None, "11/2")
+names_baryons["Delta-2750"] = properties("3/2", -1, None, "13/2")
+names_baryons["Delta-2950"] = properties("3/2", 1, None, "15/2")
 
-# names_baryons["Xi"]   = properties("1/2", 1, None, "1/2")
-# Xi-1530
-# Xi-1820
+# properties of xis
+names_baryons["Xi-1530"] = properties("1/2", 1, None, "3/2")
+names_baryons["Xi-1820"] = properties("1/2", -1, None, "3/2")
 
-# names_baryons["Omega"]   = properties(0, 1, None, "3/2")
+# properties of omega
+names_baryons["Omega"] = properties(0, 1, None, "3/2")
 
-# names_baryons["Sigma"]   = properties(1, 1, None, "3/`2")
-# Sigma-1385
-# Sigma-1660
-# Sigma-1670
-# Sigma-1750
-# Sigma-1775
-# Sigma-1915
-# Sigma-1940
-# Sigma-2030
+# properties of sigma
+names_baryons["Sigma"] = properties(1, 1, None, "1/2")
+names_baryons["Sigma-1385"] = properties(1, 1, None, "3/2")
+names_baryons["Sigma-1580"] = properties(1, -1, None, "3/2")
+names_baryons["Sigma-1620"] = properties(1, -1, None, "1/2")
+names_baryons["Sigma-1660"] = properties(1, 1, None, "1/2")
+names_baryons["Sigma-1670"] = properties(1, -1, None, "3/2")
+names_baryons["Sigma-1750"] = properties(1, -1, None, "1/2")
+names_baryons["Sigma-1770"] = properties(1, 1, None, "1/2")
+names_baryons["Sigma-1775"] = properties(1, -1, None, "5/2")
+names_baryons["Sigma-1840"] = properties(1, 1, None, "3/2")
+names_baryons["Sigma-1880"] = properties(1, 1, None, "1/2")
+names_baryons["Sigma-1915"] = properties(1, 1, None, "5/2")
+names_baryons["Sigma-1940"] = properties(1, -1, None, "3/2")
+names_baryons["Sigma-2000"] = properties(1, -1, None, "1/2")
+names_baryons["Sigma-2030"] = properties(1, 1, None, "7/2")
+names_baryons["Sigma-2070"] = properties(1, 1, None, "5/2")
+names_baryons["Sigma-2080"] = properties(1, 1, None, "3/2")
+names_baryons["Sigma-2100"] = properties(1, -1, None, "7/2")
 
 
 meson_reps = {"A1": (0, 4), "A2": (3, 6), "E": (2, 4, 5, 6), "T1": (1, 3, 4), "T2": (2, 3, 4, 5)}
