@@ -42,7 +42,57 @@ names["K3star"]   = properties("1/2", 1, None, 3)
 names["K0star"]   = properties("1/2", 1, None, 0)
 # Baryon names ['I', 'P', 'G', "spin"]
 names_baryons = {}
+# Baryons have different properties for excited versions
 names_baryons["N"]   = properties("1/2", 1, None, "1/2")
+names_baryons["N-1440"]   = properties("1/2", 1, None, "1/2")
+names_baryons["N-1520"]   = properties("1/2", -1, None, "3/2")
+names_baryons["N-1535"]   = properties("1/2", -1, None, "1/2")
+names_baryons["N-1650"]   = properties("1/2", -1, None, "1/2")
+names_baryons["N-1675"]   = properties("1/2", -1, None, "5/2")
+names_baryons["N-1680"]   = properties("1/2", 1, None, "5/2")
+names_baryons["N-1700"]   = properties("1/2", -1, None, "3/2")
+names_baryons["N-1710"]   = properties("1/2", 1, None, "1/2")
+names_baryons["N-1720"]   = properties("1/2", 1, None, "3/2")
+# properties of lambdas
+names_baryons["Lambda"]   = properties(0, 1, None, "1/2")
+names_baryons["Lambda-1405"] = properties(0, -1, None, "1/2")
+names_baryons["Lambda-1520"] = properties(0, -1, None, "3/2")
+names_baryons["Lambda-1600"] = properties(0, 1, None, "1/2")
+names_baryons["Lambda-1670"] = properties(0, -1, None, "1/2")
+names_baryons["Lambda-1690"] = properties(0, -1, None, "3/2")
+names_baryons["Lambda-1800"] = properties(0, -1, None, "1/2")
+names_baryons["Lambda-1810"] = properties(0, 1, None, "1/2")
+names_baryons["Lambda-1820"] = properties(0, 1, None, "5/2")
+names_baryons["Lambda-1830"] = properties(0, -1, None, "5/2")
+names_baryons["Lambda-1890"] = properties(0, 1, None, "3/2")
+names_baryons["Lambda-2100"] = properties(0, -1, None, "7/2")
+names_baryons["Lambda-2110"] = properties(0, 1, None, "5/2")
+# properties of deltas
+names_baryons["Delta-1232"] = properties("3/2", 1, None, "3/2")
+names_baryons["Delta-1600"] = properties("3/2", 1, None, "3/2")
+names_baryons["Delta-1620"] = properties("3/2", -1, None, "1/2")
+names_baryons["Delta-1700"] = properties("3/2", -1, None, "3/2")
+names_baryons["Delta-1905"] = properties("3/2", 1, None, "5/2")
+names_baryons["Delta-1910"] = properties("3/2", 1, None, "1/2")
+names_baryons["Delta-1920"] = properties("3/2", 1, None, "3/2")
+names_baryons["Delta-1930"] = properties("3/2", -1, None, "5/2")
+names_baryons["Delta-1950"] = properties("3/2", 1, None, "7/2")
+
+# names_baryons["Xi"]   = properties("1/2", 1, None, "1/2")
+# Xi-1530
+# Xi-1820
+
+# names_baryons["Omega"]   = properties(0, 1, None, "3/2")
+
+# names_baryons["Sigma"]   = properties(1, 1, None, "3/`2")
+# Sigma-1385
+# Sigma-1660
+# Sigma-1670
+# Sigma-1750
+# Sigma-1775
+# Sigma-1915
+# Sigma-1940
+# Sigma-2030
 
 
 meson_reps = {"A1": (0, 4), "A2": (3, 6), "E": (2, 4, 5, 6), "T1": (1, 3, 4), "T2": (2, 3, 4, 5)}
@@ -102,7 +152,7 @@ def particle_name(name):
     if basename in names.keys():
         return names[basename]
     elif basename in names_baryons.keys():
-        return names_baryons[basename]
+        return names_baryons[name]
     else:
         logging.critical("I don't know understand the particle {}".format(basename))
         raise NotImplementedError("Particle name unknown")
