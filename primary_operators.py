@@ -196,11 +196,9 @@ def swap(particle1, particle2):
 
 def get_unspecified_parameters(args):
 
-    if not args.baryon:
+    if not args.hadrontype:
         print("Select hadron type")
         args.hadrontype = readinput.selectchoices(["meson", "baryon"], default="meson")
-    else:
-        args.hadrontype = "baryon"
 
     if not args.isospin:
         print("Select isospin")
@@ -287,7 +285,6 @@ def get_ops(args, expected_levels):
                 single_hadron(ops)
             continue
         found_one = False
-        print opset
         for op in opset:
             p1, p2 = op
             if p1[3] is None or p2[3] is None:
@@ -320,7 +317,6 @@ def get_ops(args, expected_levels):
                 found_one = True
                 continue
             oplines = custom_opline(level, mom1, mom2, p1, p2, flavor1, flavor2, args.channel, args.outfile)
-            print oplines
             if oplines is None:
                 logging.warn("failed to make this op {} {}".format(p1, p2))
                 continue
@@ -346,7 +342,6 @@ def get_ops(args, expected_levels):
                         already_added.append(philine)
         if not found_one:
             logging.critical("Did not find any for this level {} ABORT!!".format(level))
-            print flavor1, flavor2
             if (flavor1, flavor2) == ("eta", "pion"):
                 logging.critical("This is an eta_pion state we have no ops for!!")
                 args.outfile.write("# This is an eta_pion state we have no coeffs for!!\n".format(level_num))
@@ -435,6 +430,7 @@ if __name__ == "__main__":
     args.momray = args.momentum.replace("1","+").replace("2","#")
     print args.momray
 
+    args.hadrontype = None
     get_unspecified_parameters(args)
 
     psqr = sum(int(i)**2 for i in args.momentum)
