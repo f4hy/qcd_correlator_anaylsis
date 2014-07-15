@@ -1282,7 +1282,7 @@ xi_cubicdiag["G"].append("SS_0")
 xi_cubicdiag["G"].append("SS_10")
 # Baryons
 
-nucelon_sh = defaultdict(list)
+nucleon_sh = defaultdict(list)
 nucleon_sh["G1g"].append("SD_12")
 nucleon_sh["G1g"].append("DDI_5")
 nucleon_sh["G1g"].append("DDI_9")
@@ -1729,21 +1729,40 @@ scaleomega_sh["G1u"].append("SS_0")
 scaleomega_sh["Hu"].append("SS_0")
 scaleomega_sh["Hu"].append("SS_1")
 
-def getprunedops(isospin, optype):
+def getprunedmesons(isospin, momtype):
     sh = {"1": isovector_sh, "1h": kaon_sh, "0": isoscalar_sh}
     atrest = {"1": isovector_atrest, "1h": kaon_atrest, "0": isoscalar_atrest}
     onaxis = {"1": isovector_onaxis, "1h": kaon_onaxis, "0": isoscalar_onaxis}
     planar = {"1": isovector_planardiag, "1h": kaon_planardiag, "0": isoscalar_planardiag}
     cubic = {"1": isovector_cubicdiag, "1h": kaon_cubicdiag, "0": isoscalar_cubicdiag}
 
-    if optype == "sh":
+    if momtype == "sh":
         return sh[isospin]
-    if optype == "atrest" or optype == "AR":
+    if momtype == "atrest" or momtype == "AR":
         return atrest[isospin]
-    if optype == "onaxis" or optype == "OA":
+    if momtype == "onaxis" or momtype == "OA":
         return onaxis[isospin]
-    if optype == "planar" or optype == "PD":
+    if momtype == "planar" or momtype == "PD":
         return planar[isospin]
-    if optype == "cubic" or optype == "CD":
+    if momtype == "cubic" or momtype == "CD":
         return cubic[isospin]
-    raise RuntimeError("Invalid optype/isospin")
+    raise RuntimeError("Invalid momtype/isospin")
+
+def getprunedbaryons(name, momtype):
+    sh = {"nucleon": nucleon_sh, "delta": delta_sh, "omega": omega_sh, "sigma": sigma_sh}
+    atrest = {"nucleon": nucleon_atrest, "delta": delta_atrest, "omega": omega_atrest, "sigma": sigma_atrest}
+    onaxis = {"nucleon": nucleon_onaxis, "delta": delta_onaxis, "omega": omega_onaxis, "sigma": sigma_onaxis}
+    planar = {"nucleon": nucleon_planardiag, "delta": delta_planardiag, "omega": omega_planardiag, "sigma": sigma_planardiag}
+    cubic = {"nucleon": nucleon_cubicdiag, "delta": delta_cubicdiag, "omega": omega_cubicdiag, "sigma": sigma_cubicdiag}
+
+    if momtype == "sh":
+        return sh[isospin]
+    if momtype == "atrest" or momtype == "AR":
+        return atrest[isospin]
+    if momtype == "onaxis" or momtype == "OA":
+        return onaxis[isospin]
+    if momtype == "planar" or momtype == "PD":
+        return planar[isospin]
+    if momtype == "cubic" or momtype == "CD":
+        return cubic[isospin]
+    raise RuntimeError("Invalid request to pruned baryons")

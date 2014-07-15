@@ -7,7 +7,8 @@ import re
 import irreps
 import sys
 import particle_operators
-from prunedops import getprunedops
+from prunedops import getprunedmesons
+from prunedops import getprunedbaryons
 from momentum_permute import all_permutations
 
 expected_levels_path = "/home/colin/research/notes/hadron_spectrum/expectedlevels/final_results"
