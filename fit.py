@@ -83,7 +83,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         cov = covariance_matrix(correlator, tmin, tmax+1)
         inv_cov = bestInverse(cov)
         aoc = np.array([ave_cor[t] for t in fitrange])
-        logging.debug("guess {}".format(str(guess)))
+        #logging.debug("guess {}".format(str(guess)))
 
         def cov_fun(g):
             """ Function to be minizied. computed using matrix mult"""
@@ -107,7 +107,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         def clamp(n, minn, maxn):
                 return max(min(maxn, n), minn)
         bounded_guess = [clamp(g, b[0], b[1]) for g, b in zip(guess, fn.bounds)]
-        logging.debug("guess {}, bounded guess {}".format(repr(guess), repr(bounded_guess)))
+        #logging.debug("guess {}, bounded guess {}".format(repr(guess), repr(bounded_guess)))
 
         m = fn.custom_minuit(aoc, inv_cov, x, guess=bounded_guess)
         #m.set_strategy(2)
@@ -129,7 +129,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
 
     boot_params = []
+    failcount = 0
+    attempted = 0
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub):
+        attempted +=1
         if options.reguess:
             newguess = fn.starting_guess(strap, tmax, tmin)
         else:
@@ -137,8 +140,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         fitted_params = cov_fit(strap, newguess)
         if fitted_params is not None:
             boot_params.append(fitted_params)
+            logging.debug("bootstrap converged")
         else:
             logging.error("bootstrap failed to converge!")
+            failcount+=1
+            logging.debug("fails:{} attempts:{}, ratio:{}".format(failcount, attempted, failcount/float(attempted)))
+            if failcount/float(attempted) > 0.15 and attempted > 40:
+                raise InvalidFit("more than 20% of boostraps failed to converge")
 
     logging.warn("{} bootstraps did not converge!".format(bootstraps-len(boot_params)))
     if len(boot_params) < bootstraps * 0.9:
@@ -385,6 +393,7 @@ def best_fit_range(fn, cor, options=None):
 
 def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False, options=None):
     fit_ranges = best_fit_range(funct, cor, options=options)
+    logging.info("trying ranges {}".format(repr(fit_ranges)))
     for tmin, tmax in fit_ranges:
         logging.info("Trying fit range {}, {}".format(tmin, tmax))
         try:
@@ -396,8 +405,9 @@ def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=F
                               bootstraps=bootstraps, options=options)
             logging.info("Auto Fit sucessfully!")
             return  # (tmin, tmax) + results  # Need to return what fit range was done
-        except RuntimeError:
+        except RuntimeError as e:
             logging.warn("Fit range {} {} failed, trying next best".format(tmin, tmax))
+            logging.warn("errored with {}".format(e))
             continue
 
 
