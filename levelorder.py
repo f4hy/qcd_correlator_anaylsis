@@ -27,7 +27,8 @@ def format_fit_results(filewild):
                 txt = infile.read()
                 if txt == "":
                     logging.debug("empty log file!")
-                    break
+                    level+=1
+                    continue
                 if "mass2" not in txt:
                     comment = " # single exp fit"
                 mass, masserror = re.findall("mass .*?(\d+\.\d+).*?(\d+\.\d+)", txt)[0]
