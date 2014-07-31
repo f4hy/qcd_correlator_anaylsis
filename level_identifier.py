@@ -65,7 +65,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
         j = (plot_index-1) % cols
         logging.info("making plot {} {} {}".format(plot_index, i, j))
         if not args.seperate:
-            if len(plots[:maxplots]) <= cols:
+            if len(plots[:maxplots]) <= cols or cols == 1:
                 ax=layout[j]
             else:
                 ax=layout[i][j]
