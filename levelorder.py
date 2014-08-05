@@ -2,7 +2,8 @@
 import logging
 import argparse
 import re
-
+import os
+import glob
 
 def print_results(results):
     for r in results:
@@ -18,7 +19,11 @@ def format_fit_results(filewild):
 
     results = []
     level = 0
-    while True:
+    fitfiles = glob.glob(filewild.format("*"))
+    def get_level(i):
+        return int(re.search(r'level(\d+)', i).group(1))
+    levels = sorted([get_level(i) for i in fitfiles])
+    for level in levels:
         try:
             filename = filewild.format(level)
             logging.debug("opening file {}".format(filename))
@@ -27,7 +32,6 @@ def format_fit_results(filewild):
                 txt = infile.read()
                 if txt == "":
                     logging.debug("empty log file!")
-                    level+=1
                     continue
                 if "mass2" not in txt:
                     comment = " # single exp fit"
@@ -37,12 +41,10 @@ def format_fit_results(filewild):
 
         except IOError:
             logging.debug("No file {}".format(filename))
-            break
+            continue
         except IndexError:
             logging.debug("File {} does not have fit results".format(filename))
-            break
-        level += 1
-    #print_results(results)
+            continue
     print_order(results)
 
 
