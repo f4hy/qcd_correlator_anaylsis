@@ -250,18 +250,13 @@ def boxplot_files():
         sdfs = [(i,dfs[i]) for i in ordering]
     else:
         sdfs = [(i,dfs[i]) for i in labels]
-        
+
     sdfs = [i for i in sdfs if i[1].mass.std() < args.prune]
     if args.maxlevels:
         sdfs = sdfs[:args.maxlevels]
 
-    if args.experiment and args.single:
-        logging.info("experiment and single, so only plot the singles")
-
-        sdfs = [(l,df) for l,df in sdfs if int(l) in args.single]
-
     sorted_labels = [i[0] for i in sdfs]
-
+    plotindex = -1
     for index, (label, df) in enumerate(sdfs):
 
         # for index, label in enumerate(labels):
@@ -292,29 +287,38 @@ def boxplot_files():
                 logging.info("adding level{} index {} to single_index".format(levelnum, index))
                 single_indecies.append(index)
                 circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r', fill=False))
-        else:
+        else:                   # not seperate
+            if args.experiment and args.color is not None:
+                levelnum=int(label)
+                if args.color[levelnum+1] < 0.5:
+                    continue
+                plotindex += 1
+            else:
+                plotindex = index
+
             med = lattice_scale(df.mass.median())
             width = lattice_scale(df.mass.std())
             values = lattice_scale(df.mass.values)
 
-            offset = 0.25+((1-(index+1) % 3) * 0.33)#+(index/3)*0.05
-            if index%3 == 0 and index%2==0 :
-                offset += (index/3)*0.03
-            if index%3 == 2 and index%2==0:
-                offset += (index/3)*0.03
-            if index%3 == 1 and index%2==0:
-                offset -= (index/3)*0.03
+            offset = 0.25+((1-(plotindex+1) % 3) * 0.33)#+(plotindex/3)*0.05
+            if plotindex%3 == 0 and plotindex%2==0 :
+                offset += (plotindex/3)*0.03
+            if plotindex%3 == 2 and plotindex%2==0:
+                offset += (plotindex/3)*0.03
+            if plotindex%3 == 1 and plotindex%2==0:
+                offset -= (plotindex/3)*0.03
             prevtextloc = med if med-prevtextloc > 0.01 else prevtextloc+0.01
 
-            textloc = (-1.2 if (index + 1) % 3 > 0 else 1, prevtextloc)
+            textloc = (-1.2 if (plotindex + 1) % 3 > 0 else 1, prevtextloc)
             plots[label] = plt.boxplot(values, widths=0.5, patch_artist=True,
                                        positions=[offset])
             hide = not args.clean
-            plots[label]["boxes"][0].set_facecolor(color)
-            plots[label]["boxes"][0].set_linewidth(1)
-            plots[label]["boxes"][0].set_color(color)
-            plots[label]["boxes"][0].set_alpha(max(1.0-width*2.0, 0.1))
-            plots[label]["boxes"][0].set_zorder(-1*width)
+            b = plots[label]["boxes"][0]
+            b.set_facecolor(color)
+            b.set_linewidth(1)
+            b.set_color(color)
+            b.set_alpha(max(1.0-width*2.0, 0.1))
+            b.set_zorder(-1*width)
             plt.setp(plots[label]["whiskers"], color=color, visible=hide)
             plt.setp(plots[label]["fliers"], color=color, visible=hide)
             plt.setp(plots[label]["caps"], color=color, visible=hide)
@@ -322,6 +326,11 @@ def boxplot_files():
             if not args.experiment:
                 ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset-0.1, med),
                             xytext=textloc, arrowprops=dict(arrowstyle="->", fc="0.6"))
+            if args.experiment and args.color is not None and 1.0 > args.color[levelnum+1]:
+                b.set_linewidth(2)
+                b.set_color('b')
+                b.set_facecolor('c')
+
 
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
@@ -453,15 +462,14 @@ if __name__ == "__main__":
             logging.error("seperate color mode requires an ordering")
             parser.print_help()
             parser.exit()
-        
-        
+
     if args.single:
         args.single = get_singles(args.single)
 
     if args.color:
         args.color = get_colors(args.color)
 
-    if args.experiment and args.single:
+    if args.experiment and args.color is not None:
         logging.info("experiemental and single, so only ploting the singles against experiment")
 
     if args.verbose:
