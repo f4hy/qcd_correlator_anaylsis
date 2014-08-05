@@ -39,6 +39,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
     df = read_file(inputfile).apply(square)
     ops = list(set([i/1000 for i in df.index]))
     levels = list(set([(i % 1000) for i in df.index]))
+    logging.info("Read {} levels and {} ops".format(len(levels), len(ops)))
     N = int(np.sqrt(len(df)))
     largest_zfactor = max(df.identities)
     untranslated = opnames
@@ -112,6 +113,7 @@ def make_bar_plot(inputfile, cols, output_stub, mode, ns, opnames=None, maxplots
             color = "b"
             if plot_index <= ns:
                 color = "g"
+            levels = range(1,len(values)+1)
             plot[(i, j)] = ax.bar(levels, values, 1, color=color, yerr=errors, ecolor="r")
         ax.set_ylim([0, np.ceil(largest_zfactor)])
         ax.set_xlim(xmin=1)
