@@ -102,7 +102,9 @@ def sh_optimized_zfacts():
         logging.info("Saving shcandidates to {}".format(args.output_stub+".singleresonances"))
         with open(args.output_stub+".singleresonances", 'w') as resfile:
             for level,d in OptZ.iteritems():
-                resfile.write("{}, {}\n".format(level, np.argmax(d)))
+                fixd = np.nan_to_num(d)
+                if max(fixd) > 0:
+                    resfile.write("{}, {}\n".format(level, np.argmax(fixd)))
 
         plt.rcParams.update({'font.size': 10})
         fig.set_size_inches(18.5,10.5)
