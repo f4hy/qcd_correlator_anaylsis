@@ -38,6 +38,9 @@ def format_fit_results(filewild):
         except IOError:
             logging.debug("No file {}".format(filename))
             break
+        except IndexError:
+            logging.debug("File {} does not have fit results".format(filename))
+            break
         level += 1
     #print_results(results)
     print_order(results)
