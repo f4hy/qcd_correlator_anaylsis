@@ -47,16 +47,21 @@ def determine_type(txt):
     firstline = txt.readline()
     txt.seek(0)
     if "(" in firstline and ")" in firstline:
+        logging.debug("paren_complex file type detected")
         return "paren_complex"
     if "," in firstline:
+        logging.debug("comma file type detected")
         return "comma"
+    logging.debug("space sperated file assumed")
     return "space_seperated"
+
 
 def get_singles(singlefilename):
     if not os.path.isfile(singlefilename):
         logging.warn("Single file missing, ignoring")
         return []
     else:
+        logging.debug("reading {} for levels which are singles".format(singlefilename))
         txt = lines_without_comments(singlefilename)
         df = pd.read_csv(txt, sep=",", delimiter=",", skipinitialspace=True, names=["index", "levelnum"])
         return list(df.levelnum.values)
@@ -67,15 +72,15 @@ def get_colors(colorfilename):
         logging.warn("color file missing, ignoring")
         return None
     else:
+        logging.debug("reading {} for sh optimize overlaps".format(colorfilename))
         txt = lines_without_comments(colorfilename)
         df = pd.read_csv(txt, sep=",", delimiter=",", skipinitialspace=True,
                          index_col=0, header=None)
         with open(args.ordering) as orderfile:
-            ordering = [int(i.strip())+1 for i in orderfile.readlines()] # ofset by 1 so +1
+            ordering = [int(i.strip())+1 for i in orderfile.readlines()]  # ofset by 1 so +1
         todrop = [i for i in df.columns if i not in ordering]
         df = df.drop(todrop, axis=1)
         return (df.transpose()/df.max(axis=1)).max(axis=1)
-
 
 
 def read_file(filename):
@@ -93,20 +98,6 @@ def read_file(filename):
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=names)
     return df
-
-
-def get_fit(filename):
-    with open(filename) as f:
-        for line in f:
-            if "fit" in line:
-                logging.info("found fit info: {}".format(line))
-                fitrange = re.search("\(([0-9]+),([0-9]+)\)", line)
-                tmin, tmax = int(fitrange.group(1)), int(fitrange.group(2))
-                mass = float(re.search("m=(.*?) ", line).group(1))
-                error = float(re.search("e=(.*?) ", line).group(1))
-                qual = re.search("qual:(.*)", line).group(1)
-                return (tmin, tmax, mass, error, qual)
-    raise RuntimeError("No fit info")
 
 
 def label_names_from_filelist(filelist):
@@ -133,25 +124,6 @@ def label_names_from_filelist(filelist):
     return names
 
 
-def add_fit_info(filename, ax=None):
-    if not ax:
-        ax = plt
-
-    try:
-        tmin, tmax, mass, error, quality = get_fit(filename)
-        ax.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)))
-        ax.plot(range(tmin, tmax+1), [mass+error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-        ax.plot(range(tmin, tmax+1), [mass-error]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-        digits = -1.0*round(math.log10(error))
-        formated_error = int(round(error * (10**(digits + 1))))
-        formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
-        # ax.annotate("{m}({e})".format(m=formated_mass, e=formated_error), xy=(tmax,mass),
-        #              xytext=(tmax+1, mass+error))
-        return "{m}({e}) qual:{q:.4}".format(m=formated_mass, e=formated_error, q=quality)
-    except RuntimeError:
-        logging.error("File {} had no fit into".format(filename))
-
-
 def format_error_string(value, error):
     digits = -1.0*round(math.log10(error))
     if np.isnan(digits):
@@ -160,7 +132,9 @@ def format_error_string(value, error):
     formated_value = "{m:.{d}}".format(d=int(digits) + 1, m=value)
     return "{m}({e})".format(m=formated_value, e=formated_error)
 
+
 def scale_params():
+    logging.info("setting scale using {}".format(args.scale))
     if args.scale == "none":
         return "$a_t$E", 0.6
     if args.scale == "omega":
@@ -172,7 +146,7 @@ def scale_params():
 
 
 def experimental_scale(i):
-    if not args.experiment or args.scale == "none":
+    if args.scale == "none":
         return i
     else:
         if args.scale == "omega":
@@ -183,32 +157,31 @@ def experimental_scale(i):
             raise NotImplementedError("Have not implemented {}".format(args.scale))
 
 
-
 def lattice_scale(i):
     if args.scale == "none":
         return i
     if args.scale == "omega":
-        lattice_omegamass=0.27803
+        lattice_omegamass = 0.27803
         return (5.0 * i) / (3.0 * lattice_omegamass)
     if args.scale == "kaon":
-        lattice_omegamass=0.083855
+        lattice_omegamass = 0.083855
         return i / 0.083855
     else:
         raise NotImplementedError("Have not implemented {}".format(args.scale))
 
 
-
 def add_experiment_results(experimental_results, f, ax):
+    logging.info("Adding experimental results from {}".format(experimental_results))
     with open(experimental_results, "r") as expfile:
         for line in expfile:
             if line.startswith("#"):
                 continue
-            name, mass, uncertainty = [i.strip() for i in  line.split(",")]
+            name, mass, uncertainty = [i.strip() for i in line.split(",")]
             smass = experimental_scale(float(mass))
             suncertainty = experimental_scale(float(uncertainty))
-            loc,tloc = -1.6,-1.8
+            loc, tloc = -1.6, -1.8
             if "_3" in name:
-                loc,tloc = -1.45, -0.9
+                loc, tloc = -1.45, -0.9
             rect = plt.Rectangle((loc, smass-suncertainty), 0.5, 2*suncertainty,
                                  fc='r', fill=True, linewidth=1, color='r')
             f.gca().add_artist(rect)
@@ -216,21 +189,21 @@ def add_experiment_results(experimental_results, f, ax):
     plt.xlim(-2.0, 1.0)
     label, ymax = scale_params()
     plt.ylim(0, ymax)
-    plt.plot([-0.5,-0.5], [0,ymax], 'k-', lw=2, )
+    plt.plot([-0.5, -0.5], [0, ymax], 'k-', lw=2, )
     ax.annotate("Experiment", xy=(-1.5, 0.1), fontsize=22, fontweight='bold')
     ax.annotate("Lattice", xy=(0.2, 0.1), fontsize=22, fontweight='bold')
     ax.set_ylabel(label, fontweight='bold', fontsize=22)
 
+
 def boxplot_files():
-    markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
-    # colors, white sucks
+    logging.info("makeing boxplots")
     mpl.rcParams['axes.linewidth'] = 5.0
+    # colors, white sucks
     colors = [c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "k"]
-    cm = plt.get_cmap("winter_r") # colormap to use
+    cm = plt.get_cmap("winter_r")  # colormap to use
     colors.append("#ffa500")
     plots = {}
     labels = label_names_from_filelist(args.files)
-    #labels = [translate(l) for l in labels]
     circles = []
     single_indecies = []
     outline_single = []
@@ -246,10 +219,10 @@ def boxplot_files():
     if args.ordering:
         with open(args.ordering) as orderfile:
             ordering = [i.strip() for i in orderfile.readlines()]
-
-        sdfs = [(i,dfs[i]) for i in ordering]
+            logging.debug("Using ordering {}".format(",".join(ordering)))
+        sdfs = [(i, dfs[i]) for i in ordering]
     else:
-        sdfs = [(i,dfs[i]) for i in labels]
+        sdfs = [(i, dfs[i]) for i in labels]
 
     sdfs = [i for i in sdfs if i[1].mass.std() < args.prune]
     if args.maxlevels:
@@ -262,23 +235,26 @@ def boxplot_files():
         # for index, label in enumerate(labels):
         color = "b" if args.experiment else colors[index % len(colors)]
 
-
         if args.seperate:
+            logging.info("Ploting staircase")
             data.append(lattice_scale(df.mass.values))
             try:
-                levelnum=int(label)
+                levelnum = int(label)
             except ValueError:
                 logging.error("Can not level order, inputs are not levels")
                 continue
             if args.color is not None:
                 if args.splitbox:
-                    lower = df.mass.quantile(q=0.25)
-                    upper = df.mass.quantile(q=0.75)
-                    circles.append(Rectangle((index+0.75, lower), width=0.5, height=(upper-lower)*args.color[levelnum+1], color='b', fill=True))
+                    lower = lattice_scale(df.mass.quantile(q=0.25))
+                    upper = lattice_scale(df.mass.quantile(q=0.75))
+                    circles.append(Rectangle((index+0.75, lower), width=0.5,
+                                             height=(upper-lower)*args.color[levelnum+1], color='b', fill=True))
                 elif args.outline:
                     if args.color[levelnum+1] == 1.0:
+                        logging.debug("marking {} as single".format(index))
                         single_indecies.append(index)
-                    if 1.0 > args.color[levelnum+1] > 0.5:
+                    if 1.0 > args.color[levelnum+1] > args.mixing:
+                        logging.debug("marking {} as single-mix".format(index))
                         outline_single.append(index)
 
                 else:
@@ -286,11 +262,14 @@ def boxplot_files():
             if levelnum in args.single:
                 logging.info("adding level{} index {} to single_index".format(levelnum, index))
                 single_indecies.append(index)
-                circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r', fill=False))
+                circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r',
+                                       fill=False))
         else:                   # not seperate
+            logging.debug("Ploting vertical boxplot")
             if args.experiment and args.color is not None:
-                levelnum=int(label)
-                if args.color[levelnum+1] < 0.5:
+                levelnum = int(label)
+                if args.color[levelnum+1] < args.mixing:
+                    logging.debug("No significant single mixing, skipping")
                     continue
                 plotindex += 1
             else:
@@ -300,12 +279,12 @@ def boxplot_files():
             width = lattice_scale(df.mass.std())
             values = lattice_scale(df.mass.values)
 
-            offset = 0.25+((1-(plotindex+1) % 3) * 0.33)#+(plotindex/3)*0.05
-            if plotindex%3 == 0 and plotindex%2==0 :
+            offset = 0.25+((1-(plotindex+1) % 3) * 0.33)  # +(plotindex/3)*0.05
+            if plotindex % 3 == 0 and plotindex % 2 == 0:
                 offset += (plotindex/3)*0.03
-            if plotindex%3 == 2 and plotindex%2==0:
+            if plotindex % 3 == 2 and plotindex % 2 == 0:
                 offset += (plotindex/3)*0.03
-            if plotindex%3 == 1 and plotindex%2==0:
+            if plotindex % 3 == 1 and plotindex % 2 == 0:
                 offset -= (plotindex/3)*0.03
             prevtextloc = med if med-prevtextloc > 0.01 else prevtextloc+0.01
 
@@ -326,17 +305,22 @@ def boxplot_files():
             if not args.experiment:
                 ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset-0.1, med),
                             xytext=textloc, arrowprops=dict(arrowstyle="->", fc="0.6"))
-            if args.experiment and args.color is not None and 1.0 > args.color[levelnum+1]:
-                b.set_linewidth(2)
-                b.set_color('b')
-                b.set_facecolor('c')
-
+            if args.experiment:
+                if args.color is not None and 1.0 > args.color[levelnum+1]:
+                    logging.debug("marking {} as single-mix".format(index))
+                    b.set_linewidth(2)
+                    b.set_color('b')
+                    b.set_facecolor('c')
+                    outlinecolor = b
+                else:
+                    singlecolor = b
+                    b.set_alpha(1)
 
     if args.seperate:
         splot = plt.boxplot(data, widths=0.5, patch_artist=True)
-        for i,b in enumerate(splot["boxes"]):
+        for i, b in enumerate(splot["boxes"]):
             if args.color is not None and not args.splitbox and not args.outline:
-                color = cm(mycolors[i]) # colormap
+                color = cm(mycolors[i])  # colormap
             else:
                 color = 'c'
             b.set_linewidth(2)
@@ -355,11 +339,12 @@ def boxplot_files():
             if i not in outline_single and i not in single_indecies:
                 normal = b
         if args.clean:
+            logging.debug("cleaning up, removing whiskers")
             plt.setp(splot["whiskers"], visible=False)
             plt.setp(splot["fliers"], visible=False)
             plt.setp(splot["caps"], visible=False)
             plt.setp(splot["medians"], visible=False)
-            plt.setp( ax.get_xticklabels(), visible=False)
+            plt.setp(ax.get_xticklabels(), visible=False)
         else:
             xticknames = plt.setp(ax, xticklabels=sorted_labels)
             plt.setp(xticknames, rotation=45, fontsize=8)
@@ -380,27 +365,33 @@ def boxplot_files():
     if args.yrange:
         plt.ylim(args.yrange)
     else:
-        plt.ylim((0,ymax))
+        logging.debug("setting yrange to 0,{}".format(ymax))
+        plt.ylim((0, ymax))
     ax.set_yticks(np.arange(int(ax.get_ylim()[0]), int(ax.get_ylim()[1]), 1))
 
     if args.outline:
-        plt.legend([singlecolor, normal, outlinecolor], ["single-hadron dominated", "two-hadron dominated", "significant mixing"],
+        legend_labels = ["single-hadron dominated", "two-hadron dominated", "significant mixing"]
+        plt.legend([singlecolor, normal, outlinecolor], legend_labels,
                    fontsize=30, loc=2)
         leg = plt.legend(fancybox=True, shadow=True)
-
+    if args.experiment and args.color is not None:
+        legend_labels = ["two-hadron dominated", "significant mixing"]
+        plt.legend([singlecolor, outlinecolor], legend_labels,
+                   fontsize=30, loc=2)
+        leg = plt.legend(fancybox=True, shadow=True)
 
     if args.title:
         f.suptitle(args.title.replace("_", " "), fontsize=24)
 
     if args.threshold:
-        plt.plot([-2, 200], [args.threshold, args.threshold], color='r', linestyle='--', linewidth=2)
+        scaled_thresh = experimental_scale(args.threshold)
+        logging.info("Drawing line for 3/4 particle threshold at {} {}".format(scaled_thresh, args.threshold))
+        plt.plot([-2, 200], [scaled_thresh, scaled_thresh], color='r', linestyle='--', linewidth=2)
 
     if(args.output_stub):
         f.set_size_inches(19.2, 12.0)
         plt.rcParams.update({'font.size': 24})
         f.set_dpi(100)
-        #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
-        #plt.tight_layout()
         logging.info("Saving plot to {}".format(args.output_stub+".png"))
         plt.savefig(args.output_stub+".png")
         # logging.info("Saving plot to {}".format(args.output_stub+".eps"))
@@ -434,6 +425,8 @@ if __name__ == "__main__":
                         help="display without outliers or wiskers")
     parser.add_argument("-3", "--threshold", type=float, required=False,
                         help="Draw a line where 3 particle threshold is")
+    parser.add_argument("-m", "--mixing", type=float, required=False, default=0.75,
+                        help="Draw a line where 3 particle threshold is")
     parser.add_argument("-n", "--maxlevels", type=int, required=False,
                         help="dont plot more  than this many levels")
     parser.add_argument("-p", "--prune", type=float, required=False, default=1e10,
@@ -452,12 +445,18 @@ if __name__ == "__main__":
                         help='files to plot')
     args = parser.parse_args()
 
+    if args.verbose:
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        logging.debug("Verbose debuging mode activated")
+    else:
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
     if args.experiment and args.seperate:
         logging.error("Comaparison to experimental results doesn't work in seperate mode'")
         parser.print_help()
         parser.exit()
 
-    if args.seperate and  args.color:
+    if args.seperate and args.color:
         if not args.ordering:
             logging.error("seperate color mode requires an ordering")
             parser.print_help()
@@ -471,11 +470,5 @@ if __name__ == "__main__":
 
     if args.experiment and args.color is not None:
         logging.info("experiemental and single, so only ploting the singles against experiment")
-
-    if args.verbose:
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-        logging.debug("Verbose debuging mode activated")
-    else:
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     boxplot_files()
