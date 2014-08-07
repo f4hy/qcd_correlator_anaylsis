@@ -210,7 +210,6 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         if seperate:
             logging.info("plotting {}  {}, {}".format(label, i, j))
             axe.set_title(label)
-
         # Do a Tmin plot
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
@@ -260,6 +259,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
 
     if title:
         f.suptitle(title, **fontsettings)
+
+    f.canvas.set_window_title(files[0])
 
     if not seperate:
         leg = plt.legend(fancybox=True, shadow=True)
