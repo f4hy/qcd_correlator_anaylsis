@@ -171,6 +171,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         f, layout = plt.subplots(nrows=rows, ncols=cols, sharey=True, sharex=True, squeeze=False)
     else:
         f, axe = plt.subplots(1)
+        axe.tick_params(axis='both', which='major', labelsize=20)
         axe.set_xlabel("time", **fontsettings)
     for i in range(cols):       # Set bottom row to have xlabels
         layout[rows-1][i].set_xlabel("time", **fontsettings)
@@ -262,24 +263,27 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
 
     f.canvas.set_window_title(files[0])
 
-    if not seperate:
-        leg = plt.legend(fancybox=True, shadow=True)
-    else:
+    if seperate:
         plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
         if has_colorbar:
             f.subplots_adjust(right=0.95)
             cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
             f.colorbar(tmin_plot[label], cax=cbar_ax)
+    else:
+        if not args.nolegend:
+            leg = plt.legend(fancybox=True, shadow=True)
 
     if(output_stub):
         f.set_size_inches(18.5, 10.5)
-        plt.rcParams.update({'font.size': 20})
+        # plt.rcParams.update({'font.size': 20})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
         # plt.tight_layout()
-        logging.info("Saving plot to {}".format(output_stub+".png"))
-        plt.savefig(output_stub+".png", dpi=100)
-        # logging.info("Saving plot to {}".format(output_stub+".eps"))
-        # plt.savefig(output_stub+".eps")
+        if args.eps:
+            logging.info("Saving plot to {}".format(output_stub+".eps"))
+            plt.savefig(output_stub+".eps")
+        else:
+            logging.info("Saving plot to {}".format(output_stub+".png"))
+            plt.savefig(output_stub+".png", dpi=100)
         return
 
     def toggle_errorbar_vis(ebarplot):
@@ -297,7 +301,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         rax = plt.axes([0.85, 0.8, 0.1, 0.15])
         check = CheckButtons(rax, plots.keys(), [True]*len(plots))
         check.on_clicked(func)
-        leg.draggable()
+        if not args.nolegend:
+            leg.draggable()
 
     plt.show()
 
@@ -308,6 +313,10 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-f", "--include-fit", action="store_true",
                         help="check file for fit into, add it to plots")
+    parser.add_argument("-e", "--eps", action="store_true",
+                        help="save as eps not png")
+    parser.add_argument("-nl", "--nolegend", action="store_true",
+                        help="Don't plot the legend")
     parser.add_argument("-fo", "--fit_only", action="store_true",
                         help="replace_labels with fit info")
     parser.add_argument("-ff", "--fitfunction", action="store_true",
