@@ -129,7 +129,7 @@ def format_error_string(value, error):
     if np.isnan(digits):
         return "****"
     formated_error = int(round(error * (10**(digits + 1))))
-    formated_value = "{m:.{d}}".format(d=int(digits) + 1, m=value)
+    formated_value = "{m:.{d}f}".format(d=int(digits) + 1, m=value)
     return "{m}({e})".format(m=formated_value, e=formated_error)
 
 
