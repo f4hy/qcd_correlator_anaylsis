@@ -145,7 +145,7 @@ def add_fit_info(filename, ax=None):
             ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
         digits = -1.0*round(math.log10(masserror))
         formated_error = int(round(masserror * (10**(digits + 1))))
-        formated_mass = "{m:.{d}}".format(d=int(digits) + 1, m=mass)
+        formated_mass = "{m:.{d}f}".format(d=int(digits) + 1, m=mass)
         return "{m}({e})".format(m=formated_mass, e=formated_error)
     except RuntimeError:
         logging.error("File {} had no fit into".format(filename))
