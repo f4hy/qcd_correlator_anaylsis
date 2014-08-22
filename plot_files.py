@@ -118,10 +118,10 @@ def add_fit_info(filename, ax=None):
     if not ax:
         ax = plt
     funmap = {"two_exp": two_exp, "single_exp": single_exp, "periodic_two_exp": two_exp,
-              "fwd-back-exp": single_exp}
+              "fwd-back-exp": single_exp, "periodic_two_exp_const": periodic_two_exp_const, "fwd-back-exp_const": periodic_exp_const}
     try:
         fittype, function, tmin, tmax, fitparams, fiterrors = get_fit(filename)
-        fun = funmap[function]()
+        fun = funmap[function](Nt=256)
         massindex = fun.parameter_names.index("mass")
         mass = fitparams[massindex]
         masserror = fiterrors[massindex]
