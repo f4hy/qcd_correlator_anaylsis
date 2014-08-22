@@ -23,7 +23,6 @@ def all_permutations(psqr, outputformat="{}{}{}", nobackies=False):
             if i not in all:
                 continue
             reverse = tuple(-1*e for e in i)
-            print i, reverse
             all.discard(reverse)
 
     joined = [outputformat.format(*mom) for mom in all]
