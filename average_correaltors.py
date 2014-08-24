@@ -10,6 +10,8 @@ def writeformat(x):
     """Format complex number into paren grouped format"""
     return [int(x[0]) ,"({},{})".format(np.real(x[1]), np.imag(x[1]))]
 
+def all_same(items):
+    return all(x == items[0] for x in items)
 
 def average_files(files, outfile):
     data = [plot_files.read_file(f) for f in files]
@@ -20,7 +22,7 @@ def average_files(files, outfile):
     formated = ave.apply(writeformat,axis=1)
     formated.columns = ["#time", "correlator"]
     print formated
-    formated.to_csv(outfile, sep=" ", index=False, index_label="#time")
+    formated.to_csv(outfile, sep=" ", index=False, header=False, index_label="#time")
     logging.info("wrote ave cor to {}".format(outfile))
 
 if __name__ == "__main__":

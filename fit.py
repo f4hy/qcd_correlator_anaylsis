@@ -148,7 +148,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             if failcount/float(attempted) > 0.15 and attempted > 40:
                 raise InvalidFit("more than 20% of boostraps failed to converge")
 
-    logging.warn("{} bootstraps did not converge!".format(bootstraps-len(boot_params)))
+    if failcount > 0:
+        logging.warn("{} bootstraps did not converge!".format(bootstraps-len(boot_params)))
     if len(boot_params) < bootstraps * 0.9:
         logging.error("More that 10% of the straps failed")
         raise InvalidFit("more than 10% of boostraps failed to converge")

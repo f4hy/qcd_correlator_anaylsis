@@ -103,6 +103,10 @@ if __name__ == "__main__":
 
     funct = functions[args.function](Nt=args.period)
 
+    if not args.time_start or not args.time_end:
+        parser.error("tmin plot requires specifing a fit range")
+
+
     if args.output_stub:
         args.output_stub = os.path.splitext(args.output_stub)[0]
 
