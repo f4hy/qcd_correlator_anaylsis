@@ -189,6 +189,8 @@ class twice_mass_amp_const(object):
         return vect.dot(self.inv_cov).dot(vect)
 
     def valid(self, params):
+        if not params:
+            return False
         mass, amp, mass2, amp2, const = params
         if amp2 > 10*amp:
             logging.error("Invalid fit with paramters {}".format(repr(params)))
