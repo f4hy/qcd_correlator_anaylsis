@@ -140,7 +140,7 @@ def scale_params():
     if args.scale == "omega":
         return "$5m/3m_\omega$", 3
     if args.scale == "kaon":
-        return "$m/m_K$", 6
+        return "$m/m_K$", 5
     else:
         raise NotImplementedError("Have not implemented {}".format(args.scale))
 
@@ -152,7 +152,7 @@ def experimental_scale(i):
         if args.scale == "omega":
             return (5.0 * i) / (3.0 * 1.67245)
         if args.scale == "kaon":
-            return (i) / 0.497614
+            return (i) /  .495
         else:
             raise NotImplementedError("Have not implemented {}".format(args.scale))
 
@@ -164,8 +164,8 @@ def lattice_scale(i):
         lattice_omegamass = 0.27803
         return (5.0 * i) / (3.0 * lattice_omegamass)
     if args.scale == "kaon":
-        lattice_omegamass = 0.083855
-        return i / 0.083855
+        lattice_kaonmass = 0.0835376129
+        return i / lattice_kaonmass
     else:
         raise NotImplementedError("Have not implemented {}".format(args.scale))
 
@@ -173,26 +173,34 @@ def lattice_scale(i):
 def add_experiment_results(experimental_results, f, ax):
     logging.info("Adding experimental results from {}".format(experimental_results))
     with open(experimental_results, "r") as expfile:
+        loc, tloc = -2.125, -1.8
+        size=0.1
         for line in expfile:
             if line.startswith("#"):
                 continue
-            name, mass, uncertainty = [i.strip() for i in line.split(",")]
+            name, mass, uncertainty, width, w_uncertainty = [i.strip() for i in line.split(",")]
             smass = experimental_scale(float(mass))
             suncertainty = experimental_scale(float(uncertainty))
-            loc, tloc = -1.6, -1.8
-            if "_3" in name:
-                loc, tloc = -1.45, -0.9
-            rect = plt.Rectangle((loc, smass-suncertainty), 0.5, 2*suncertainty,
+            swidth = experimental_scale(float(width))
+            sw_uncertainty = experimental_scale(float(w_uncertainty))
+            loc+=size+.08
+            rect = plt.Rectangle((loc, smass-suncertainty), size, 2*suncertainty,
                                  fc='r', fill=True, linewidth=1, color='r')
+            width_rect = plt.Rectangle((loc, smass-swidth), size, 2*(swidth),
+                                 fc='r', fill=True, linewidth=1, color='r', alpha=0.3, zorder=-100)
             f.gca().add_artist(rect)
-            ax.annotate("${}$".format(name), xy=(tloc, smass), fontsize=22)
+            f.gca().add_artist(width_rect)
+            text_yloc= smass-suncertainty-swidth-0.1
+            text_yloc= 0.2
+            ax.annotate("${}$".format(name), xy=(loc, text_yloc ), fontsize=20)
     plt.xlim(-2.0, 1.0)
     label, ymax = scale_params()
     plt.ylim(0, ymax)
     plt.plot([-0.5, -0.5], [0, ymax], 'k-', lw=2, )
-    ax.annotate("Experiment", xy=(-1.5, 0.1), fontsize=22, fontweight='bold')
-    ax.annotate("Lattice", xy=(0.2, 0.1), fontsize=22, fontweight='bold')
+    ax.annotate("Experiment", xy=(-1.5, 4.8), fontsize=22, fontweight='bold')
+    ax.annotate("Lattice", xy=(0.2, 4.8), fontsize=22, fontweight='bold')
     ax.set_ylabel(label, fontweight='bold', fontsize=22)
+    return rect, width_rect
 
 
 def boxplot_files():
@@ -230,6 +238,8 @@ def boxplot_files():
 
     sorted_labels = [i[0] for i in sdfs]
     plotindex = -1
+    offset = -0.58
+    size = 0.1
     for index, (label, df) in enumerate(sdfs):
 
         # for index, label in enumerate(labels):
@@ -276,20 +286,17 @@ def boxplot_files():
                 plotindex = index
 
             med = lattice_scale(df.mass.median())
+            print "level{}: {}".format(plotindex, med)
             width = lattice_scale(df.mass.std())
             values = lattice_scale(df.mass.values)
 
-            offset = 0.25+((1-(plotindex+1) % 3) * 0.33)  # +(plotindex/3)*0.05
-            if plotindex % 3 == 0 and plotindex % 2 == 0:
-                offset += (plotindex/3)*0.03
-            if plotindex % 3 == 2 and plotindex % 2 == 0:
-                offset += (plotindex/3)*0.03
-            if plotindex % 3 == 1 and plotindex % 2 == 0:
-                offset -= (plotindex/3)*0.03
+            offset += size+0.06
+
             prevtextloc = med if med-prevtextloc > 0.01 else prevtextloc+0.01
 
             textloc = (-1.2 if (plotindex + 1) % 3 > 0 else 1, prevtextloc)
-            plots[label] = plt.boxplot(values, widths=0.5, patch_artist=True,
+            textloc = (-1.2 if (plotindex + 1) % 3 > 0 else 1, med)
+            plots[label] = plt.boxplot(values, widths=size, patch_artist=True,
                                        positions=[offset])
             hide = not args.clean
             b = plots[label]["boxes"][0]
@@ -355,7 +362,7 @@ def boxplot_files():
     if not args.seperate:
         plt.tick_params(labelbottom="off", bottom='off')
         if args.experiment:
-            add_experiment_results(args.experiment, f, ax)
+            experimental_box, width_box =add_experiment_results(args.experiment, f, ax)
         else:
             plt.xlim(-1.5, 1.5)
 
@@ -375,10 +382,11 @@ def boxplot_files():
                    fontsize=30, loc=2)
         leg = plt.legend(fancybox=True, shadow=True)
     if args.experiment and args.color is not None:
-        legend_labels = ["two-hadron dominated", "significant mixing"]
-        plt.legend([singlecolor, outlinecolor], legend_labels,
-                   fontsize=30, loc=2)
+        legend_labels = ["two-hadron dominated", "significant mixing", "experimental mass", "experimental width"]
+        plt.legend([singlecolor, outlinecolor, experimental_box, width_box], legend_labels,
+                   fontsize=30, loc=4)
         leg = plt.legend(fancybox=True, shadow=True)
+        plt.tick_params(axis='both', which='major', labelsize=20)
 
     if args.title:
         f.suptitle(args.title.replace("_", " "), fontsize=24)
@@ -426,7 +434,7 @@ if __name__ == "__main__":
     parser.add_argument("-3", "--threshold", type=float, required=False,
                         help="Draw a line where 3 particle threshold is")
     parser.add_argument("-m", "--mixing", type=float, required=False, default=0.75,
-                        help="Draw a line where 3 particle threshold is")
+                        help="determine the cutoff to draw the single partile state")
     parser.add_argument("-n", "--maxlevels", type=int, required=False,
                         help="dont plot more  than this many levels")
     parser.add_argument("-p", "--prune", type=float, required=False, default=1e10,
