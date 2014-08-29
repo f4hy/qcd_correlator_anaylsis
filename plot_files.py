@@ -211,7 +211,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                             capthick=2, mec=color, aa=True)
         if seperate:
             logging.info("plotting {}  {}, {}".format(label, i, j))
-            axe.set_title(label)
+            # axe.set_title(label)
         # Do a Tmin plot
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
@@ -275,10 +275,10 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             leg = plt.legend(fancybox=True, shadow=True)
 
     if(output_stub):
-        f.set_size_inches(18.5, 10.5)
-        plt.rcParams.update({'marker.size': 20})
-        #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
-        plt.tight_layout()
+        f.set_size_inches(18.5, 18.5)
+        # plt.rcParams.update({'font.size': 20})
+        plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
+        #plt.tight_layout()
         if args.eps:
             logging.info("Saving plot to {}".format(output_stub+".eps"))
             plt.savefig(output_stub+".eps")
