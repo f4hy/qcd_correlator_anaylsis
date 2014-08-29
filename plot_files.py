@@ -133,7 +133,7 @@ def add_fit_info(filename, ax=None):
             if args.fitfunction:
                 return fun.template.format(*fitparams)
         if fittype == "#fit_emass":
-            xpoints = np.arange(tmin, tmax, 1.0)
+            xpoints = np.arange(tmin, tmax+1, 1.0)
             fitpoints = fun.formula(fitparams, xpoints)
             emassfit = []
             dt = 3
@@ -202,6 +202,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         color = colors[index % len(colors)]
         df = read_file(filename)
         time_offset = df.time.values+(index*0.1)
+        time_offset = df.time.values
         if seperate:
             time_offset = df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
@@ -275,15 +276,15 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
 
     if(output_stub):
         f.set_size_inches(18.5, 10.5)
-        # plt.rcParams.update({'font.size': 20})
+        plt.rcParams.update({'marker.size': 20})
         #plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
-        # plt.tight_layout()
+        plt.tight_layout()
         if args.eps:
             logging.info("Saving plot to {}".format(output_stub+".eps"))
             plt.savefig(output_stub+".eps")
         else:
             logging.info("Saving plot to {}".format(output_stub+".png"))
-            plt.savefig(output_stub+".png", dpi=100)
+            plt.savefig(output_stub+".png", dpi=400)
         return
 
     def toggle_errorbar_vis(ebarplot):
