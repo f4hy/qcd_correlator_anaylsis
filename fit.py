@@ -33,6 +33,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     if(tmax-tmin < len(fn.parameter_names)):
         raise InvalidFit("Can not fit to less points than parameters")
 
+    if args.random:
+        logging.info("Setting random seed to %s", args.random)
+        np.random.seed(args.random)
+
     results = logging.getLogger("results")
     if filestub and not results.handlers:
         filename = filestub+".log"
