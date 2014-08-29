@@ -143,6 +143,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             logging.debug("bootstrap converged")
         else:
             logging.error("bootstrap failed to converge!")
+            raise InvalidFit("one bootstrap failed")
+            #raw_input("test")
             failcount+=1
             logging.debug("fails:{} attempts:{}, ratio:{}".format(failcount, attempted, failcount/float(attempted)))
             if failcount/float(attempted) > 0.15 and attempted > 40:
@@ -323,6 +325,8 @@ def bootstrap(cor, filelog=None):
 
 def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None):
     if N > 1:
+        with open(filelog+".straps", 'w') as bootfile:
+            bootfile.write("# boot straps used for fitting")
         return [bootstrap(cor, filelog) for i in range(N)]
     else:
         logging.info("Not bootstraping!")
