@@ -67,7 +67,8 @@ def diagonalize(correlator_pannel, t0, td, generalized=False):
         M = hermitionize(M)
         D = V.H * M * V
         R = np.array(D).flatten()
-        return R
+        P = pd.Series(R)
+        return P
 
     diag = correlator_pannel.apply(rotate, "items")
     diag.items = ["{}{}".format(i,j) for i in reversed(range(n)) for j in reversed(range(n))]
@@ -105,13 +106,14 @@ def principle(correlator_pannel, t0, generalized=False):
         A = hermitionize(np.matrix(np.resize(x, (n, n))))
         logging.info("condition number: {}".format(cond(Binvsqrt*A*Binvsqrt)))
         evals, evecs = LA.eigh(Binvsqrt*A*Binvsqrt)
-        loging.info("lowest eval={}".format(min(evals)))
+        logging.info("lowest eval={}".format(min(evals)))
         evecs = np.matrix(evecs)
         V = np.matrix(Binvsqrt)*evecs
 
         D = V.H * A * V
         R = np.array(D).flatten()
-        return R
+        P = pd.Series(R)
+        return P
 
     diag = correlator_pannel.apply(rotate, "items")
     diag.items = ["{}{}".format(i,j) for i in reversed(range(n)) for j in reversed(range(n))]
@@ -227,7 +229,7 @@ if __name__ == "__main__":
         print diagonalize(p, args.tnaught, args.tstar, generalized=args.generalized)
 
     if args.principle:
-        diag = principle(p, args.tnaught, args.tstar, generalized=args.generalized)
+        diag = principle(p, args.tnaught, generalized=args.generalized)
     else:
         if args.tnaught is None:
             parser.print_help()
