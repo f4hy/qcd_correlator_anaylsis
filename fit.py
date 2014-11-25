@@ -490,6 +490,10 @@ if __name__ == "__main__":
     cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     cor.prune_invalid(delete=True, sigma=args.prune)
 
+        outdir = os.path.dirname(args.output_stub)
+        if not os.path.exists(outdir):
+            logging.info("directory for output {} does not exist, atempting to create".format(outdir))
+            os.makedirs(outdir)
     if not args.period:
         if cor.numconfigs == 551:
             logging.warning("period not set, guessing by confiigs, setting to 128")
