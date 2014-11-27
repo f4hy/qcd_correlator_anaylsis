@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import logging
 import argparse
 from matplotlib.widgets import CheckButtons
@@ -24,8 +25,12 @@ def plot_files(args):
     color = 'k'
     # plt.rcParams.update({'font.size': 20})
     # dirs = glob.glob(args.dataroot+"/psqr*/*_1/")
+    # mpl.rc('text', usetex=True)
+    # mpl.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 
     channels = {1:("A1p", "Ep"), 2:("A1p", "B1p", "B2p"), 3:("A1p", "Ep"), 4:("A1p", "Ep") }
+    singles = {("A1p", 1): 1, ("Ep", 1): 0, ("A1p", 2): 1, ("B1p", 2): -1, ("B2p", 2): -1, ("A1p", 3): 1, ("Ep", 3):0, ("A1p", 4): 1, ("Ep", 4):0}
+
 
     for mom in channels.keys():
         plt.figure(mom)
@@ -33,8 +38,9 @@ def plot_files(args):
         biggest_thresh = 0
         for index,irrep in enumerate(channels[mom]):
             mark = markers[index]
+            mark = "o"
             label = irrep
-            plotsettings = dict(linestyle="none", marker=mark, label=label, ms=8, elinewidth=3, capsize=20,
+            plotsettings = dict(linestyle="none", label=label, ms=16, elinewidth=3, capsize=20,
                                 capthick=2, aa=True, markeredgecolor='none')
             print mom,irrep
             threshold = 0.3
@@ -43,35 +49,46 @@ def plot_files(args):
                 with open(threshfilename) as threshfile:
                     threshold = float(threshfile.read())
                 logging.info("Adding threshold at {}".format(threshold))
-                plt.fill_between([index,index+1], [threshold,threshold], 1.0, color='b', hatch="/", alpha=0.9, linewidth=1)
+                plt.fill_between([index,index+1], [threshold,threshold], 1.0, color='0.85', hatch="/", linewidth=1)
                 biggest_thresh = max(biggest_thresh,threshold)
 
             noninteractingfilename = args.dataroot+"/psqr{}/{}_1/noninteracting.txt".format(mom,irrep)
             if os.path.isfile(noninteractingfilename):
                 with open(noninteractingfilename) as noninteractingfile:
                     for line in noninteractingfile:
-                        noninteractinglevel = float(line)
+                        print "LINE",line
+                        mom1, mom2, noninteractinglevel = line.split()
+                        noninteractinglevel = float(noninteractinglevel)
                         logging.info("Adding noninteracting at {}".format(noninteractinglevel))
                         plt.plot([index,index+1], [noninteractinglevel,noninteractinglevel], linestyle="--", color='g', linewidth=4)
+                        loc = (index+0.05, noninteractinglevel+0.002 )
+                        if (mom == 2 and irrep == "B1p" and mom2 == "3"):
+                            loc = (index+0.05, noninteractinglevel-0.005 )
+                        plt.annotate("$\pi[{}]-\pi[{}]$".format(mom1, mom2), xy=loc, fontsize=21)
 
             filename = args.dataroot+"/psqr{}/{}_1/diag_fulltops/5_8_cond5000.0/fits/two_exp_tmax.summary".format(mom,irrep)
             with open(filename) as sumfile:
-                for line in sumfile:
+                for l,line in enumerate(sumfile):
                     color = colors[index]
+                    mark = "o"
+                    print irrep, mom, singles[(irrep, mom)] , l
+                    if singles[(irrep, mom)] == l:
+                        mark = "D"
                     level, amp, amperr, mass, masserr = map(float,line.split(","))
                     print level
                     if mass < 0 or mass > threshold:
                         continue
                         print mass,masserr
-                    if mass+masserr*2 > threshold or (mom == 2 and irrep == "B1p" and level == 1):
+                    if mass+masserr*2 > threshold:
                         print "OMG", mass, masserr, threshold
                         color='0.5'
-                    plots[label] = plt.errorbar(index+0.5, mass, yerr=masserr, color=color, **plotsettings)
+                        continue
+                    plots[label] = plt.errorbar(index+0.5, mass, yerr=masserr, color=color, marker=mark, **plotsettings)
                     plt.plot([index,index], [0,1.0], color='k', lw=4)
         plt.xlim(0,len(channels[mom]))
         plt.xticks(np.array(range(len(channels[mom])))+0.5, **fontsettings)
         thisplot.set_xticklabels(translate(channels[mom]), fontsize=50)
-        plt.title("$P^2$={}".format(mom), **fontsettings)
+        plt.title("d$^2={}$".format(mom), **fontsettings)
         plt.ylim((0.1,biggest_thresh+0.01))
 
         plt.ylabel("$a_t E$", fontsize=50)
