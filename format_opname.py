@@ -6,7 +6,10 @@ import argparse
 
 def format_op(op):
     "format operator from ruby format to david format"
-    base, rep, p1,c1,o1, p2,c2,o2 = re.match('@oplist.push\("(.*)"\)', op).group(1).split()
+    try:
+        base, rep, p1,c1,o1, p2,c2,o2 = re.match('@oplist.push\("(.*)"\)', op).group(1).split()
+    except ValueError:
+        return
 
     iso, n1, n2 =  base.split("_")
     p1 = "".join(p1.replace("[P=(", "").replace(")", "").split(","))
