@@ -6,6 +6,7 @@ import correlator
 import build_corr
 import argparse
 import os
+import math
 
 from parser_fit import fitparser, functions
 from fit_parents import InvalidFit
@@ -33,9 +34,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     if(tmax-tmin < len(fn.parameter_names)):
         raise InvalidFit("Can not fit to less points than parameters")
 
-    if args.random:
-        logging.info("Setting random seed to %s", args.random)
-        np.random.seed(args.random)
+    if options.random:
+        logging.info("Setting random seed to %s", options.random)
+        np.random.seed(options.random)
 
     results = logging.getLogger("results")
     if filestub and not results.handlers:
@@ -225,9 +226,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr)))
 
     valid = True
-    if original_ensamble_correlatedfit[0]*2 < min(cor.effective_mass(3).values()):
+    if original_ensamble_correlatedfit[0]*2 < min(cor.cosh_effective_mass(3).values()):
         logging.error("fit value much lower than effective mass {} , {}!!".format(original_ensamble_correlatedfit[0],
-                                                                                  min(cor.effective_mass(3).values())))
+                                                                                  min(cor.cosh_effective_mass(3).values())))
         valid = False
 
     if options.write_each_boot and valid and filestub:
@@ -277,8 +278,8 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     corvals = cor.average_sub_vev().values()
     plt.ylim([min(min(corvals), 0), max(corvals)])
     plt.xlim([0, tmax + 2])
-    emass = cor.effective_mass(emass_dt)
-    emass_errors = cor.effective_mass_errors(emass_dt).values()
+    emass = cor.cosh_effective_mass(emass_dt)
+    emass_errors = cor.cosh_effective_mass_errors(emass_dt).values()
     emassplot = plt.subplot(212)
     emassplot.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$")
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
@@ -291,12 +292,15 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     emassfit = []
     dt = emass_dt
     for i in range(len(fitpoints))[:-dt]:
-        fitemass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
+        try:
+            fitemass = (1.0 / float(dt)) * math.acosh((fitpoints[i+dt] + fitpoints[i-dt])/(2.0*fitpoints[i]))
+        except ValueError:
+            fitemass = 0.0
         emassfit.append(fitemass)
     emass_fit = emassplot.plot(range(tmin, tmax+1)[:-dt], emassfit)
 
     plt.legend([dataplt, fitplt], ["Emass of data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
-    plt.ylim([min(min(emass.values()),0), max(emass.values())*1.2])
+    plt.ylim([min(min(emass.values()),-0.01), max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
 
     if(filestub):
@@ -377,10 +381,15 @@ def best_fit_range(fn, cor, options=None):
     best = 0
     best_ranges = []
     for tmin in cor.times:
-        if fn.subtract and tmin == min(cor.times):
+        if fn.subtract and tmin == min(cor.times) or tmin < 1:
             continue
         tmaxes = [options.time_end] if options.time_end else range(tmin + 4, max(cor.times))
+        if options.full:        # if input is the full correlator can only fit up to half
+            tmaxes = [t for t in tmaxes if t < (options.period/2)]
         for tmax in tmaxes:
+            print tmin,tmax
+            if tmin > tmax:
+                continue
             try:
                 _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=False, return_quality=True, options=options)
                 #metric = abs(chi-1.0)
@@ -393,6 +402,8 @@ def best_fit_range(fn, cor, options=None):
                                 " is good with chi/dof {}".format(tmin, tmax, qual))
             except RuntimeError:
                 logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
+            except InversionError:
+                logging.warn("Covariance matrix failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
             # except Exception:
             #     logging.warn("Fitter failed, skipping this tmin,tmax")
     logger.setLevel(previous_loglevel)
@@ -451,6 +462,8 @@ def bestInverse(M):
         logging.debug("Inversions errors were inv={}, chol={}".format(error, chol_error))
 
         if chol_error > TOLERANCE and error > TOLERANCE:
+            logging.error("Error, {}".format(error))
+            logging.error("chol_Error, {}".format(chol_error))
             raise InversionError("Could not invert within tolerance")
 
         if chol_error < error:
@@ -486,14 +499,29 @@ if __name__ == "__main__":
 
     if args.output_stub:
         args.output_stub = os.path.splitext(args.output_stub)[0]
-
-    cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
-    cor.prune_invalid(delete=True, sigma=args.prune)
-
         outdir = os.path.dirname(args.output_stub)
         if not os.path.exists(outdir):
             logging.info("directory for output {} does not exist, atempting to create".format(outdir))
             os.makedirs(outdir)
+
+    try:
+        cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
+    except AttributeError:
+        logging.info("Failed to read with pandas, reading normal")
+        cor = build_corr.corr_and_vev_from_files(corrfile, vev1, vev2)
+
+
+    if args.full:
+        # check
+        period = max(cor.times)+1
+        if list(range(0, period)) != cor.times:
+            raise RuntimeError("correlator times are not contiguous required by --full")
+        args.period = period
+
+    cor.prune_invalid(delete=True, sigma=args.prune)
+
+
+
     if not args.period:
         if cor.numconfigs == 551:
             logging.warning("period not set, guessing by confiigs, setting to 128")
@@ -509,9 +537,10 @@ if __name__ == "__main__":
         args.time_start = min(cor.times)
         args.time_end = max(cor.times)
     if args.tmax:
-        logging.info("setting tmax to {}".format(max(cor.times)))
-        args.time_end = max(cor.times)
-        
+        newtmax = min(max(cor.times), args.period / 2)
+        logging.info("setting tmax to {}".format(newtmax))
+        args.time_end = newtmax
+
     tmin = args.time_start
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]

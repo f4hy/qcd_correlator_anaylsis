@@ -10,10 +10,10 @@ class InvalidFit(RuntimeError):
     pass
 
 def massamp_guess(cor, tmax, *args):
-    dt = 3
+    dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
-    emass = cor.effective_mass(dt)
+    emass = cor.cosh_effective_mass(dt)
     if not emass[maxt] > 0:
         for t in range(maxt,0,-1):
             if emass[t] > 0:
