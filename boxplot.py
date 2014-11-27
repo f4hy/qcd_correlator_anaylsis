@@ -136,7 +136,7 @@ def format_error_string(value, error):
 def scale_params():
     logging.info("setting scale using {}".format(args.scale))
     if args.scale == "none":
-        return "$a_t$E", 0.6
+        return "$a_t$m", 0.6
     if args.scale == "omega":
         return "$5m/3m_\omega$", 3
     if args.scale == "kaon":
@@ -192,14 +192,14 @@ def add_experiment_results(experimental_results, f, ax):
             f.gca().add_artist(width_rect)
             text_yloc= smass-suncertainty-swidth-0.1
             text_yloc= 0.2
-            ax.annotate("${}$".format(name), xy=(loc, text_yloc ), fontsize=20)
+            ax.annotate("${}$".format(name), xy=(loc-0.01, text_yloc ), fontsize=21)
     plt.xlim(-2.0, 1.0)
     label, ymax = scale_params()
     plt.ylim(0, ymax)
     plt.plot([-0.5, -0.5], [0, ymax], 'k-', lw=2, )
-    ax.annotate("Experiment", xy=(-1.5, 4.8), fontsize=22, fontweight='bold')
-    ax.annotate("Lattice", xy=(0.2, 4.8), fontsize=22, fontweight='bold')
-    ax.set_ylabel(label, fontweight='bold', fontsize=22)
+    ax.annotate("Experiment", xy=(-1.6, 4.6), fontsize=40, fontweight='bold')
+    ax.annotate("Lattice $T_{1u}^+$", xy=(-0.1, 4.6), fontsize=40, fontweight='bold')
+    ax.set_ylabel(label, fontweight='bold', fontsize=40)
     return rect, width_rect
 
 
@@ -239,9 +239,8 @@ def boxplot_files():
     sorted_labels = [i[0] for i in sdfs]
     plotindex = -1
     offset = -0.58
-    size = 0.1
+    size = 0.125
     for index, (label, df) in enumerate(sdfs):
-
         # for index, label in enumerate(labels):
         color = "b" if args.experiment else colors[index % len(colors)]
 
@@ -290,7 +289,7 @@ def boxplot_files():
             width = lattice_scale(df.mass.std())
             values = lattice_scale(df.mass.values)
 
-            offset += size+0.06
+            offset += size+0.1
 
             prevtextloc = med if med-prevtextloc > 0.01 else prevtextloc+0.01
 
@@ -367,29 +366,34 @@ def boxplot_files():
             plt.xlim(-1.5, 1.5)
 
     ylabel, ymax = scale_params()
-    ax.set_ylabel(ylabel, fontweight='bold', fontsize=30)
+    ax.set_ylabel(ylabel, fontweight='bold', fontsize=50)
 
     if args.yrange:
         plt.ylim(args.yrange)
     else:
         logging.debug("setting yrange to 0,{}".format(ymax))
         plt.ylim((0, ymax))
-    ax.set_yticks(np.arange(int(ax.get_ylim()[0]), int(ax.get_ylim()[1]), 1))
+    print np.arange(int(ax.get_ylim()[0]), int(ax.get_ylim()[1]), 0.2)
+    print ax.get_ylim()
+    ax.set_yticks(np.arange((ax.get_ylim()[0]), (ax.get_ylim()[1]), 0.2))
 
     if args.outline:
-        legend_labels = ["single-hadron dominated", "two-hadron dominated", "significant mixing"]
+        legend_labels = ["lattice $q \overline{q}$ dominated", "two-hadron dominated", "significant mixing"]
         plt.legend([singlecolor, normal, outlinecolor], legend_labels,
-                   fontsize=30, loc=2)
+                   fontsize=50, loc=4)
         leg = plt.legend(fancybox=True, shadow=True)
     if args.experiment and args.color is not None:
-        legend_labels = ["two-hadron dominated", "significant mixing", "experimental mass", "experimental width"]
-        plt.legend([singlecolor, outlinecolor, experimental_box, width_box], legend_labels,
-                   fontsize=30, loc=4)
+        # legend_labels = ["single-hadron dominated", "significant mixing", "experimental mass", "experimental width"]
+        # plt.legend([singlecolor, outlinecolor, experimental_box, width_box], legend_labels,
+        #            fontsize=35, loc=4)
+        legend_labels = ["lattice $q \overline{q}$ state", "experimental mass", "experimental width"]
+        plt.legend([singlecolor, experimental_box, width_box], legend_labels,
+                   fontsize=35, loc=4)
         leg = plt.legend(fancybox=True, shadow=True)
-        plt.tick_params(axis='both', which='major', labelsize=20)
+        plt.tick_params(axis='both', which='major', labelsize=50)
 
     if args.title:
-        f.suptitle(args.title.replace("_", " "), fontsize=24)
+        f.suptitle(args.title.replace("_", " "), fontsize=50)
 
     if args.threshold:
         scaled_thresh = experimental_scale(args.threshold)
@@ -397,13 +401,17 @@ def boxplot_files():
         plt.plot([-2, 200], [scaled_thresh, scaled_thresh], color='r', linestyle='--', linewidth=2)
 
     if(args.output_stub):
-        f.set_size_inches(19.2, 12.0)
+        f.set_size_inches(20.0, 12.0)
         plt.rcParams.update({'font.size': 24})
+        # plt.tight_layout()
         f.set_dpi(100)
         logging.info("Saving plot to {}".format(args.output_stub+".png"))
         plt.savefig(args.output_stub+".png")
-        # logging.info("Saving plot to {}".format(args.output_stub+".eps"))
-        # plt.savefig(output_stub+".eps")
+        # ax.set_rasterized(True)
+        logging.info("Saving plot to {}".format(args.output_stub+".eps"))
+        plt.savefig(args.output_stub+".eps")
+        logging.info("Saving plot to {}".format(args.output_stub+".pdf"))
+        plt.savefig(args.output_stub+".pdf")
         return
 
     plt.show()
