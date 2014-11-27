@@ -81,7 +81,7 @@ def read_pion_masses(args):
 
 
 def plot_dispersion(args, pion_masses):
-    fontsettings = dict(fontweight='bold', fontsize=18)
+    fontsettings = dict(fontweight='bold', fontsize=40)
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     colors = ['b', 'r', 'k', 'm', 'c', 'y']
     plots = {}
@@ -126,11 +126,13 @@ def plot_dispersion(args, pion_masses):
                 outdata.write("{}\n".format(repr(aniso)))
 
 
-
     f, layout = plt.subplots(nrows=1, ncols=1)
+    # f.suptitle(r"$ \xi $ = {}".format(np.mean(XIs)), **fontsettings)
+    layout.set_xlabel("d$^2$", **fontsettings)
+    layout.set_ylabel("$E^2$", **fontsettings)
 
     dispersionplot = layout
-    fitdata = np.sqrt(pion_masses[0].mean()**2 + Xdata*(4.0*np.pi**2) / (32.0**2*np.mean(XIs)**2))
+    fitdata = (pion_masses[0].mean()**2 + Xdata*(4.0*np.pi**2) / (32.0**2*np.mean(XIs)**2))
     dispersionplot.plot(Xdata, fitdata, label="fit")
     # for p in layout:
     #     p.tick_params(axis='both', which='major', labelsize=20)
@@ -144,7 +146,13 @@ def plot_dispersion(args, pion_masses):
         color = colors[index % len(colors)]
         data[label] = (p,m.median(), iqr(m))
         print data[label]
-        plots[p] = dispersionplot.errorbar(p, m.median(), yerr=iqr(m), label=label , marker=mark, color=color, ms=10)
+
+        print "Wtf"
+        # print m
+        # print m**2
+        msqr = m**2
+        print p, m[0] , msqr[0]
+        plots[p] = dispersionplot.errorbar(p, msqr.median(), yerr=iqr(msqr), label=label , marker=mark, color=color, ms=10)
         index+=1
 
     plots["fit"] = dispersionplot.plot()
@@ -153,8 +161,12 @@ def plot_dispersion(args, pion_masses):
     if args.xrang:
         plt.xlim(args.xrang)
 
-    if args.title:
-        f.suptitle(args.title, **fontsettings)
+    plt.tick_params(axis='both', which='major', labelsize=50)
+
+    # if args.title:
+    #     f.suptitle(args.title, **fontsettings)
+
+
 
     # for p in layout:
     #     p.legend(fancybox=True, shadow=True, loc=2)
