@@ -73,7 +73,8 @@ def sh_optimized_zfacts():
     else:
         Ncols = ncols(N)
     rows = int(math.ceil(float(N)/Ncols))
-    fig, ax = plt.subplots(ncols=Ncols, nrows=rows)
+    if not args.seperate:
+        fig, ax = plt.subplots(ncols=Ncols, nrows=rows)
     with open(args.SHordering) as SHorderfile:
         SHordering = [int(i.strip()) for i in SHorderfile.readlines()]
     for index, m in enumerate(SHordering):
@@ -81,18 +82,30 @@ def sh_optimized_zfacts():
             break
         i = (index)/Ncols
         j = (index) % Ncols
-        if N <= Ncols:
-            axe=ax[j]
+        if args.seperate:
+            fig, axe = plt.subplots(1)
         else:
-            axe=ax[i][j]
+            if N <= Ncols:
+                axe=ax[j]
+            else:
+                axe=ax[i][j]
         reordered = [OptZ[m+1][reorderedlevel] for reorderedlevel in ordering]
 
         axe.bar(range(len(reordered)), reordered, 1.0, color="b")
-        axe.set_title("SH-opt level{}".format(index))
+        # axe.set_title("SH-opt level{}".format(index))
         axe.set_ylim((0,max(reordered)))
-        axe.set_ylabel("$|Z|^2$", fontweight='bold')
-        axe.set_xlabel("Level", fontweight='bold')
+        axe.set_ylabel("$|Z|^2$", fontweight='bold', fontsize=30)
+        axe.set_xlabel("Level", fontweight='bold', fontsize=30)
+        axe.tick_params(axis='both', which='major', labelsize=20)
+        plt.tight_layout()
+        if args.seperate:
+            outfilename = args.output_stub+"_{}.eps".format(index)
+            logging.info("Saving plot to {}".format(outfilename))
+            plt.savefig(outfilename)
+            plt.clf()
 
+    if args.seperate:
+        return
 
     if args.output_stub:
         logging.info("Saving unreordered shopt_zfactors to {}".format(args.output_stub+".nonreordered.out"))
@@ -107,10 +120,14 @@ def sh_optimized_zfacts():
                     resfile.write("{}, {}\n".format(level, np.argmax(fixd)))
 
         plt.rcParams.update({'font.size': 10})
-        fig.set_size_inches(18.5,10.5)
+        fig.set_size_inches(18.5,8.5)
         plt.tight_layout()
-        logging.info("Saving plot to {}".format(args.output_stub+".png"))
-        plt.savefig(args.output_stub+".png",dpi=100)
+        if args.eps:
+            logging.info("Saving plot to {}".format(args.output_stub+".eps"))
+            plt.savefig(args.output_stub+".eps")
+        else:
+            logging.info("Saving plot to {}".format(args.output_stub+".png"))
+            plt.savefig(args.output_stub+".png",dpi=100)
     else:
         plt.tight_layout()
         plt.show()
@@ -140,6 +157,10 @@ if __name__ == "__main__":
                         help="single hadtron rotation coeffs")
     parser.add_argument("-N", "--number", type=int, required=False,
                         help="max number of plots")
+    parser.add_argument("-sep", "--seperate", action="store_true", default=None,
+                        help="put each on their own plot")
+    parser.add_argument("--eps", action="store_true",
+                        help="plot eps instead of png")
     args = parser.parse_args()
 
     if args.verbose:
