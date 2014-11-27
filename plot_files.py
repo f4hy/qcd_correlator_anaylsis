@@ -88,6 +88,9 @@ def get_fit(filename, noexcept=False):
         return ("single_exp", 0, 1, [0.0, 0.0], [0.0, 0.0])
     raise RuntimeError("No fit info")
 
+def allEqual(lst):
+     return not lst or lst.count(lst[0]) == len(lst)
+
 
 def label_names_from_filelist(filelist):
     names = filelist
@@ -102,6 +105,35 @@ def label_names_from_filelist(filelist):
         logging.debug("two files with same basename, cant use basenames")
         names = filelist
 
+    if "/" in names[0]:
+        splitnames = [n.split("/") for n in names]
+        if allEqual([len(s) for s in splitnames]):
+            length = len(splitnames[0])
+            newnames = [""] * len(names)
+            logging.info("removing common strings")
+            for i in range(length):
+                nth = [s[i] for s in splitnames]
+                pruned = remove_common_prepost(nth)
+                newnames = [o+p for o,p in zip(newnames,pruned)]
+            names = newnames
+
+    names = remove_common_prepost(names)
+    names = remove_common_segments(names)
+    return names
+
+def remove_common_segments(names, delim="_"):
+    splitnames = [n.split("_") for n in names]
+    if  not allEqual([len(s) for s in splitnames]):
+        return names
+    length = len(splitnames[0])
+    newnames = [""] * len(names)
+    for i in range(length):
+        nth = [s[i] for s in splitnames]
+        if not allEqual(nth):
+            newnames = [o+n for o,n in zip(newnames,nth)]
+    return newnames
+
+def remove_common_prepost(names):
     if len(names) < 2:
         return names
     prefix = os.path.commonprefix(names)
