@@ -57,6 +57,15 @@ def read_configcols_paraenformat(filename):
     ).rename(columns=lambda x: 'correlator%s' % x)
     return joined
 
+def read_configcols_normal(filename):
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=',', names=["time", "correlator", "correlator_imag"])
+    grouped = df.groupby('time')
+    joined = df.groupby('time').apply(
+        lambda g: pd.Series(g['correlator'].values)
+    ).rename(columns=lambda x: 'correlator%s' % x)
+    return joined
+
 def read_full_paraenformat_multiindex(filename):
     f = lines_without_comments(filename)
     df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],

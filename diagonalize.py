@@ -126,10 +126,11 @@ def principle(correlator_pannel, t0, generalized=False):
     return diag
 
 
-    
+
 def parenformat(x):
     """Format complex number into paren grouped format"""
-    return "({},{})".format(np.real(x), np.imag(x))
+    return x
+    # return "({},{})".format(np.real(x), np.imag(x))
 
 
 def parenformatn(x):
@@ -148,14 +149,14 @@ def write_cor_matrix(correlator_pannel, outputwild, ops, suffix=""):
             first = True
             cor = correlator_pannel[snk+src]
             if cor.ndim == 1:
-                cor.apply(parenformat).to_csv(filename, sep=" ", header=True, index_label="#time")
+                cor.apply(parenformat).to_csv(filename, sep=",", header=True, index_label="#time")
                 continue
             for n in cor:
                 if first:
-                    cor[n].apply(parenformat).to_csv(filename, sep=" ", header=True, index_label="#time")
+                    cor[n].apply(parenformat).to_csv(filename, sep=",", header=True, index_label="#time")
                     first = False
                 else:
-                    cor[n].apply(parenformat).to_csv(filename, sep=" ", header=False, mode="a")
+                    cor[n].apply(parenformat).to_csv(filename, sep=",", header=False, mode="a")
     logging.info("Wrote correlator matrix to {}{}".format(outputwild.format("SNK", "SRC"), suffix))
 
 if __name__ == "__main__":
@@ -220,7 +221,10 @@ if __name__ == "__main__":
         for src in args.operators:
             filename = args.input_dir + args.filewild.format(snk, src)
             logging.info("reading {}".format(filename))
-            cor_matrix[snk+src] = pandas_reader.read_configcols_paraenformat(filename)
+            try:
+                cor_matrix[snk+src] = pandas_reader.read_configcols_paraenformat(filename)
+            except:
+                cor_matrix[snk+src] = pandas_reader.read_configcols_normal(filename)
 
     p = pd.Panel(cor_matrix)
 
