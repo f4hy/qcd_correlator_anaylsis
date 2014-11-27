@@ -36,7 +36,7 @@ def make_histogram(data, numbins=10, norm=False):
             y = mlab.normpdf(bincenters, np.mean(imagdata), np.std(imagdata))
             imagplot.plot(bincenters, y, 'r--', linewidth=1)
     else:
-        plt.hist(data, bins)
+        plt.hist(data, numbins)
         if norm:
             bincenters = 0.5*(bins[1:]+bins[:-1])
             y = mlab.normpdf(bincenters, np.mean(data), np.std(data))
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="plot a histogram of a file for a single time")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
-    parser.add_argument("-t", "--time", type=int, required=True,
+    parser.add_argument("-t", "--time", type=int, required=False,
                         help="time slice to histogram", default=None)
     parser.add_argument("-b", "--bins", type=int, required=False, default=100,
                         help="number of bins for the histogram")
@@ -69,6 +69,9 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    data = pandas_reader.read_single_time_paraenformat(args.datafile, args.time)
-
+    if args.time:
+        data = pandas_reader.read_single_time_paraenformat(args.datafile, args.time)
+    else:
+        with open(args.datafile) as dataf:
+            data= map(float,dataf.read().split())
     make_histogram(data, args.bins, args.norm)
