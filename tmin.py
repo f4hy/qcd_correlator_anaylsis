@@ -116,6 +116,11 @@ if __name__ == "__main__":
     if args.vev2:
         vev2 = args.vev2
 
-    cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
+    try:
+        cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
+    except AttributeError:
+        logging.info("Failed to read with pandas, reading normal")
+        cor = build_corr.corr_and_vev_from_files(corrfile, vev1, vev2)
+
     tmin_plot(funct, cor, args.time_start, args.time_end,
               filestub=args.output_stub, bootstraps=args.bootstraps)
