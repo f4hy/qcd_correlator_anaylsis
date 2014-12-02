@@ -13,6 +13,9 @@ import math
 from fitfunctions import *  # noqa
 from cStringIO import StringIO
 
+import build_corr
+import pandas_reader as pr
+
 import re
 
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
@@ -55,6 +58,16 @@ def determine_type(txt):
         return "comma"
     return "space_seperated"
 
+def read_full_correlator(filename):
+    try:
+        cor = build_corr.corr_and_vev_from_files_pandas(filename, None, None)
+    except AttributeError:
+        logging.info("Failed to read with pandas, reading normal")
+        cor = build_corr.corr_and_vev_from_files(filename, None, None)
+
+    d = {"time": cor.times, "correlator": [cor.average_sub_vev()[t] for t in cor.times], "error": [cor.jackknifed_errors()[t]  for t in cor.times], "quality": [float('NaN') for t in cor.times]}
+    df = pd.DataFrame(d)
+    return df
 
 def read_file(filename):
     txt = lines_without_comments(filename)
@@ -233,6 +246,9 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
         df = read_file(filename)
+        if len(df.time) > len(set(df.time)):
+            df = read_full_correlator(filename)
+
         time_offset = df.time.values+(index*0.1)
         time_offset = df.time.values
         if seperate:
@@ -334,7 +350,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         rax = plt.axes([0.85, 0.8, 0.1, 0.15])
         check = CheckButtons(rax, plots.keys(), [True]*len(plots))
         check.on_clicked(func)
-        if not args.nolegend:
+        if not args.nolegend and len(plots) > 1:
             leg.draggable()
 
     plt.show()
