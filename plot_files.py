@@ -58,14 +58,24 @@ def determine_type(txt):
         return "comma"
     return "space_seperated"
 
-def read_full_correlator(filename):
+def read_full_correlator(filename, emass=False):
     try:
         cor = build_corr.corr_and_vev_from_files_pandas(filename, None, None)
     except AttributeError:
         logging.info("Failed to read with pandas, reading normal")
         cor = build_corr.corr_and_vev_from_files(filename, None, None)
 
-    d = {"time": cor.times, "correlator": [cor.average_sub_vev()[t] for t in cor.times], "error": [cor.jackknifed_errors()[t]  for t in cor.times], "quality": [float('NaN') for t in cor.times]}
+    if emass:
+        emasses = cor.cosh_effective_mass(1)
+        times = emasses.keys()
+        data = [emasses[t] for t in times]
+        errors = [cor.cosh_effective_mass_errors(1)[t]  for t in times]
+    else:
+        times = cor.times
+        data = [cor.average_sub_vev()[t] for t in times]
+        errors = [cor.jackknifed_errors()[t]  for t in times]
+
+    d = {"time": times, "correlator": data, "error": errors, "quality": [float('NaN') for t in times]}
     df = pd.DataFrame(d)
     return df
 
@@ -228,7 +238,9 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         if j == 0:
             if "cor" in filename:
                 axe.set_ylabel("Correlator", **fontsettings)
-            if "emass" in filename:
+                if args.emass:
+                    logging.warn("EMASS flag set but filename indicates a correlator file!")
+            if "emass" in filename or args.emass:
                 axe.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$", **fontsettings)
 
         if fit:
@@ -247,7 +259,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         color = colors[index % len(colors)]
         df = read_file(filename)
         if len(df.time) > len(set(df.time)):
-            df = read_full_correlator(filename)
+            df = read_full_correlator(filename, args.emass)
 
         time_offset = df.time.values+(index*0.1)
         time_offset = df.time.values
@@ -390,6 +402,8 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
+    parser.add_argument("--emass", action="store_true",
+                        help="plot emasses not correlators")
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
     args = parser.parse_args()
