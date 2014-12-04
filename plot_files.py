@@ -302,8 +302,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                 plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, **plotsettings)
 
         if not yrange:
-            ymin = min(ymin, min(df.correlator)-min(df.correlator)*0.05)
-            ymax = max(ymax, max(df.correlator)*1.05)
+            ymin = min(ymin, min(df.correlator))
+            ymax = max(ymax, max(df.correlator))
             logging.debug("ymin {} ymax {}".format(ymin, ymax))
         if not xrang:
             xmin = min(xmin, min(df.time)-1)
@@ -313,7 +313,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     if yrange:
         plt.ylim(yrange)
     else:
-        plt.ylim(max(ymin, 0), ymax)
+        spread = ymax - ymin
+        plt.ylim(ymin-spread*0.1, ymax+spread*0.1)
     if xrang:
         plt.xlim(xrang)
     else:
