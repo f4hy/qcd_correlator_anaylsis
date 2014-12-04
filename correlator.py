@@ -291,10 +291,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
             for t, a in asv.iteritems():
                 outfile.write("{!r},   {!r}, {!r}\n".format(t, a, error[t]))
 
-    def writeemass(self, filename, dt=3, header=None):
+    def writeemass(self, filename, dt=3, header=None, cosh=True):
         logging.info("Writing emass{} to {}".format(dt,filename))
-        emass = self.effective_mass(dt)
-        error = self.effective_mass_errors(dt)
+        if cosh:
+            emass = self.cosh_effective_mass(dt)
+            error = self.cosh_effective_mass_errors(dt)
         with open(filename, 'w') as outfile:
             if header:
                 outfile.write(header)
