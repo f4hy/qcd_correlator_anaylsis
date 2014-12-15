@@ -137,7 +137,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
             try:
                 emass[t] = (1.0 / float(dt)) * math.log(asv[t] / asv[t + dt])
             except ValueError:
-                logging.error("invalid argument to log at t={}, setting to NaN".format(t))
+                logging.debug("invalid argument to log at t={}, setting to NaN".format(t))
                 emass[t] = float('NaN')
             except KeyError:
                 logging.error("index out of range")
@@ -153,7 +153,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
             try:
                 emass[t] = (1.0 / float(dt))*math.acosh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
             except ValueError:
-                logging.error("invalid argument to acosh, setting to zero")
+                logging.debug("invalid argument to acosh, setting to zero")
                 emass[t] = float('NaN')
             except KeyError:
                 logging.error("index out of range")
@@ -170,7 +170,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
             try:
                 emass[t] = (1.0 / float(dt))*math.acosh((asvt[t+dt] + asvt[t-dt])/(2.0*asvt[t]))
             except ValueError:
-                logging.error("invalid argument to acosh, setting to nan")
+                logging.debug("invalid argument to acosh, setting to nan")
                 emass[t] = float('NaN')
             except KeyError:
                 logging.error("index out of range")
