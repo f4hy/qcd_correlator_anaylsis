@@ -255,7 +255,8 @@ def quality_of_fit(degrees_of_freedom, chi_sqr):
 
 
 def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options=None):
-    emass_dt = 3
+    import plot_helpers
+    emass_dt = 1
 
     X = np.linspace(tmin, tmax, 200 * 5)
     fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps, options=options)
@@ -267,16 +268,17 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     corfit, = corplot.plot(X, fn.formula(fitted_params, X), lw=2.0)
     single_fit = None
     if fn.description == "exp" or "subtract" in fn.description:
-        corplot.legend([cordata, corfit], ["Correlator data", fn.template.format(*fitted_params)])
+        corplot.legend([cordata, corfit], ["Correlator data", fn.template.format(*fitted_params)], loc='best')
     else:
         single = functions["single_exp"]()
         single_fit, = corplot.plot(X, single.formula(fitted_params[:2], X), ls="-.", lw=2.0)
-        corplot.legend([cordata, corfit, single_fit], ["Correlator data", fn.template.format(*fitted_params), "single_exp with these values"])
+        corplot.legend([cordata, corfit, single_fit], ["Correlator data", fn.template.format(*fitted_params), "single_exp with these values"], loc='best')
 
     corplot.set_ylabel("Fit Correlator")
 
     corvals = cor.average_sub_vev().values()
-    plt.ylim([min(min(corvals), 0), max(corvals)])
+
+    plt.ylim(plot_helpers.auto_fit_range(min(corvals),max(corvals)))
     plt.xlim([0, tmax + 2])
     emass = cor.cosh_effective_mass(emass_dt)
     emass_errors = cor.cosh_effective_mass_errors(emass_dt).values()
@@ -290,17 +292,20 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     # belowfitline = emassplot.plot(range(tmin, tmax+1), [mass-mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
     fitpoints = fn.formula(fitted_params, np.arange(tmin, tmax+1))
     emassfit = []
+    emassfit_range = []
     dt = emass_dt
     for i in range(len(fitpoints))[:-dt]:
+
         try:
             fitemass = (1.0 / float(dt)) * math.acosh((fitpoints[i+dt] + fitpoints[i-dt])/(2.0*fitpoints[i]))
+            emassfit.append(fitemass)
+            emassfit_range.append(tmin+i)
         except ValueError:
             fitemass = 0.0
-        emassfit.append(fitemass)
-    emass_fit = emassplot.plot(range(tmin, tmax+1)[:-dt], emassfit)
+    emass_fit = emassplot.plot(emassfit_range, emassfit, color="k")
 
-    plt.legend([dataplt, fitplt], ["Emass of data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)])
-    plt.ylim([min(min(emass.values()),-0.01), max(emass.values())*1.2])
+    plt.legend([dataplt, fitplt], ["Emass of data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)], loc='best')
+    # plt.ylim([min(min(emass.values()),-0.01), max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
 
     if(filestub):
@@ -310,7 +315,7 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
         header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
         cor.writeasv(filestub+".fittedcor.out", header=header)
         header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
-        cor.writeemass(filestub+".fittedemass.out", header=header)
+        cor.writeemass(filestub+".fittedemass.out", dt=1, header=header)
     else:
         plt.show()
 
@@ -333,8 +338,9 @@ def bootstrap(cor, filelog=None):
 
 def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None):
     if N > 1:
-        with open(filelog+".straps", 'w') as bootfile:
-            bootfile.write("# boot straps used for fitting")
+        if filelog:
+            with open(filelog+".straps", 'w') as bootfile:
+                bootfile.write("# boot straps used for fitting")
         return [bootstrap(cor, filelog) for i in range(N)]
     else:
         logging.info("Not bootstraping!")
@@ -383,17 +389,18 @@ def best_fit_range(fn, cor, options=None):
     for tmin in cor.times:
         if fn.subtract and tmin == min(cor.times) or tmin < 1:
             continue
-        tmaxes = [options.time_end] if options.time_end else range(tmin + 4, max(cor.times))
-        if options.full:        # if input is the full correlator can only fit up to half
-            tmaxes = [t for t in tmaxes if t < (options.period/2)]
+        tmaxes = [options.time_end] if options.time_end else range(tmin + len(fn.parameter_names)*2, max(cor.times))
         for tmax in tmaxes:
-            print tmin,tmax
             if tmin > tmax:
                 continue
             try:
                 _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=False, return_quality=True, options=options)
                 #metric = abs(chi-1.0)
                 metric = qual
+                # if qual > 0.1:
+                #     metric = (tmax-tmin)+qual
+                # else:
+                #     metric = qual
                 #if metric > best:
                 # best = metric
                 best_ranges.append((metric, tmin, tmax))
@@ -429,6 +436,10 @@ def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=F
             logging.warn("Fit range {} {} failed, trying next best".format(tmin, tmax))
             logging.warn("errored with {}".format(e))
             continue
+        except InversionError as e:
+            logging.warn("Fit range {} {} failed, trying next best".format(tmin, tmax))
+            logging.warn("errored with {}".format(e))
+        continue
 
 
 class InversionError(Exception):
@@ -440,7 +451,7 @@ class InversionError(Exception):
 
 
 def bestInverse(M):
-    TOLERANCE = 1.E-5
+    TOLERANCE = 1.E-4
 
     def invert_error(i):
         return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
@@ -502,7 +513,8 @@ if __name__ == "__main__":
         outdir = os.path.dirname(args.output_stub)
         if not os.path.exists(outdir):
             logging.info("directory for output {} does not exist, atempting to create".format(outdir))
-            os.makedirs(outdir)
+            if outdir is not "":
+                os.makedirs(outdir)
 
     try:
         cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
@@ -510,6 +522,13 @@ if __name__ == "__main__":
         logging.info("Failed to read with pandas, reading normal")
         cor = build_corr.corr_and_vev_from_files(corrfile, vev1, vev2)
 
+    # cor.make_symmetric()
+    if args.symmetric:
+        if cor.check_symmetric(4.0):
+            cor.make_symmetric()
+        else:
+            logging.error("Correlator was not symmetric!")
+            exit()
 
     if args.full:
         # check
@@ -531,20 +550,23 @@ if __name__ == "__main__":
             args.period = 256
 
     funct = functions[args.function](Nt=args.period)
+    if args.debugguess and (not args.time_start or not args.time_end):
+        logging.warn("debugguess set without fit range, setting to max")
+        args.maxrange = True
 
     if args.maxrange:
         logging.info("setting trange to the all of the data")
         args.time_start = min(cor.times)
         args.time_end = max(cor.times)
     if args.tmax:
-        newtmax = min(max(cor.times), args.period / 2)
+        newtmax = max(cor.times)
         logging.info("setting tmax to {}".format(newtmax))
         args.time_end = newtmax
 
     tmin = args.time_start
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]
-    if not args.time_start:
+    if args.time_start is None:
         print args.output_stub
         auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         exit()
