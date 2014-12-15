@@ -12,3 +12,7 @@ def ncols(N):
         if N % 3 == 0:
             return 3
     return int(math.sqrt(N))+1
+
+def auto_fit_range(minval, maxval):
+    spread = maxval - minval
+    return minval-spread*0.1, maxval+spread*0.1

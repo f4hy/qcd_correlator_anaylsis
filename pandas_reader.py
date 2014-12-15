@@ -47,6 +47,17 @@ def read_normal_paraenformat(filename):
                      converters={1: parse_pair})
     return df
 
+def read_normal(filename):
+    try:
+        f = lines_without_comments(filename)
+        df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
+                         converters={1: parse_pair})
+    except AttributeError:
+        logging.info("Failed to read with pandas, reading normal")
+        f = lines_without_comments(filename)
+        df = pd.read_csv(f, delimiter=',', names=["time", "correlator"])
+    return df
+
 def read_configcols_paraenformat(filename):
     f = lines_without_comments(filename)
     df = pd.read_csv(f, delimiter=' ', names=["time", "correlator"],
@@ -82,6 +93,13 @@ def read_single_time_paraenformat(filename, t):
     logging.info("reading time {} from file {}".format(t, filename))
     df = pd.read_csv(f, delimiter=' ', names=["time", "data"],
                      converters={1: parse_pair})
+    single_time = df.ix[df["time"] == t, "data"]
+    return single_time.values
+
+def read_single_time_commaformat(filename, t):
+    f = lines_without_comments(filename)
+    logging.info("reading time {} from file {}".format(t, filename))
+    df = pd.read_csv(f, delimiter=',', names=["time", "data"] )
     single_time = df.ix[df["time"] == t, "data"]
     return single_time.values
 

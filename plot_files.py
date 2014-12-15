@@ -15,6 +15,7 @@ from cStringIO import StringIO
 
 import build_corr
 import pandas_reader as pr
+import plot_helpers
 
 import re
 
@@ -196,8 +197,9 @@ def add_fit_info(filename, ax=None):
                 emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
                 emassfit.append(emass)
             ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r", lw=2, zorder=5)
-            # ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
-            # ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
+            if args.fit_errors:
+                ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
+                ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
         digits = -1.0*round(math.log10(masserror))
         formated_error = int(round(masserror * (10**(digits + 1))))
         formated_mass = "{m:.{d}f}".format(d=int(digits) + 1, m=mass)
@@ -302,8 +304,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                 plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, **plotsettings)
 
         if not yrange:
-            ymin = min(ymin, min(df.correlator))
-            ymax = max(ymax, max(df.correlator))
+            ymin = min(ymin, min(df.correlator.fillna(1000)))
+            ymax = max(ymax, max(df.correlator.fillna(0)))
             logging.debug("ymin {} ymax {}".format(ymin, ymax))
         if not xrang:
             xmin = min(xmin, min(df.time)-1)
@@ -313,8 +315,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     if yrange:
         plt.ylim(yrange)
     else:
-        spread = ymax - ymin
-        plt.ylim(ymin-spread*0.1, ymax+spread*0.1)
+        plt.ylim(plot_helpers.auto_fit_range(ymin,ymax))
     if xrang:
         plt.xlim(xrang)
     else:
@@ -360,11 +361,11 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         plt.draw()
 
     if not seperate:
-        rax = plt.axes([0.85, 0.8, 0.1, 0.15])
+        rax = plt.axes([0.9, 0.8, 0.1, 0.15])
         check = CheckButtons(rax, plots.keys(), [True]*len(plots))
         check.on_clicked(func)
-        if not args.nolegend and len(plots) > 1:
-            leg.draggable()
+        # if not args.nolegend and len(plots) > 1:
+        #     leg.draggable()
 
     plt.show()
 
@@ -375,6 +376,8 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("-f", "--include-fit", action="store_true",
                         help="check file for fit into, add it to plots")
+    parser.add_argument("-fe", "--fit-errors", action="store_true",
+                        help="put bands for the error on the fit")
     parser.add_argument("-e", "--eps", action="store_true",
                         help="save as eps not png")
     parser.add_argument("-nl", "--nolegend", action="store_true",

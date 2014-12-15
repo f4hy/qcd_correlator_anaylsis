@@ -70,7 +70,8 @@ if __name__ == "__main__":
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     if args.time:
-        data = pandas_reader.read_single_time_paraenformat(args.datafile, args.time)
+        #data = pandas_reader.read_single_time_paraenformat(args.datafile, args.time)
+        data = pandas_reader.read_single_time_commaformat(args.datafile, args.time)
     else:
         with open(args.datafile) as dataf:
             data= map(float,dataf.read().split())
