@@ -113,7 +113,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         # new_times = [t for t in self.times if asv[t] - 2.0 * errors[t] > 0.0]
         new_times = []
         for t in self.times:
-            if (asv[t] - errors[t]*sigma) > 0.0:
+            if (abs(asv[t]) - errors[t]*sigma) > 0.0:
                 new_times.append(t)
             else:
                 break
@@ -317,3 +317,57 @@ class Correlator(configtimeobj.Cfgtimeobj):
         self.jkasv = None
         self.sums = None
         self.times = new_times
+
+    def check_symmetric(self, sigma=1.0, anti=False):
+        asv = self.average_sub_vev()
+        errors = self.jackknifed_errors()
+        print asv
+        print errors
+        seperations = [t for t in sorted(self.times) if t>0]
+        print seperations
+        max_asymmetry = 0
+        for tf, tb in zip(seperations, reversed(seperations)):
+            if anti:
+                asymmetry = abs(asv[tf] + asv[tb]) / (errors[tf]+errors[tb])
+            else:
+                asymmetry = abs(asv[tf] - asv[tb]) / (errors[tf]+errors[tb])
+            logging.debug("asymmetry in correlator({},{}): {}".format(tf,tb,asymmetry))
+            max_asymmetry = max(asymmetry,max_asymmetry)
+            if max_asymmetry>sigma:
+                logging.error("correlator is not symmetric within {}sigma".format(sigma))
+                logging.error("C({}) - C({}) = {}, E({}) E({})".format(tf , tb, asv[tf] - asv[tb], errors[tf],errors[tb],))
+                return False
+        logging.info("Max asymmetry in correlator: {}sigma".format(max_asymmetry))
+        return True
+
+    def make_symmetric(self, sigma=1.0, anti=False):
+        logging.info("original times {}-{}".format( min(self.times), max(self.times) ) )
+        asv = self.average_sub_vev()
+        errors = self.jackknifed_errors()
+
+        # new_times = [t for t in self.times if asv[t] - 2.0 * errors[t] > 0.0]
+        period = len(self.times)
+        print period
+        seperations = list(range(1,period/2+1))
+        print seperations
+        biggest_change = 0.0
+        for t in self.times:
+            if t in seperations:
+                logging.debug("averaging %d %d", t, period-t)
+                for cfg in self.configs:
+                    prevdata = self.data[cfg][t]
+                    if anti:
+                        newdata = (self.data[cfg][t] - self.data[cfg][period-t])/2.0
+                    else:
+                        newdata = (self.data[cfg][t] + self.data[cfg][period-t])/2.0
+
+                    biggest_change = max(biggest_change, abs(prevdata - newdata)/prevdata)
+                    self.data[cfg][t] = (self.data[cfg][t] + self.data[cfg][period-t])/2.0
+            else:
+                logging.info("Removing data for t={}".format(t))
+                for cfg in self.configs:
+                    del self.data[cfg][t]
+        logging.info("Correlator made symetric, largest change was {}".format(biggest_change))
+        self.times = seperations
+        self.asv = None
+        self.jkasv = None
