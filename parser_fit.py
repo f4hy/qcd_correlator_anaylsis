@@ -33,6 +33,10 @@ fitparser.add_argument("-p", "--plot", action="store_true", required=False,
                     help="Plot the resulting fit")
 fitparser.add_argument("--prune", type=float, required=False, default=0.5,
                        help="number of sigma to prune at")
+fitparser.add_argument("--symmetric", action="store_true",
+                       help="check for symmetry then symmetrize")
+fitparser.add_argument("--antisymmetric", action="store_true",
+                       help="check for antisymmetry then (anti)symmetrize")
 fitparser.add_argument("-Nt", "--period", type=int, required=False,
                     help="Period in time direction (not required for all functions)")
 fitparser.add_argument("-r", "--random", type=int, required=False,
