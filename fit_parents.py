@@ -3,7 +3,7 @@ from iminuit import Minuit
 import logging
 
 mass_bounds = (0.005, 5.0)
-amp_bounds = (0.0, 1.0e5)
+amp_bounds = (-1.0e5, 1.0e5)
 const_bounds = (-5.0, 1.0e8)
 
 class InvalidFit(RuntimeError):
@@ -27,7 +27,7 @@ def massamp_guess(cor, tmax, *args):
 
 
 def const_guess(cor, tmax, *args):
-    dt = 3
+    dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
     emass = cor.effective_mass(dt)
@@ -44,13 +44,13 @@ def const_guess(cor, tmax, *args):
 
 
 def twoexp_sqr_guess(cor, tmax, tmin):
-    dt = 3
+    dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
-    emass = cor.effective_mass(dt)
+    emass = cor.cosh_effective_mass(dt)
     mass_guess = np.median(emass.values())
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
-    mass2_guess = np.sqrt(emass[tmin])
+    mass2_guess = np.sqrt(emass[tmin+1])
     amp2_guess = (abs(ave[tmin] - amp_guess*np.exp(-mass_guess*tmin)) /
                   (amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin)))/2
     return [mass_guess, amp_guess, mass2_guess, amp2_guess]
