@@ -31,6 +31,8 @@ fitparser.add_argument("-b", "--bootstraps", type=int, required=False, default=N
                     help="Number of straps")
 fitparser.add_argument("-p", "--plot", action="store_true", required=False,
                     help="Plot the resulting fit")
+fitparser.add_argument("-d", "--debug", action="store_true", required=False,
+                       help="debug the fit")
 fitparser.add_argument("--histo", action="store_true", required=False,
                        help="make a histogram of the fit paramters")
 fitparser.add_argument("--prune", type=float, required=False, default=0.5,

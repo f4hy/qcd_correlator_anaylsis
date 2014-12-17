@@ -146,6 +146,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         if fitted_params is not None:
             boot_params.append(fitted_params)
             logging.debug("bootstrap converged")
+            if options.write_each_boot:
+                write_fitted_cor(fn, strap, tmin, tmax, options, fitted_params, postfix=".bootstrap{}".format(attempted))
+            if options.debug:
+                plot_fit(fn, strap, tmin, tmax, options, fitted_params, postfix=".bootstrap{}".format(attempted))
         else:
             logging.error("bootstrap failed to converge!")
             raise InvalidFit("one bootstrap failed")
@@ -235,8 +239,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                                                                                   min(cor.cosh_effective_mass(3).values())))
         valid = False
 
-    if options.write_each_boot and valid and filestub:
-        results.info("writing each bootstrap to {}.boot".format(filestub))
+    if NBOOTSTRAPS > 1 and valid and filestub:
+        results.info("writing each bootstrap parameter to {}.boot".format(filestub))
         with open(filestub+".boot", 'w') as bootfile:
             str_ensamble_params = ", ".join([str(p) for p in original_ensamble_params])
             bootfile.write("#bootstrap, {}, \t ensamble mean: {}\n".format(", ".join(fn.parameter_names), str_ensamble_params))
@@ -244,6 +248,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 strparams = ", ".join([str(p) for p in params])
                 bootfile.write("{}, {}\n".format(i, strparams))
 
+    if options.output_stub:
+        write_fitted_cor(fn, cor, tmin, tmax, options, original_ensamble_params, errors=boot_std)
+    if options.plot:
+        plot_fit(fn, cor, tmin, tmax, options, original_ensamble_params, errors=boot_std)
 
     if return_chi:
         return original_ensamble_correlatedfit, boot_std, chi_sqr/dof
@@ -257,23 +265,31 @@ def quality_of_fit(degrees_of_freedom, chi_sqr):
     dof = degrees_of_freedom
     return gammaincc(dof/2.0, chi_sqr / 2.0)
 
+def write_fitted_cor(fn, cor, tmin, tmax, options, fitted_params, errors=None, postfix=None):
+    if errors is None:
+        fitted_errors = [0.0]* len(fitted_params)
+    else:
+        fitted_errors = errors
+    if postfix:
+        filestub = options.output_stub + postfix
+    else:
+        filestub = options.output_stub
+    header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
+    cor.writeasv(filestub+".fittedcor.out", header=header)
+    header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
+    cor.writeemass(filestub+".fittedemass.out", dt=1, header=header)
 
-def plot_histograms(names, paramters, options):
-    logging.info("Plotting histograms of the bootstrap fits")
-    import histo
-    for index, name in enumerate(names):
-        data = [p[index] for p in paramters]
-        stub = "{}.{}.histo".format(options.output_stub, name)
-        histo.make_histogram(data, options, stub, 100)
 
-
-
-def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options=None):
+def plot_fit(fn, cor, tmin, tmax, options, fitted_params, errors=None, postfix=None):
     import plot_helpers
     emass_dt = 1
 
     X = np.linspace(tmin, tmax, 200 * 5)
-    fitted_params, fitted_errors = fit(fn, cor, tmin, tmax, filestub, bootstraps=bootstraps, options=options)
+
+    if errors is None:
+        fitted_errors = [0.0]* len(fitted_params)
+    else:
+        fitted_errors = errors
 
     fig = plt.figure()
     corplot = plt.subplot(211)
@@ -302,7 +318,7 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
     named_params = {n: (m, e) for n, m, e in zip(fn.parameter_names, fitted_params, fitted_errors)}
     mass, mass_err = named_params["mass"]
     # abovefitline = emassplot.plot(range(tmin, tmax+1), [mass+mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
-    fitplt = emassplot.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)), ls="dotted", color="r")
+    fitplt, = emassplot.plot(range(tmin, tmax+1), [mass]*len(range(tmin, tmax+1)), ls="dotted", color="r")
     # belowfitline = emassplot.plot(range(tmin, tmax+1), [mass-mass_err]*len(range(tmin, tmax+1)), ls="dashed", color="b")
     fitpoints = fn.formula(fitted_params, np.arange(tmin, tmax+1))
     emassfit = []
@@ -318,20 +334,31 @@ def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options
             fitemass = 0.0
     emass_fit = emassplot.plot(emassfit_range, emassfit, color="k")
 
-    plt.legend([dataplt, fitplt], ["Emass of data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)], loc='best')
+    emassplot.legend([dataplt, fitplt], ["Emass of data", u"fit mass={:.5f}\xb1{:.5f}".format(mass, mass_err)], loc='best')
     # plt.ylim([min(min(emass.values()),-0.01), max(emass.values())*1.2])
     plt.xlim([0, tmax + 2])
 
-    if(filestub):
+    if options.output_stub:
+        if postfix:
+            filestub = options.output_stub + postfix
+        else:
+            filestub = options.output_stub
         logging.info("Saving plot to {}".format(filestub+".png"))
         fig.set_size_inches(18.5, 10.5)
         plt.savefig(filestub+".png")
-        header="#fit {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
-        cor.writeasv(filestub+".fittedcor.out", header=header)
-        header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
-        cor.writeemass(filestub+".fittedemass.out", dt=1, header=header)
     else:
         plt.show()
+    plt.close()
+
+
+def plot_histograms(names, paramters, options):
+    logging.info("Plotting histograms of the bootstrap fits")
+    import histo
+    for index, name in enumerate(names):
+        data = [p[index] for p in paramters]
+        stub = "{}.{}.histo".format(options.output_stub, name)
+        histo.make_histogram(data, options, stub, 100)
+
 
 
 def bootstrap_cfgs(cor):
@@ -438,12 +465,8 @@ def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=F
     for tmin, tmax in fit_ranges:
         logging.info("Trying fit range {}, {}".format(tmin, tmax))
         try:
-            if args.plot:
-                results = plot_fit(funct, cor, tmin, tmax, filestub=filestub,
-                                   bootstraps=bootstraps, options=options)
-            else:
-                results = fit(funct, cor, tmin, tmax, filestub=filestub,
-                              bootstraps=bootstraps, options=options)
+            results = fit(funct, cor, tmin, tmax, filestub=filestub,
+                          bootstraps=bootstraps, options=options)
             logging.info("Auto Fit sucessfully!")
             return  # (tmin, tmax) + results  # Need to return what fit range was done
         except RuntimeError as e:
@@ -544,6 +567,14 @@ if __name__ == "__main__":
             logging.error("Correlator was not symmetric!")
             exit()
 
+    if args.antisymmetric:
+        if cor.check_symmetric(4.0, anti=True):
+            cor.make_symmetric(anti=True)
+        else:
+            logging.error("Correlator was not antisymmetric!")
+            exit()
+
+
     if args.full:
         # check
         period = max(cor.times)+1
@@ -586,20 +617,12 @@ if __name__ == "__main__":
         exit()
 
     try:
-        if args.plot:
-            plot_fit(funct, cor, tmin, tmax, filestub=args.output_stub,
-                     bootstraps=args.bootstraps, options=args)
-        else:
-            fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
+        fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
     except InvalidFit:
         logging.error("Fit was invalid, trying backup")
         if funct.fallback and not args.nofallback:
             logging.error("function has a fallback {}".format(funct.fallback))
             fallback = functions[funct.fallback](Nt=args.period)
-            if args.plot:
-                plot_fit(fallback, cor, tmin, tmax, filestub=args.output_stub,
-                         bootstraps=args.bootstraps, options=args)
-            else:
-                fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
+            fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         else:
             logging.error("Function does not have a fallback, fit failed")
