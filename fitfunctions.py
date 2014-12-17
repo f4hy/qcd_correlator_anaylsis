@@ -34,6 +34,16 @@ class periodic_exp(mass_amp, periodic):
     def formula(self, v, x):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
 
+class antiperiodic_exp(mass_amp, periodic):
+    def __init__(self, Nt=None):
+        super(antiperiodic_exp, self).__init__()
+        self.setNt(Nt)
+        self.description = "sinh"
+        self.template = "{1: f}(exp(-{0: f}*t)-exp(-{0: f}*(t-%d))" % self.Nt
+
+    def formula(self, v, x):
+        return (v[1] * (np.exp((-1.0) * v[0] * x) - np.exp(v[0] * (x-(self.Nt)))))
+
 
 class periodic_exp_subtracted(mass_amp, periodic):
     def __init__(self, Nt=None):
