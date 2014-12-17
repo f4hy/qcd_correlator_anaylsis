@@ -200,6 +200,8 @@ def add_fit_info(filename, ax=None):
             if args.fit_errors:
                 ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
                 ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
+        if masserror == 0:
+            return "{}".format(mass)
         digits = -1.0*round(math.log10(masserror))
         formated_error = int(round(masserror * (10**(digits + 1))))
         formated_mass = "{m:.{d}f}".format(d=int(digits) + 1, m=mass)
