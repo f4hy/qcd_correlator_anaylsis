@@ -12,7 +12,7 @@ import re
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
 
 
-def make_histogram(data, numbins=10, norm=False):
+def make_histogram(data, options, output_stub, numbins=10, norm=False):
 
     print "norm", norm
 
@@ -42,9 +42,9 @@ def make_histogram(data, numbins=10, norm=False):
             y = mlab.normpdf(bincenters, np.mean(data), np.std(data))
             plt.plot(bincenters, y, 'r--', linewidth=1)
 
-    if(args.output_stub):
-        logging.info("Saving plot to {}".format(args.output_stub+".png"))
-        plt.savefig(args.output_stub+".png",dpi=200)
+    if(output_stub):
+        logging.info("Saving plot to {}".format(output_stub+".png"))
+        plt.savefig(output_stub+".png",dpi=200)
     else:
         plt.show()
 
@@ -75,4 +75,4 @@ if __name__ == "__main__":
     else:
         with open(args.datafile) as dataf:
             data= map(float,dataf.read().split())
-    make_histogram(data, args.bins, args.norm)
+    make_histogram(data, args, args.output_stub, args.bins, args.norm)

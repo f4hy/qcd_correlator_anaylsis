@@ -161,9 +161,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         logging.error("More that 10% of the straps failed")
         raise InvalidFit("more than 10% of boostraps failed to converge")
 
+    if options.histo:
+        plot_histograms(fn.parameter_names, boot_params, options)
+
     results.info('')
     results.info('Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
     results.info('Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
+
     boot_averages = np.mean(boot_params, 0)
     boot_std = np.std(boot_params, 0)
     boota = np.array(boot_params)
@@ -252,6 +256,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 def quality_of_fit(degrees_of_freedom, chi_sqr):
     dof = degrees_of_freedom
     return gammaincc(dof/2.0, chi_sqr / 2.0)
+
+
+def plot_histograms(names, paramters, options):
+    logging.info("Plotting histograms of the bootstrap fits")
+    import histo
+    for index, name in enumerate(names):
+        data = [p[index] for p in paramters]
+        stub = "{}.{}.histo".format(options.output_stub, name)
+        histo.make_histogram(data, options, stub, 100)
+
 
 
 def plot_fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, options=None):
