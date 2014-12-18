@@ -43,7 +43,7 @@ fitparser.add_argument("--antisymmetric", action="store_true",
                        help="check for antisymmetry then (anti)symmetrize")
 fitparser.add_argument("-Nt", "--period", type=int, required=False,
                     help="Period in time direction (not required for all functions)")
-fitparser.add_argument("-r", "--random", type=int, required=False,
+fitparser.add_argument("-r", "--random", type=int, default=4, required=False,
                     help="set the random seed")
 fitparser.add_argument("-v", "--verbose", action="store_true",
                     help="increase output verbosity")
