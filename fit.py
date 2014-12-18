@@ -242,7 +242,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     if NBOOTSTRAPS > 1 and valid and filestub:
         results.info("writing each bootstrap parameter to {}.boot".format(filestub))
         with open(filestub+".boot", 'w') as bootfile:
-            str_ensamble_params = ", ".join([str(p) for p in original_ensamble_params])
+            str_ensamble_params = ", ".join([str(p) for p in original_ensamble_correlatedfit])
             bootfile.write("#bootstrap, {}, \t ensamble mean: {}\n".format(", ".join(fn.parameter_names), str_ensamble_params))
             for i, params in enumerate(boot_params):
                 strparams = ", ".join([str(p) for p in params])
