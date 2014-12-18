@@ -356,7 +356,10 @@ def plot_histograms(names, paramters, options):
     import histo
     for index, name in enumerate(names):
         data = [p[index] for p in paramters]
-        stub = "{}.{}.histo".format(options.output_stub, name)
+        if options.output_stub:
+            stub = "{}.{}.histo".format(options.output_stub, name)
+        else:
+            stub = None
         histo.make_histogram(data, options, stub, 100)
 
 
