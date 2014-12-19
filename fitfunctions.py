@@ -1,5 +1,5 @@
 import numpy as np
-from fit_parents import periodic, mass_amp, mass_amp_const, twice_mass_amp, twice_mass_amp_const, InvalidFit
+from fit_parents import periodic, mass_amp, mass_amp_const, twice_mass_amp, twice_mass_amp_const, InvalidFit, multirange, sharedmass_amp
 
 
 class cosh(mass_amp, periodic):
@@ -177,3 +177,30 @@ class periodic_two_exp_const(twice_mass_amp_const, periodic):
 
 #     def formula(self, v, x):
 #         return ((1 - v[1]) * np.exp((-1.0) * v[0] * x))+(v[1] * np.exp((-1.0) * v[2] * x))
+
+# class twocor_periodic_exp(twocor_sharedmass_amp, periodic):
+#     def __init__(self, Nt=None):
+#         super(twocor_periodic_exp, self).__init__()
+#         self.setNt(Nt)
+#         self.description = "two_cor-fwd-back-exp"
+#         self.template = "{1: f}(exp(-{0: f}*t)+exp(-{0: f}*(t-%d))" % self.Nt
+
+#     def formula(self, v, x):
+#         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
+
+class twocor_periodic_exp(sharedmass_amp, periodic, multirange):
+    def __init__(self, Nt=None, ranges=None):
+        super(twocor_periodic_exp, self).__init__()
+        self.setNt(Nt)
+        self.setranges(ranges)
+        self.description = "two_cor-fwd-back-exp"
+        self.template = "m{0: f}, A1{1: f} A2{2: f}"
+
+    def formula(self, v, x):
+        ys = []
+        for i in range(len(self.ranges)):
+            r = self.ranges[i]
+            tx = np.arange(r[0], r[1]+1, 1)
+            ys.append(v[1+i] * (np.exp((-1.0) * v[0] * tx) + np.exp(v[0] * (tx-(self.Nt)))))
+            # (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
+        return np.concatenate(ys)

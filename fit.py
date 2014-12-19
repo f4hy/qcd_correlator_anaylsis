@@ -75,6 +75,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     if options.debugguess:
         #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
+        if options.plot:
+            plot_fit(fn, cor, tmin, tmax, options, initial_guess)
         return initial_guess, [0.01, 0.01, 0.01, 0.01]  # For testing initila guess in plot
     if not success:
         raise InvalidFit("original exnamble leastsq failed")
