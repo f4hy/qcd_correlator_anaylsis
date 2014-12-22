@@ -1,8 +1,7 @@
 import numpy as np
-from fit_parents import periodic, mass_amp, mass_amp_const, twice_mass_amp, twice_mass_amp_const, InvalidFit, multirange, sharedmass_amp
+import fit_parents as fp
 
-
-class cosh(mass_amp, periodic):
+class cosh(fp.mass_amp, fp.periodic):
     def __init__(self, Nt=None):
         super(cosh, self).__init__()
         self.setNt(Nt)
@@ -14,7 +13,7 @@ class cosh(mass_amp, periodic):
         return (v[1] * np.cosh((-1.0)*v[0]*((x-(self.Nt/2.0)))))
 
 
-class single_exp(mass_amp):
+class single_exp(fp.mass_amp):
     def __init__(self, **kargs):
         super(single_exp, self).__init__()
         self.description = "exp"
@@ -24,7 +23,7 @@ class single_exp(mass_amp):
         return (v[1] * np.exp((-1.0) * v[0] * x))
 
 
-class periodic_exp(mass_amp, periodic):
+class periodic_exp(fp.mass_amp, fp.periodic):
     def __init__(self, Nt=None):
         super(periodic_exp, self).__init__()
         self.setNt(Nt)
@@ -34,7 +33,7 @@ class periodic_exp(mass_amp, periodic):
     def formula(self, v, x):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
 
-class antiperiodic_exp(mass_amp, periodic):
+class antiperiodic_exp(fp.mass_amp, fp.periodic):
     def __init__(self, Nt=None):
         super(antiperiodic_exp, self).__init__()
         self.setNt(Nt)
@@ -45,7 +44,7 @@ class antiperiodic_exp(mass_amp, periodic):
         return (v[1] * (np.exp((-1.0) * v[0] * x) - np.exp(v[0] * (x-(self.Nt)))))
 
 
-class periodic_exp_subtracted(mass_amp, periodic):
+class periodic_exp_subtracted(fp.mass_amp, fp.periodic):
     def __init__(self, Nt=None):
         super(periodic_exp_subtracted, self).__init__()
         self.setNt(Nt)
@@ -58,7 +57,7 @@ class periodic_exp_subtracted(mass_amp, periodic):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt))))) - (v[1] * (np.exp((-1.0) * v[0] * self.subtract) + np.exp(v[0] * (self.subtract-(self.Nt)))))
 
 
-class periodic_exp_const(mass_amp_const, periodic):
+class periodic_exp_const(fp.mass_amp_const, fp.periodic):
     def __init__(self, Nt=None):
         super(periodic_exp_const, self).__init__()
         self.setNt(Nt)
@@ -69,7 +68,7 @@ class periodic_exp_const(mass_amp_const, periodic):
         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))+v[2]
 
 
-class cosh_const(mass_amp_const, periodic):
+class cosh_const(fp.mass_amp_const, fp.periodic):
     def __init__(self, Nt=None):
         super(cosh_const, self).__init__()
         self.setNt(Nt)
@@ -80,7 +79,7 @@ class cosh_const(mass_amp_const, periodic):
         return (v[1] * np.cosh((-1.0)*v[0]*((x-(self.Nt/2.0)))))+v[2]
 
 
-class two_exp(twice_mass_amp):
+class two_exp(fp.twice_mass_amp):
     def __init__(self, **kargs):
         super(two_exp, self).__init__()
         self.description = "two_exp"
@@ -91,7 +90,7 @@ class two_exp(twice_mass_amp):
         return (v[1] * np.exp((-1.0) * v[0] * x)*(1.0 + v[3]*np.exp((-1.0)*(v[2]**2)*x)))
 
 
-class periodic_two_exp(twice_mass_amp, periodic):
+class periodic_two_exp(fp.twice_mass_amp, fp.periodic):
     def __init__(self, Nt=None):
         super(periodic_two_exp, self).__init__()
         self.setNt(Nt)
@@ -105,7 +104,7 @@ class periodic_two_exp(twice_mass_amp, periodic):
                         (v[1]*np.exp(v[0]*(x-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(x-(self.Nt))))))  # noqa
 
 
-class periodic_two_exp_subtracted(twice_mass_amp, periodic):
+class periodic_two_exp_subtracted(fp.twice_mass_amp, fp.periodic):
     def __init__(self, Nt=None):
         super(periodic_two_exp_subtracted, self).__init__()
         self.setNt(Nt)
@@ -122,7 +121,7 @@ class periodic_two_exp_subtracted(twice_mass_amp, periodic):
                  (v[1]*np.exp(v[0]*(self.subtract-(self.Nt)))*(1.0 + v[3]*np.exp((v[2]**2)*(self.subtract-(self.Nt)))))))  # noqa
 
 
-class periodic_two_exp_const(twice_mass_amp_const, periodic):
+class periodic_two_exp_const(fp.twice_mass_amp_const, fp.periodic):
     def __init__(self, Nt=None):
         super(periodic_two_exp_const, self).__init__()
         self.setNt(Nt)
@@ -178,7 +177,7 @@ class periodic_two_exp_const(twice_mass_amp_const, periodic):
 #     def formula(self, v, x):
 #         return ((1 - v[1]) * np.exp((-1.0) * v[0] * x))+(v[1] * np.exp((-1.0) * v[2] * x))
 
-# class twocor_periodic_exp(twocor_sharedmass_amp, periodic):
+# class twocor_periodic_exp(twocor_sharedmass_amp, fp.periodic):
 #     def __init__(self, Nt=None):
 #         super(twocor_periodic_exp, self).__init__()
 #         self.setNt(Nt)
@@ -187,20 +186,3 @@ class periodic_two_exp_const(twice_mass_amp_const, periodic):
 
 #     def formula(self, v, x):
 #         return (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
-
-class twocor_periodic_exp(sharedmass_amp, periodic, multirange):
-    def __init__(self, Nt=None, ranges=None):
-        super(twocor_periodic_exp, self).__init__()
-        self.setNt(Nt)
-        self.setranges(ranges)
-        self.description = "two_cor-fwd-back-exp"
-        self.template = "m{0: f}, A1{1: f} A2{2: f}"
-
-    def formula(self, v, x):
-        ys = []
-        for i in range(len(self.ranges)):
-            r = self.ranges[i]
-            tx = np.arange(r[0], r[1]+1, 1)
-            ys.append(v[1+i] * (np.exp((-1.0) * v[0] * tx) + np.exp(v[0] * (tx-(self.Nt)))))
-            # (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
-        return np.concatenate(ys)

@@ -120,22 +120,24 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         #m.set_strategy(2)
         migradinfo = m.migrad()
         minuit_results = [m.values[name] for name in fn.parameter_names]
+        chisqr = migradinfo[0]["fval"]
         if m.get_fmin().is_valid:
-            return minuit_results
+            return minuit_results, chisqr
         else:
             logging.error("minuit failed!!")
             logging.error("was at {}".format(minuit_results))
-            return None
+            raise InvalidFit("minuit failed")
 
     # end cov_fit
 
-    original_ensamble_correlatedfit = cov_fit(cor, initial_guess)
+    original_ensamble_correlatedfit, original_ensamble_chisqr = cov_fit(cor, initial_guess)
     isvalidfit = fn.valid(original_ensamble_correlatedfit)
     if not isvalidfit:
         raise InvalidFit("Full ensamble failed")
 
 
     boot_params = []
+    boot_chisqr = []
     failcount = 0
     attempted = 0
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub):
@@ -144,9 +146,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             newguess = fn.starting_guess(strap, tmax, tmin)
         else:
             newguess = initial_guess
-        fitted_params = cov_fit(strap, newguess)
+        fitted_params, fitted_chisqr = cov_fit(strap, newguess)
         if fitted_params is not None:
             boot_params.append(fitted_params)
+            boot_chisqr.append(fitted_chisqr)
             logging.debug("bootstrap converged")
             if options.write_each_boot:
                 write_fitted_cor(fn, strap, tmin, tmax, options, fitted_params, postfix=".bootstrap{}".format(attempted))
@@ -228,12 +231,19 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     v = original_ensamble_correlatedfit
     cov = covariance_matrix(cor, tmin, tmax+1)
     inv_cov = bestInverse(cov)
-    chi_sqr = np.sum(((orig_ave_cor[t] - fn.formula(v, t)) * inv_cov[t - tmin][tp - tmin] * (orig_ave_cor[tp] - fn.formula(v, tp))
-                      for t in fitrange for tp in fitrange))
 
+    chi_average = np.mean(boot_chisqr, 0)
+    chi_median = np.median(boot_chisqr, 0)
+    chi_min = min(boot_chisqr)
+    chi_std = np.std(boot_chisqr, 0)
+    chi_range = stats.scoreatpercentile(boot_chisqr, 84) - stats.scoreatpercentile(boot_chisqr, 16)
     dof = len(x) - len(fn.parameter_names)
+    chi_sqr = original_ensamble_chisqr
     results.log(OUTPUT, u'\u03c7\u00b2 ={},   \u03c7\u00b2 / dof = {}, Qual {}\n'.format(
         chi_sqr, chi_sqr/dof, quality_of_fit(dof, chi_sqr)))
+
+    logging.debug("chiave:{}, chi_med:{}, chi_min:{}, chi_std:{}, chi_range{}".format(
+        chi_average, chi_median, chi_min, chi_std, chi_range))
 
     valid = True
     if original_ensamble_correlatedfit[0]*2 < min(cor.cosh_effective_mass(3).values()):
