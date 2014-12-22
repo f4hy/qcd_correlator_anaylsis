@@ -58,6 +58,59 @@ def mergecors(cors, tmins, tmaxs):
 
     return correlator.Correlator.fromDataDicts(newdata, dummyvev, dummyvev)
 
+
+def auto_fit(cors, options=None):
+    logging.info("Finding best fit range")
+    logging.debug("Temporarily setting the logger to warnings only")
+    logger = logging.getLogger()
+    previous_loglevel = logger.level
+    ALWAYSINFO = 26
+    logger.setLevel(ALWAYSINFO)
+    import itertools
+    tend = options.period/2
+    print tend
+
+    tends = [tend] * len(cors)
+
+    allowed_tmins = range(5,tend-5)
+    tmins = itertools.combinations_with_replacement(allowed_tmins, 2)
+    print tmins
+    best_ranges = []
+    for tmin in tmins:
+        multicor = mergecors(cors, tmin, tends)
+        funct = functions[options.function](Nt=options.period, ranges=zip(tmin, tends))
+        try:
+            _, _, qual = fit.fit(funct, multicor, min(multicor.times), max(multicor.times),
+                                 bootstraps=1, return_chi=False, return_quality=True, options=options)
+            metric = qual
+            best_ranges.append((metric,tmin))
+        except RuntimeError:
+            logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(*tmin))
+        except fit.InversionError:
+            logging.warn("Covariance matrix failed, skipping this tmin,tmax {},{}".format(*tmin))
+
+    logger.setLevel(previous_loglevel)
+    logging.debug("Restored logging state to original")
+
+    sortedranges = [(metric, tmins) for metric, tmins in sorted(best_ranges, reverse=True)]
+    print sortedranges
+    for _, tmin in sortedranges:
+        try:
+            fit.fit(funct, multicor, min(multicor.times), max(multicor.times),
+                    filestub=options.output_stub, return_chi=False, return_quality=True, options=options)
+        except RuntimeError:
+            logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(*tmin))
+        except fit.InversionError:
+            logging.warn("Covariance matrix failed, skipping this tmin,tmax {},{}".format(*tmin))
+        else:
+            print "fit using ranges {}".format(tmin)
+            break
+    print "done"
+    exit()
+
+
+    logging.info("starting fit with mergedcorrelator")
+
 if __name__ == "__main__":
 
     # add the fit parser, but then override to use many correlators.
@@ -112,8 +165,10 @@ if __name__ == "__main__":
         cors.append(cor)
 
 
-    multicor = mergecors(cors, args.time_start, args.time_end)
-    funct = functions[args.function](Nt=args.period, ranges=zip(args.time_start, args.time_end))
+    auto_fit(cors, options=args)
 
-    logging.info("starting fit with mergedcorrelator")
-    fit.fit(funct, multicor, min(multicor.times), max(multicor.times), options=args)
+    # multicor = mergecors(cors, args.time_start, args.time_end)
+    # funct = functions[args.function](Nt=args.period, ranges=zip(args.time_start, args.time_end))
+
+    # logging.info("starting fit with mergedcorrelator")
+    # fit.fit(funct, multicor, min(multicor.times), max(multicor.times), options=args)
