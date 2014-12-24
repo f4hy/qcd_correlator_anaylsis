@@ -15,7 +15,7 @@ class sharedmass_amp(object):
         dt = 1
         ave = cor.average_sub_vev()
         emass = cor.cosh_effective_mass(dt)
-        mass_guess = np.mean([emass[i[1]-dt] for i in self.indexes])
+        mass_guess = np.mean([emass[i[1]-dt-1] for i in self.indexes])
 
         amp_guess1 = ave[self.indexes[0][1]]*np.exp(mass_guess*(self.ranges[0][1]))
         amp_guess2 = ave[self.indexes[1][1]]*np.exp(mass_guess*(self.ranges[1][1]))

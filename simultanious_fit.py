@@ -73,8 +73,8 @@ def auto_fit(cors, options=None):
     tends = [tend] * len(cors)
 
     allowed_tmins = range(5,tend-5)
-    tmins = itertools.combinations_with_replacement(allowed_tmins, 2)
-    print tmins
+    tmins = itertools.product(allowed_tmins, repeat=2)
+    tmins = [(x,y) for x,y in tmins if x>y]
     best_ranges = []
     for tmin in tmins:
         multicor = mergecors(cors, tmin, tends)
@@ -93,9 +93,11 @@ def auto_fit(cors, options=None):
     logging.debug("Restored logging state to original")
 
     sortedranges = [(metric, tmins) for metric, tmins in sorted(best_ranges, reverse=True)]
-    print sortedranges
-    for _, tmin in sortedranges:
+    print sortedranges[:5]
+    for _, tmin in sortedranges[:10]:
         try:
+            multicor = mergecors(cors, tmin, tends)
+            funct = functions[options.function](Nt=options.period, ranges=zip(tmin, tends))
             fit.fit(funct, multicor, min(multicor.times), max(multicor.times),
                     filestub=options.output_stub, return_chi=False, return_quality=True, options=options)
         except RuntimeError:
@@ -152,6 +154,7 @@ if __name__ == "__main__":
             vev2 = args.vev2[i]
 
         try:
+            logging.info("reading {}".format(corrfile))
             cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
             cors.append(cor)
         except AttributeError:
