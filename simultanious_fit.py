@@ -88,6 +88,9 @@ def auto_fit(cors, options=None):
             logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(*tmin))
         except fit.InversionError:
             logging.warn("Covariance matrix failed, skipping this tmin,tmax {},{}".format(*tmin))
+        except Exception as e:
+            logging.warn("Fitter failed error {}".format(e))
+            logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(*tmin))
 
     logger.setLevel(previous_loglevel)
     logging.debug("Restored logging state to original")

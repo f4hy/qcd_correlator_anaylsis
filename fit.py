@@ -503,7 +503,7 @@ class InversionError(Exception):
 
 
 def bestInverse(M):
-    TOLERANCE = 1.E-4
+    TOLERANCE = 1.E-3
 
     def invert_error(i):
         return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
