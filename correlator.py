@@ -362,7 +362,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                         newdata = (self.data[cfg][t] + self.data[cfg][period-t])/2.0
 
                     biggest_change = max(biggest_change, abs(prevdata - newdata)/prevdata)
-                    self.data[cfg][t] = (self.data[cfg][t] + self.data[cfg][period-t])/2.0
+                    self.data[cfg][t] = newdata # (self.data[cfg][t] + self.data[cfg][period-t])/2.0
             else:
                 logging.info("Removing data for t={}".format(t))
                 for cfg in self.configs:
