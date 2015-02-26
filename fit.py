@@ -88,7 +88,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         ave_cor = correlator.average_sub_vev()
         y = [ave_cor[t] for t in fitrange]
         cov = covariance_matrix(correlator, tmin, tmax+1)
+        if options.debug_uncorrelated:
+            cov = np.diag(np.diag(cov))
         inv_cov = bestInverse(cov)
+
+
+        if options.debug_identcov:
+            results.log(30, "using identcov debug option")
+            inv_cov = np.identity(len(cov))
+
+
         aoc = np.array([ave_cor[t] for t in fitrange])
         #logging.debug("guess {}".format(str(guess)))
 
@@ -210,20 +219,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 raise InvalidFit("Bootstrap average does not agree with ensamble average")
         else:
             results.info("{}: diff of bstrap average and bstrap med is {:.3%}".format(name, skew))
-        if dist_skew > 1.0:
-            results.error("for {} diff of stddev and IQR is {:.3%}".format(name, dist_skew))
-            results.error("Large outliers present in bootstrap fits!!")
-            if not options.unsafe:
-                results.critical("Exiting! Run with --unsafe to fit anyway")
-                raise InvalidFit("Bootstrap average does not agree with ensamble average")
-        else:
-            results.info("for {} diff of standard deviation"
-                         " and interquartile range is {:.3%}".format(name, dist_skew))
 
     results.info("")
+    try:
+        results.log(OUTPUT, "Fit ranges ({}), ({})".format(*fn.ranges))
+    except Exception as e:
+        pass
+
     results.log(OUTPUT, "Full esamble fitted parameters t=%2d to %2d---------------------", tmin, tmax)
     results.log(OUTPUT, "Name      : Average,        STD,           (1st Quart, Median, 3rd Quart, IQR)")
-    for name, ave, std, low, med, up, iqr in zip(fn.parameter_names, original_ensamble_correlatedfit, boot_std,
+    for name, ave, std, low, med, up, iqr in zip(fn.parameter_names, boot_averages, boot_std,
                                                  upper_quartiles, medians, lower_quartiles, inter_range):
         results.log(OUTPUT, u"{:<10}: {:<15.10f} \u00b1 {:<10g}   ({:<9.6f}, {:<9.6f}, {:<9.6f}, {:<9.6f})".format(name, ave, std, low, med, up, iqr))
     results.log(OUTPUT, "--------------------------------------------------------")
@@ -251,7 +256,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                                                                                   min(cor.cosh_effective_mass(3).values())))
         valid = False
 
-    if NBOOTSTRAPS > 1 and valid and filestub:
+    if bootstraps > 1 and valid and filestub:
         results.info("writing each bootstrap parameter to {}.boot".format(filestub))
         with open(filestub+".boot", 'w') as bootfile:
             str_ensamble_params = ", ".join([str(p) for p in original_ensamble_correlatedfit])
@@ -261,16 +266,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 bootfile.write("{}, {}\n".format(i, strparams))
 
     if options.output_stub:
-        write_fitted_cor(fn, cor, tmin, tmax, options, original_ensamble_params, errors=boot_std)
-    if options.plot:
-        plot_fit(fn, cor, tmin, tmax, options, original_ensamble_params, errors=boot_std)
+        write_fitted_cor(fn, cor, tmin, tmax, options, boot_averages, errors=boot_std)
+    if options.plot and bootstraps > 1:
+        plot_fit(fn, cor, tmin, tmax, options, boot_averages, errors=boot_std)
 
     if return_chi:
-        return original_ensamble_correlatedfit, boot_std, chi_sqr/dof
+        return boot_averages, boot_std, chi_sqr/dof
     if return_quality:
-        return original_ensamble_correlatedfit, boot_std, quality_of_fit(dof, chi_sqr)
+        return boot_averages, boot_std, quality_of_fit(dof, chi_sqr)
     else:
-        return original_ensamble_correlatedfit, boot_std
+        return boot_averages, boot_std
 
 
 def quality_of_fit(degrees_of_freedom, chi_sqr):
@@ -445,16 +450,15 @@ def best_fit_range(fn, cor, options=None):
     for tmin in cor.times:
         if fn.subtract and tmin == min(cor.times) or tmin < 1:
             continue
-        tmaxes = [options.time_end] if options.time_end else range(tmin + len(fn.parameter_names)*2, max(cor.times))
+        tmaxes = [options.time_end] if options.time_end else range(tmin + len(fn.parameter_names)*4, max(cor.times))
         for tmax in tmaxes:
             if tmin > tmax:
                 continue
             try:
-                _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=False, return_quality=True, options=options)
-                #metric = abs(chi-1.0)
-                metric = qual
-                # if qual > 0.1:
-                #     metric = (tmax-tmin)+qual
+                _, _, qual = fit(fn, cor, tmin, tmax, filestub=None, bootstraps=1, return_chi=True, return_quality=False, options=options)
+                metric = 1/qual
+                if qual < 1.5:
+                    metric = (tmax-tmin)+metric
                 # else:
                 #     metric = qual
                 #if metric > best:
@@ -462,7 +466,7 @@ def best_fit_range(fn, cor, options=None):
                 best_ranges.append((metric, tmin, tmax))
                 if metric > 0.2:
                     logging.log(ALWAYSINFO, "Fit range ({},{})"
-                                " is good with chi/dof {}".format(tmin, tmax, qual))
+                                " is good with chi/dof {} using {} points".format(tmin, tmax, qual, tmax-tmin))
             except RuntimeError:
                 logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
             except InversionError:
@@ -503,12 +507,16 @@ class InversionError(Exception):
 
 
 def bestInverse(M):
-    TOLERANCE = 1.E-3
+    TOLERANCE = 1.E-5
 
     def invert_error(i):
         return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
 
-    inv = linalg.inv(M)         # Will raise error if singular
+    try:
+        inv = linalg.inv(M)         # Will raise error if singular
+    except np.linalg.linalg.LinAlgError:
+        raise InversionError("Could not invert within tolerance")
+
     error = invert_error(inv)
 
     try:
@@ -516,7 +524,7 @@ def bestInverse(M):
     except np.linalg.linalg.LinAlgError:
         logging.error("Not positive definite!")
         logging.exception("Could not invert Not positive definite!")
-        raise
+        raise InversionError("Could not invert within tolerance")
 
     else:
         chol_inv = CholeskyInverse(chol)

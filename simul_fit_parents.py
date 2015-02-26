@@ -33,8 +33,12 @@ class sharedmass_amp(object):
         self.aoc = data
         self.inv_cov = invmatrix
         self.times = times
-        m = Minuit(self.my_cov_fun, mass=guess[0], amp1=guess[1], amp2=guess[2],
-                   print_level=0, pedantic=False)
+        dof = len(guess)+len(data)
+        m = Minuit(self.my_cov_fun, mass=guess[0], error_mass=guess[0]*0.1,
+                   amp1=guess[1], error_amp1=guess[1]*0.1,
+                   amp2=guess[2], error_amp2=guess[2]*0.1,
+                   errordef=dof,
+                   print_level=0, pedantic=True)
         return m
 
 class multirange(object):
