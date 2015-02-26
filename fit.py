@@ -413,7 +413,7 @@ def covariance_matrix(cor, tmin, tmax):
         b = np.fromiter(v.values(), np.float)[tmin-start_time:tmax-start_time] - aoc
         # b = np.array(v.values()[tmin-start_time:tmax-start_time]).flat-aoc
         mymat += np.outer(b, b)
-    return mymat*nm1*nm0
+    return mymat*nm1#*nm0
 
 
 def CholeskyInverse(t):
