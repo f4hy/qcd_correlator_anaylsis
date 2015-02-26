@@ -323,6 +323,10 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     else:
         plt.xlim(xmin, xmax)
 
+    if args.logarithm:
+        plt.yscale('log')
+
+
     if title:
         f.suptitle(title, **fontsettings)
 
@@ -362,7 +366,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             tmin_plot[label].set_visible(not tmin_plot[label].get_visible())
         plt.draw()
 
-    if not seperate:
+    if not seperate and not args.nolegend:
         rax = plt.axes([0.9, 0.8, 0.1, 0.15])
         check = CheckButtons(rax, plots.keys(), [True]*len(plots))
         check.on_clicked(func)
@@ -400,6 +404,10 @@ if __name__ == "__main__":
                         help="plot title", default=None)
     parser.add_argument("-tr", "--translate", action="store_true", required=False,
                         help="Attempt to translate the names (of operators)")
+    parser.add_argument("-l", "--logarithm", action="store_true", required=False,
+                        help="take the log on the y axis")
+    parser.add_argument("-pf", "--plotfunction", type=float, required=False, nargs=2,
+                        help="add a plot of a correlator with AMP and MASS")
     parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
                         help="set the yrange of the plot", default=None)
     parser.add_argument("-x", "--xrang", type=float, required=False, nargs=2,
