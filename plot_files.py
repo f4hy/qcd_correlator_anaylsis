@@ -210,6 +210,14 @@ def add_fit_info(filename, ax=None):
         logging.error("File {} had no fit into".format(filename))
 
 
+def add_function_plot(function_params, xmin, xmax):
+    print function_params
+    t = np.arange(xmin,xmax)
+    amp, mass = function_params
+    cor = amp*(np.exp(-1.0*mass*t) - np.exp(-1.0*mass*(96-t)))
+    plt.plot(t,cor)
+
+
 def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=False, real=False, title=None):
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
@@ -314,10 +322,14 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             xmax = max(xmax, max(df.time)+1)
             logging.debug("xmin {} xmax {}".format(xmin, xmax))
 
-    if yrange:
-        plt.ylim(yrange)
-    else:
-        plt.ylim(plot_helpers.auto_fit_range(ymin,ymax))
+    if args.plotfunction:
+        add_function_plot(args.plotfunction, xmin,xmax)
+
+    if not args.logarithm:
+        if yrange:
+            plt.ylim(yrange)
+        else:
+            plt.ylim(plot_helpers.auto_fit_range(ymin,ymax))
     if xrang:
         plt.xlim(xrang)
     else:
