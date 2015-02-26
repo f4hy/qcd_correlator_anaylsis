@@ -146,6 +146,30 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 emass[t] = float('NaN')
         return emass
 
+    def effective_amp(self, dt):
+        asv = self.average_sub_vev()
+        print asv
+        emass = {}
+        eamp = {}
+        for t in self.times[:-dt]:
+            try:
+                emass[t] = (1.0 / float(dt)) * math.log(asv[t] / asv[t + dt])
+                eamp[t] = asv[t] * math.exp(emass[t]*t)
+            except ValueError:
+                logging.debug("invalid argument to log at t={}, setting to NaN".format(t))
+                emass[t] = float('NaN')
+                eamp[t] = float('NaN')
+            except KeyError:
+                logging.error("index out of range")
+            except ZeroDivisionError:
+                logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t + dt]))
+                emass[t] = float('NaN')
+                eamp[t] = float('NaN')
+        print eamp
+        #exit()
+        return eamp
+
+
     def cosh_effective_mass(self, dt):
         asv = self.average_sub_vev()
         emass = {}
@@ -161,6 +185,28 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t]))
                 emass[t] = float('NaN')
         return emass
+
+    def cosh_effective_amp(self, dt, period, mass):
+        asv = self.average_sub_vev()
+        emass = {}
+        eamp = {}
+        for t in self.times[dt:-dt]:
+            try:
+                # emass[t] = (1.0 / float(dt))*math.acosh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
+                # eamp[t] = asv[t] / (math.exp(emass[t]*t)+math.exp(emass[t]*(period-t)))
+                eamp[t] = asv[t] / (math.exp(mass*t)+math.exp(mass*(period-t)))
+            except ValueError:
+                logging.debug("invalid argument to acosh, setting to zero")
+                emass[t] = float('NaN')
+                eamp[t] = asv[t] * math.exp(emass[t]*t)
+            except KeyError:
+                logging.error("index out of range")
+            except ZeroDivisionError:
+                logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t]))
+                emass[t] = float('NaN')
+                eamp[t] = asv[t] * math.exp(emass[t]*t)
+        return eamp
+
 
     def cosh_const_effective_mass(self, dt):
         asv = self.average_sub_vev()
@@ -341,6 +387,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return True
 
     def make_symmetric(self, sigma=1.0, anti=False):
+        logging.info("making correlator {}symmetric".format("anti" if anti else ""))
         logging.info("original times {}-{}".format( min(self.times), max(self.times) ) )
         asv = self.average_sub_vev()
         errors = self.jackknifed_errors()
