@@ -100,14 +100,15 @@ def get_fit(filename, noexcept=False):
         for line in f:
             if line.startswith("#fit"):
                 logging.debug("found fit info: {}".format(line.strip()))
-                function, tmin, tmax, params, errors = line.split(",")
+                function, tmin, tmax, params, errors, Nt = line.split(",")
                 fittype = function.split(" ")[0].strip()
                 fn = function.split(" ")[1].strip()
                 tmin = int(tmin.strip(" (),."))
                 tmax = int(tmax.strip(" (),."))
                 params = [float(i) for i in params.strip(" []\n").split()]
                 errors = [float(i) for i in errors.strip(" []\n").split()]
-                return (fittype, fn, tmin, tmax, params, errors)
+                Nt = int(Nt)
+                return (fittype, fn, tmin, tmax, params, errors, Nt)
     if noexcept:
         return ("single_exp", 0, 1, [0.0, 0.0], [0.0, 0.0])
     raise RuntimeError("No fit info")
