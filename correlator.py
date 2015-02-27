@@ -3,7 +3,7 @@ import jackknife
 import math
 import vev
 import logging
-
+import newton
 
 class Correlator(configtimeobj.Cfgtimeobj):
 
@@ -170,12 +170,18 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return eamp
 
 
-    def cosh_effective_mass(self, dt):
+    def cosh_effective_mass(self, dt, fast=True, period=None):
+        if period is None:
+            period = len(self.times)
         asv = self.average_sub_vev()
         emass = {}
         for t in self.times[dt:-dt]:
             try:
-                emass[t] = (1.0 / float(dt))*math.acosh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
+                guess = (1.0 / float(dt))*math.acosh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
+                if fast:
+                    emass[t] = guess
+                else:
+                    emass[t] = newton.newton_cosh_for_m(t,t+dt,asv, guess,period)
             except ValueError:
                 logging.debug("invalid argument to acosh, setting to zero")
                 emass[t] = float('NaN')
@@ -250,8 +256,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[:-dt]}
 
-    def cosh_effective_mass_errors(self, dt):
-
+    def cosh_effective_mass_errors(self, dt, fast=True, period=None):
+        if period is None:
+            period = len(self.times)
         jkasv = self.jackknife_average_sub_vev()
         jkemass = {}
         for cfg in self.configs:
@@ -259,7 +266,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
             emass = {}
             for t in self.times[dt:-dt]:
                 try:
-                    emass[t] = (1.0 / float(dt))*math.acosh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
+                    guess = (1.0 / float(dt))*math.acosh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
+                    if fast:
+                        emass[t] = guess
+                    else:
+                        emass[t] = newton.newton_cosh_for_m(t,t+dt,asvc, guess,period)
                 except ValueError:
                     #logging.debug("invalid argument to log, setting to zero")
                     emass[t] = 0.0
