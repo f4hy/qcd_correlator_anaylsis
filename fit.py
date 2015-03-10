@@ -52,7 +52,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     #tmax = tmax+1  # I use ranges, so this needs to be offset by one
     fitrange = range(tmin, tmax+1)
     fun = lambda v, mx, my: (fn.formula(v, mx) - my)
-    initial_guess = fn.starting_guess(cor, tmax, tmin)
+    initial_guess = fn.starting_guess(cor, options.period, tmax, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
 
     x = np.array(fitrange)
@@ -152,7 +152,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub):
         attempted +=1
         if options.reguess:
-            newguess = fn.starting_guess(strap, tmax, tmin)
+            newguess = fn.starting_guess(strap, options.period, tmax, tmin)
         else:
             newguess = initial_guess
         fitted_params, fitted_chisqr = cov_fit(strap, newguess)
@@ -234,8 +234,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.log(OUTPUT, "--------------------------------------------------------")
 
     v = original_ensamble_correlatedfit
-    cov = covariance_matrix(cor, tmin, tmax+1)
-    inv_cov = bestInverse(cov)
 
     chi_average = np.mean(boot_chisqr, 0)
     chi_median = np.median(boot_chisqr, 0)
@@ -250,13 +248,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     logging.debug("chiave:{}, chi_med:{}, chi_min:{}, chi_std:{}, chi_range{}".format(
         chi_average, chi_median, chi_min, chi_std, chi_range))
 
-    valid = True
-    if original_ensamble_correlatedfit[0]*2 < min(cor.cosh_effective_mass(3).values()):
-        logging.error("fit value much lower than effective mass {} , {}!!".format(original_ensamble_correlatedfit[0],
-                                                                                  min(cor.cosh_effective_mass(3).values())))
-        valid = False
 
-    if bootstraps > 1 and valid and filestub:
+    if bootstraps > 1 and filestub:
         results.info("writing each bootstrap parameter to {}.boot".format(filestub))
         with open(filestub+".boot", 'w') as bootfile:
             str_ensamble_params = ", ".join([str(p) for p in original_ensamble_correlatedfit])
@@ -327,7 +320,7 @@ def plot_fit(fn, cor, tmin, tmax, options, fitted_params, errors=None, postfix=N
 
     plt.ylim(plot_helpers.auto_fit_range(min(corvals),max(corvals)))
     plt.xlim([0, tmax + 2])
-    emass = cor.cosh_effective_mass(emass_dt)
+    emass = cor.cosh_effective_mass(emass_dt, fast=False, period=options.period)
     emass_errors = cor.cosh_effective_mass_errors(emass_dt).values()
     emassplot = plt.subplot(212)
     emassplot.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$")

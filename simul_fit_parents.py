@@ -11,10 +11,10 @@ class sharedmass_amp(object):
         self.parameter_names = ["mass", "amp1", "amp2"]
         self.subtract = False
 
-    def thisguess(self, cor, *args):
+    def thisguess(self, cor, period, *args):
         dt = 1
         ave = cor.average_sub_vev()
-        emass = cor.cosh_effective_mass(dt)
+        emass = cor.cosh_effective_mass(dt, fast=True, period=period)
         mass_guess = np.mean([emass[i[1]-dt-1] for i in self.indexes])
 
         amp_guess1 = ave[self.indexes[0][1]]*np.exp(mass_guess*(self.ranges[0][1]))

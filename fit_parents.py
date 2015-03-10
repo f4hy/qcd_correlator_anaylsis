@@ -9,11 +9,11 @@ const_bounds = (-5.0, 1.0e8)
 class InvalidFit(RuntimeError):
     pass
 
-def massamp_guess(cor, tmax, *args):
+def massamp_guess(cor, period, tmax, *args):
     dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
-    emass = cor.cosh_effective_mass(dt)
+    emass = cor.cosh_effective_mass(dt, fast=False, period=period)
     if not emass[maxt] > 0:
         for t in range(maxt,0,-1):
             if emass[t] > 0:
@@ -26,7 +26,7 @@ def massamp_guess(cor, tmax, *args):
     return [mass_guess, amp_guess]
 
 
-def const_guess(cor, tmax, *args):
+def const_guess(cor, period, tmax, *args):
     dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
@@ -43,11 +43,11 @@ def const_guess(cor, tmax, *args):
     return [mass_guess, amp_guess, 0.01]
 
 
-def twoexp_sqr_guess(cor, tmax, tmin):
+def twoexp_sqr_guess(cor, period, tmax, tmin):
     dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
-    emass = cor.cosh_effective_mass(dt)
+    emass = cor.cosh_effective_mass(dt, fast=False, period=period)
     mass_guess = np.median(emass.values())
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     mass2_guess = np.sqrt(emass[tmin+1])
@@ -55,7 +55,7 @@ def twoexp_sqr_guess(cor, tmax, tmin):
                   (amp_guess*np.exp(-(mass_guess+mass2_guess**2)*tmin)))/2
     return [mass_guess, amp_guess, mass2_guess, amp2_guess]
 
-def twoexp_sqr_const_guess(cor, tmax, tmin):
+def twoexp_sqr_const_guess(cor, period, tmax, tmin):
     return twoexp_sqr_guess(cor, tmax, tmin) + [0.001]
 
 
