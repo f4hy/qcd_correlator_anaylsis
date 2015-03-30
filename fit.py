@@ -286,7 +286,7 @@ def write_fitted_cor(fn, cor, tmin, tmax, options, fitted_params, errors=None, p
         filestub = options.output_stub
     header="#fit {}, ({},{}), {}, {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors), options.period)
     cor.writeasv(filestub+".fittedcor.out", header=header)
-    header="#fit_emass {}, ({},{}), {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors))
+    header="#fit_emass {}, ({},{}), {}, {}, {}".format(fn.description, tmin, tmax, np.array(fitted_params), np.array(fitted_errors), options.period)
     cor.writeemass(filestub+".fittedemass.out", dt=1, header=header)
 
 
