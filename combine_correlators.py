@@ -53,6 +53,8 @@ def combine_files(files, options):
     elif options.function == "sum":
         new = sum(data)
 
+    if options.negate:
+        new["correlator"] = -1.0*new["correlator"]
 
     formated = new[['time','correlator']]
     formated["time"] = formated["time"].astype(int)
@@ -78,6 +80,8 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     parser.add_argument("-f", "--function", type=str, required=False, choices=functs,
                         help="function to use to combine the data")
+    parser.add_argument("-n", "--negate", action="store_true",
+                        help="write the negative of the correlator")
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
     args = parser.parse_args()
@@ -87,5 +91,8 @@ if __name__ == "__main__":
         logging.debug("Verbose debuging mode activated")
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
+    if args.negate:
+        logging.info("WRITING THE NEGATIVE")
 
     combine_files(args.files, args)
