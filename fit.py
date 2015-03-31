@@ -491,6 +491,23 @@ def auto_fit(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=F
         continue
 
 
+def allfits(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, options=None):
+    logging.info("Fitting ALL fit ranges")
+    for tmin in cor.times:
+        tmaxes = [options.time_end] if options.time_end else range(tmin + len(funct.parameter_names)*4, max(cor.times))
+        for tmax in tmaxes:
+            if tmin > tmax:
+                continue
+            try:
+                _, _, qual = fit(funct, cor, tmin, tmax, filestub=filestub+"_{}_{}_".format(tmin, tmax), bootstraps=bootstraps, return_chi=True, return_quality=False, options=options)
+            except RuntimeError:
+                logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
+            except InversionError:
+                logging.warn("Covariance matrix failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
+    logging.info("fit all ranges")
+    exit(0)
+
+
 class InversionError(Exception):
     def __init__(self, value):
         self.value = value
@@ -611,6 +628,10 @@ if __name__ == "__main__":
             args.period = 256
 
     funct = functions[args.function](Nt=args.period)
+
+    if args.alltimes:
+        allfits(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
+
     if args.debugguess and (not args.time_start or not args.time_end):
         logging.warn("debugguess set without fit range, setting to max")
         args.maxrange = True

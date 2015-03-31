@@ -66,5 +66,7 @@ fitparser.add_argument("--debug_uncorrelated", action="store_true",
                        help="only perform an uncorrelated fit")
 fitparser.add_argument("--nofallback", action="store_true",
                        help="don't fall back, for testing")
+fitparser.add_argument("-a", "--alltimes", action="store_true", required=False,
+                       help="do all possible fits")
 fitparser.add_argument("-f", "--function", choices=functions.keys(),
                     required=False, default="periodic_exp", help="function to fit to")
