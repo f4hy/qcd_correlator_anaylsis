@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import logging
-
+import jackknife
 
 class Cfgtimeobj(object):
     """ A class to handle all the objects that are indexed as
@@ -65,6 +65,8 @@ class Cfgtimeobj(object):
             for time in self.times:
                 if type(self.data[cfg][time]) != self.datatype:
                     logging.error(str(type(self.data[cfg][time])))
+                    print self.datatype
+                    print type(self.data[cfg][time])
                     raise TypeError("Not all data is the same type")
                 if self.data[cfg][time] is None:
                     raise ValueError("indexed value is none")
@@ -132,6 +134,12 @@ class Cfgtimeobj(object):
         else:
             return {cfg: {t: (sums[t] - self.get(time=t, config=cfg)) for t in self.times}
                     for cfg in self.configs}
+
+    def jackknifed_errors(self):
+        jk = Cfgtimeobj.fromDataDict(self.jackknifed_averages())
+        aoc = self.average_over_configs()
+        return {t: jackknife.errorbars(aoc[t], jk.get(time=t)) for t in self.times}
+
 
     def jackknifed_full_average(self):
         total = self.average_all()
