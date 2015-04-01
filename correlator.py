@@ -403,11 +403,10 @@ class Correlator(configtimeobj.Cfgtimeobj):
         asv = self.average_sub_vev()
         errors = self.jackknifed_errors()
 
+        removed_data = []
         # new_times = [t for t in self.times if asv[t] - 2.0 * errors[t] > 0.0]
         period = len(self.times)
-        print period
         seperations = list(range(1,period/2+1))
-        print seperations
         biggest_change = 0.0
         for t in self.times:
             if t in seperations:
@@ -422,9 +421,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
                     biggest_change = max(biggest_change, abs(prevdata - newdata)/prevdata)
                     self.data[cfg][t] = newdata # (self.data[cfg][t] + self.data[cfg][period-t])/2.0
             else:
-                logging.info("Removing data for t={}".format(t))
+                removed_data.append(t)
                 for cfg in self.configs:
                     del self.data[cfg][t]
+        logging.info("Removed data for t={}".format(repr(removed_data)))
+
         logging.info("Correlator made symetric, largest change was {}".format(biggest_change))
         self.times = seperations
         self.asv = None
