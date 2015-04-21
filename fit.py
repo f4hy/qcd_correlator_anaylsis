@@ -40,7 +40,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     results = logging.getLogger("results")
     if filestub and not results.handlers:
-        filename = filestub+".log"
+        filename = filestub+".stats"
         filehandler = logging.FileHandler(filename)
         filehandler.level = OUTPUT
         results.addHandler(filehandler)
@@ -89,6 +89,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         y = [ave_cor[t] for t in fitrange]
         cov = covariance_matrix(correlator, tmin, tmax+1)
         if options.debug_uncorrelated:
+            logging.debug("Using uncorrlated")
             cov = np.diag(np.diag(cov))
         inv_cov = bestInverse(cov)
 
@@ -566,6 +567,21 @@ if __name__ == "__main__":
         logging.debug("Verbose debuging mode activated")
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
+    if args.output_stub is not None:
+        root = logging.getLogger()
+        errfilename = args.output_stub+".err"
+        errfilehandler = logging.FileHandler(errfilename)
+        errfilehandler.setLevel(logging.WARNING)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        errfilehandler.setFormatter(formatter)
+        root.addHandler(errfilehandler)
+        logfilename = args.output_stub+".log"
+        logfilehandler = logging.FileHandler(logfilename)
+        logfilehandler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        logfilehandler.setFormatter(formatter)
+        root.addHandler(logfilehandler)
 
     if args.random:
         logging.info("Setting random seed to %s", args.random)
