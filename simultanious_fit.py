@@ -166,6 +166,33 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
+    if args.output_stub is not None:
+        root = logging.getLogger()
+        errfilename = args.output_stub+".err"
+        errfilehandler = logging.FileHandler(errfilename, delay=True)
+        errfilehandler.setLevel(logging.WARNING)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        errfilehandler.setFormatter(formatter)
+        root.addHandler(errfilehandler)
+        logfilename = args.output_stub+".log"
+        logfilehandler = logging.FileHandler(logfilename, delay=True)
+        logfilehandler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        logfilehandler.setFormatter(formatter)
+        root.addHandler(logfilehandler)
+
+    if args.output_stub and args.skip_done:
+        filename = args.output_stub+".boot"
+        try:
+            if os.stat(filename).st_size > 0:
+                logging.info(".boot file exists and not empty, skip fit")
+                exit(0)
+            else:
+                logging.warn(".boot file exists but is empty!")
+        except OSError:
+            logging.info("running fit")
+
+
     consistant_argument_counts(args)
 
     cors = []

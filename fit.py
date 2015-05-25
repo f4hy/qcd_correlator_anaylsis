@@ -571,17 +571,38 @@ if __name__ == "__main__":
     if args.output_stub is not None:
         root = logging.getLogger()
         errfilename = args.output_stub+".err"
-        errfilehandler = logging.FileHandler(errfilename)
+        errfilehandler = logging.FileHandler(errfilename, delay=True)
         errfilehandler.setLevel(logging.WARNING)
         formatter = logging.Formatter('%(levelname)s: %(message)s')
         errfilehandler.setFormatter(formatter)
         root.addHandler(errfilehandler)
         logfilename = args.output_stub+".log"
-        logfilehandler = logging.FileHandler(logfilename)
+        logfilehandler = logging.FileHandler(logfilename, delay=True)
         logfilehandler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(levelname)s: %(message)s')
         logfilehandler.setFormatter(formatter)
         root.addHandler(logfilehandler)
+
+    if args.output_stub:
+        args.output_stub = os.path.splitext(args.output_stub)[0]
+        outdir = os.path.dirname(args.output_stub)
+        if not os.path.exists(outdir):
+            logging.info("directory for output {} does not exist, atempting to create".format(outdir))
+            if outdir is not "":
+                os.makedirs(outdir)
+
+
+    if args.output_stub and args.skip_done:
+        filename = args.output_stub+".boot"
+        try:
+            if os.stat(filename).st_size > 0:
+                logging.info(".boot file exists and not empty, skip fit")
+                exit(-1)
+            else:
+                logging.warn(".boot file exists but is empty!")
+        except OSError as e:
+            logging.info("running fit")
+
 
     if args.random:
         logging.info("Setting random seed to %s", args.random)
@@ -594,15 +615,9 @@ if __name__ == "__main__":
     if args.vev2:
         vev2 = args.vev2
 
-    if args.output_stub:
-        args.output_stub = os.path.splitext(args.output_stub)[0]
-        outdir = os.path.dirname(args.output_stub)
-        if not os.path.exists(outdir):
-            logging.info("directory for output {} does not exist, atempting to create".format(outdir))
-            if outdir is not "":
-                os.makedirs(outdir)
 
     try:
+        logging.info("reading file {}".format(corrfile))
         cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
     except AttributeError:
         logging.info("Failed to read with pandas, reading normal")
@@ -672,6 +687,8 @@ if __name__ == "__main__":
     try:
         fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
     except InvalidFit:
+        logging.error("Function does not have a fallback, fit failed")
+        exit(-1)
         logging.error("Fit was invalid, trying backup")
         if funct.fallback and not args.nofallback:
             logging.error("function has a fallback {}".format(funct.fallback))
@@ -679,3 +696,4 @@ if __name__ == "__main__":
             fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         else:
             logging.error("Function does not have a fallback, fit failed")
+            exit(-1)
