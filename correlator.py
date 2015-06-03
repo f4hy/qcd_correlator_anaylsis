@@ -383,6 +383,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         seperations = [t for t in sorted(self.times) if t>0]
         print seperations
         max_asymmetry = 0
+        disagreements = 0
         for tf, tb in zip(seperations, reversed(seperations)):
             if anti:
                 asymmetry = abs(asv[tf] + asv[tb]) / (errors[tf]+errors[tb])
@@ -393,8 +394,13 @@ class Correlator(configtimeobj.Cfgtimeobj):
             if max_asymmetry>sigma:
                 logging.error("correlator is not symmetric within {}sigma".format(sigma))
                 logging.error("C({}) - C({}) = {}, E({}) E({})".format(tf , tb, asv[tf] - asv[tb], errors[tf],errors[tb],))
-                return False
+                disagreements+=1
+                #return False
         logging.info("Max asymmetry in correlator: {}sigma".format(max_asymmetry))
+        if disagreements > 1:
+            logging.warn("found {} disagreemnts in symmetry".format(disagreements))
+            return False
+
         return True
 
     def make_symmetric(self, sigma=1.0, anti=False):
