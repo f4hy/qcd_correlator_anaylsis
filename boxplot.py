@@ -11,6 +11,7 @@ import re
 import numpy as np
 from matplotlib.patches import Ellipse
 from matplotlib.patches import Rectangle
+import matplotlib.patches as mpatches
 
 pair = re.compile(r'\(([^,\)]+),([^,\)]+)\)')
 
@@ -87,6 +88,8 @@ def read_file(filename):
     with open(filename, 'r') as f:
         first_line = f.readline()
     names = [s.strip(" #") for s in first_line.split(",")[0:-2]]
+    if not names:
+        names = ["data"]
     txt = lines_without_comments(filename)
     filetype = determine_type(txt)
     if filetype == "paren_complex":
@@ -94,7 +97,7 @@ def read_file(filename):
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
         df = pd.read_csv(txt, sep=",", delimiter=",", names=names, skipinitialspace=True,
-                         delim_whitespace=True, converters={0: removecomma, 1: myconverter})
+                         delim_whitespace=True, converters={0: removecomma, 1: myconverter, 2:myconverter})
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=names)
     return df
@@ -193,7 +196,7 @@ def add_experiment_results(experimental_results, f, ax):
             text_yloc= smass-suncertainty-swidth-0.1
             text_yloc= 0.2
             ax.annotate("${}$".format(name), xy=(loc-0.01, text_yloc ), fontsize=21)
-    plt.xlim(-2.0, 1.0)
+    #plt.xlim(-2.0, 1.0)
     label, ymax = scale_params()
     plt.ylim(0, ymax)
     plt.plot([-0.5, -0.5], [0, ymax], 'k-', lw=2, )
@@ -219,6 +222,8 @@ def boxplot_files():
     data = []
     f, ax = plt.subplots()
 
+    legend_labels = []
+
     prevtextloc = 0.0
     dfs = {}
     for label, filename in zip(labels, args.files):
@@ -232,21 +237,40 @@ def boxplot_files():
     else:
         sdfs = [(i, dfs[i]) for i in labels]
 
-    sdfs = [i for i in sdfs if i[1].mass.std() < args.prune]
+    values = []
+
+    for i in sdfs:
+        if len(i[1].columns) == 0:
+            continue
+        if len(i[1].columns) == 1:
+            values.append((i[0], i[1][i[1].columns[0]]))
+            continue
+
+        selected_cols = [c for c in i[1].columns if c.startswith(args.col)]
+        selected = selected_cols[0]
+        if len(selected_cols) > 1:
+            logging.warn("More than one {} column, selecint the first one {}".format(args.col, selected_cols))
+        #print i[1]["mass"]
+        values.append((i[0], i[1][selected]))
+
     if args.maxlevels:
         sdfs = sdfs[:args.maxlevels]
+
+
 
     sorted_labels = [i[0] for i in sdfs]
     plotindex = -1
     offset = -0.58
     size = 0.125
-    for index, (label, df) in enumerate(sdfs):
+
+
+    for index, (label, value) in enumerate(values):
         # for index, label in enumerate(labels):
         color = "b" if args.experiment else colors[index % len(colors)]
 
         if args.seperate:
             logging.info("Ploting staircase")
-            data.append(lattice_scale(df.mass.values))
+            data.append(lattice_scale(value.values))
             try:
                 levelnum = int(label)
             except ValueError:
@@ -254,8 +278,8 @@ def boxplot_files():
                 continue
             if args.color is not None:
                 if args.splitbox:
-                    lower = lattice_scale(df.mass.quantile(q=0.25))
-                    upper = lattice_scale(df.mass.quantile(q=0.75))
+                    lower = lattice_scale(value.quantile(q=0.25))
+                    upper = lattice_scale(value.quantile(q=0.75))
                     circles.append(Rectangle((index+0.75, lower), width=0.5,
                                              height=(upper-lower)*args.color[levelnum+1], color='b', fill=True))
                 elif args.outline:
@@ -271,7 +295,7 @@ def boxplot_files():
             if levelnum in args.single:
                 logging.info("adding level{} index {} to single_index".format(levelnum, index))
                 single_indecies.append(index)
-                circles.append(Ellipse((index+1, df.mass.median()), width=1.1, height=df.mass.std()*5.0, color='r',
+                circles.append(Ellipse((index+1, value.median()), width=1.1, height=value.std()*5.0, color='r',
                                        fill=False))
         else:                   # not seperate
             logging.debug("Ploting vertical boxplot")
@@ -284,10 +308,11 @@ def boxplot_files():
             else:
                 plotindex = index
 
-            med = lattice_scale(df.mass.median())
-            print "level{}: {}".format(plotindex, med)
-            width = lattice_scale(df.mass.std())
-            values = lattice_scale(df.mass.values)
+            med = lattice_scale(value.median())
+            width = lattice_scale(value.std())
+            values = lattice_scale(value.values)
+
+            print "level{}: {} {}".format(plotindex, med, width)
 
             offset += size+0.1
 
@@ -309,8 +334,10 @@ def boxplot_files():
             plt.setp(plots[label]["caps"], color=color, visible=hide)
             plt.setp(plots[label]["medians"], visible=hide)
             if not args.experiment:
-                ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset-0.1, med),
-                            xytext=textloc, arrowprops=dict(arrowstyle="->", fc="0.6"))
+                # ax.annotate(label+":{}".format(format_error_string(med, width)), xy=(offset-0.1, med),
+                #             xytext=textloc, arrowprops=dict(arrowstyle="->", fc="0.6"))
+                legend_labels.append(mpatches.Patch(color=color, label=label))
+
             if args.experiment:
                 if args.color is not None and 1.0 > args.color[levelnum+1]:
                     logging.debug("marking {} as single-mix".format(index))
@@ -364,18 +391,21 @@ def boxplot_files():
             experimental_box, width_box =add_experiment_results(args.experiment, f, ax)
         else:
             plt.xlim(-1.5, 1.5)
+            pass
 
-    ylabel, ymax = scale_params()
-    ax.set_ylabel(ylabel, fontweight='bold', fontsize=50)
+    if args.ordering:
+        ylabel, ymax = scale_params()
+        ax.set_ylabel(ylabel, fontweight='bold', fontsize=50)
 
-    if args.yrange:
-        plt.ylim(args.yrange)
-    else:
-        logging.debug("setting yrange to 0,{}".format(ymax))
-        plt.ylim((0, ymax))
-    print np.arange(int(ax.get_ylim()[0]), int(ax.get_ylim()[1]), 0.2)
-    print ax.get_ylim()
-    ax.set_yticks(np.arange((ax.get_ylim()[0]), (ax.get_ylim()[1]), 0.2))
+        if args.yrange:
+            plt.ylim(args.yrange)
+        else:
+            logging.debug("setting yrange to 0,{}".format(ymax))
+            # plt.ylim((0, ymax))
+        ax.set_yticks(np.arange((ax.get_ylim()[0]), (ax.get_ylim()[1]), 0.2))
+
+    plt.xlim(-1,offset+2)
+
 
     if args.outline:
         legend_labels = ["lattice $q \overline{q}$ dominated", "two-hadron dominated", "significant mixing"]
@@ -392,6 +422,9 @@ def boxplot_files():
         leg = plt.legend(fancybox=True, shadow=True)
         plt.tick_params(axis='both', which='major', labelsize=50)
 
+    print legend_labels
+    leg = plt.legend(handles=legend_labels, loc=0, fontsize=16)
+
     if args.title:
         f.suptitle(args.title.replace("_", " "), fontsize=50)
 
@@ -402,16 +435,16 @@ def boxplot_files():
 
     if(args.output_stub):
         f.set_size_inches(20.0, 12.0)
-        plt.rcParams.update({'font.size': 24})
+        #plt.rcParams.update({'font.size': 24})
         # plt.tight_layout()
         f.set_dpi(100)
         logging.info("Saving plot to {}".format(args.output_stub+".png"))
         plt.savefig(args.output_stub+".png")
         # ax.set_rasterized(True)
-        logging.info("Saving plot to {}".format(args.output_stub+".eps"))
-        plt.savefig(args.output_stub+".eps")
-        logging.info("Saving plot to {}".format(args.output_stub+".pdf"))
-        plt.savefig(args.output_stub+".pdf")
+        # logging.info("Saving plot to {}".format(args.output_stub+".eps"))
+        # plt.savefig(args.output_stub+".eps")
+        # logging.info("Saving plot to {}".format(args.output_stub+".pdf"))
+        # plt.savefig(args.output_stub+".pdf")
         return
 
     plt.show()
@@ -455,11 +488,14 @@ if __name__ == "__main__":
                         help="split the box into color rather than graidant the boxes")
     parser.add_argument("--outline", action="store_true", required=False,
                         help="have color outline")
+    parser.add_argument("--col", type=str, default="mass",
+                        help="column of the data file to plot")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
     args = parser.parse_args()
+
 
     if args.verbose:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
