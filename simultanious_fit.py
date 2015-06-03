@@ -218,6 +218,8 @@ if __name__ == "__main__":
         elif "PP" in corrfile:
             cor.make_symmetric()
 
+        if args.bin:
+            cor = cor.reduce_to_bins(args.bin)
 
         cors.append(cor)
 

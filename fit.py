@@ -150,7 +150,10 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     boot_chisqr = []
     failcount = 0
     attempted = 0
-    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub):
+
+    for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub, jackknife=options.jackknife):
+        if options.jackknife:
+            bootstraps = len(cor.configs) - 1
         attempted +=1
         if options.reguess:
             newguess = fn.starting_guess(strap, options.period, tmax, tmin)
@@ -391,7 +394,22 @@ def bootstrap(cor, filelog=None):
     return correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2)
 
 
-def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None):
+def jackknife_ensemble(cor):
+    oldcfgs = cor.configs
+    jkensambles = []
+    for cfg in cor.configs:
+        newcfgs = [n for n in cor.configs if n != cfg]
+        newcor = {i: cor.get(config=c) for i, c in enumerate(newcfgs)}
+        newvev1 = {i: cor.vev1[c] for i, c in enumerate(newcfgs)}
+        newvev2 = {i: cor.vev2[c] for i, c in enumerate(newcfgs)}
+        jkensambles.append(correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2))
+    return jkensambles
+
+def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None, jackknife=False):
+    if jackknife:
+        logging.warn("using jackknife instead of bootstrap")
+        return jackknife_ensemble(cor)
+
     if N > 1:
         if filelog:
             with open(filelog+".straps", 'w') as bootfile:
@@ -648,7 +666,8 @@ if __name__ == "__main__":
 
     cor.prune_invalid(delete=True, sigma=args.prune)
 
-
+    if args.bin:
+        cor = cor.reduce_to_bins(args.bin)
 
     if not args.period:
         if cor.numconfigs == 551:
