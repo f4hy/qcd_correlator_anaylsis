@@ -181,6 +181,34 @@ def read_datadict_commacomplex(filename, real=True):
 
     return data_dict
 
+def read_baryon(filename, real=True):
+
+    f = lines_without_comments(filename)
+    df = pd.read_csv(f, delimiter=',', comment="#", names=["time", "correlator", "correlator_imag"])
+
+
+    vc = df.time.value_counts()
+    times = vc.index
+    time_counts = vc.values
+    df["config"] = pd.Series(map(lambda x: x/len(times), df.index))
+    vcc = df.config.value_counts()
+    cfgs = vcc.index
+    cfgs_counts = vcc.values
+
+
+    df = df.set_index("config")
+    df = df.set_index("time", append=True)
+
+    newtimes =  [0] + list(reversed(range(1,len(times))))
+    newindex = [(i,j)  for i in sorted(cfgs) for j in newtimes]
+    reordered = df["correlator_imag"].reindex(newindex)
+    reordered.index = newindex
+    timelist = list(range(len(times))) * len(cfgs)
+    result = (df["correlator"] + reordered.values)/2.0
+    final = pd.DataFrame(data={"time": timelist, "correlator":result.values})
+    return final
+
+
 
 def read_vev_parenformat(filename, real=True):
     f = lines_without_comments(filename)
