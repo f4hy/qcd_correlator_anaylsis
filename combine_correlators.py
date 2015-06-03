@@ -40,15 +40,30 @@ def read_full_correlator(filename, emass=False):
     return df
 
 
+def read_baryon(f):
+    d = pandas_reader.read_baryon(f, real=False)
+    return d
+
+
+
 def combine_files(files, options):
-    data = [plot_files.read_file(f) for f in files]
+    if "baryon" in options.function:
+        data = [read_baryon(f) for f in files]
+    else:
+        data = [plot_files.read_file(f) for f in files]
+
+
     assert all_same([df.shape for df in data]), "They are not all the same size!"
     if options.function == "average":
         new = sum(data)/len(data)
+    elif options.function == "baryon_average":
+        new = data[0][["time", "correlator"]]
+        new["correlator"] = (data[0]["correlator"] - data[1]["correlator"] + data[2]["correlator"])/3.0
     elif options.function == "ratio":
         if len(data) != 2:
             raise RuntimeError("Ratio requires exactly 2 correlators")
         new = data[0][["time", "correlator"]]
+
         new["correlator"] = new["correlator"] / data[1]["correlator"]
     elif options.function == "sum":
         new = sum(data)
@@ -58,11 +73,8 @@ def combine_files(files, options):
 
     formated = new[['time','correlator']]
     formated["time"] = formated["time"].astype(int)
-    print formated
     formated.columns = ["#time", "correlator"]
-    print formated
     outputtext = formated.to_csv(None, sep=",", index=False, header=False, index_label="#time").replace(",", ", ")
-    print outputtext
     if options.output_stub:
         outfile = "{}.dat".format(options.output_stub)
         with open(outfile, 'w') as ofile:
@@ -71,8 +83,9 @@ def combine_files(files, options):
     else:
         print outputtext
 
+
 if __name__ == "__main__":
-    functs = ["average", "ratio", "sum"]
+    functs = ["average", "ratio", "sum", "baryon_average"]
     parser = argparse.ArgumentParser(description="average data files")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
