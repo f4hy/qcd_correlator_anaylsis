@@ -59,18 +59,41 @@ def determine_type(txt):
         return "comma"
     return "space_seperated"
 
-def read_full_correlator(filename, emass=False):
+def read_full_correlator(filename, emass=None, eamp=False, symmetric=False):
+    logging.info("reading file {}".format(filename))
     try:
         cor = build_corr.corr_and_vev_from_files_pandas(filename, None, None)
     except AttributeError:
         logging.info("Failed to read with pandas, reading normal")
         cor = build_corr.corr_and_vev_from_files(filename, None, None)
 
+    if symmetric:
+        if "A4P" in filename:
+            cor.make_symmetric(anti=True)
+        if "PP" in filename:
+            cor.make_symmetric()
+
+    if "48x96" in filename:
+        emass = 96
+    if "32x64" in filename:
+        emass = 64
+
     if emass:
-        emasses = cor.cosh_effective_mass(1)
+        emasses = cor.cosh_effective_mass(1, fast=False, period=emass)
+        print emasses
+        #emasses = cor.effective_mass(1)
         times = emasses.keys()
         data = [emasses[t] for t in times]
-        errors = [cor.cosh_effective_mass_errors(1)[t]  for t in times]
+        errs = cor.cosh_effective_mass_errors(1, fast=True)
+        #errs = cor.effective_mass_errors(1)
+        errors = [errs[t]  for t in times]
+        logging.debug("emasses {}".format(emasses))
+        logging.debug("errs {}".format(errs))
+    elif eamp:
+        eamps = cor.cosh_effective_amp(1, len(cor.times), cor.cosh_effective_mass(1)[32] )
+        times = eamps.keys()
+        data = [eamps[t] for t in times]
+        errors = [0  for t in times]
     else:
         times = cor.times
         data = [cor.average_sub_vev()[t] for t in times]
@@ -80,18 +103,21 @@ def read_full_correlator(filename, emass=False):
     df = pd.DataFrame(d)
     return df
 
-def read_file(filename):
+def read_file(filename, columns=None):
+    if columns is None:
+        columns = ["time", "correlator", "error", "quality"]
+
     txt = lines_without_comments(filename)
     filetype = determine_type(txt)
     if filetype == "paren_complex":
-        df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"],
+        df = pd.read_csv(txt, delimiter=' ', names=columns,
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
         df = pd.read_csv(txt, sep=",", delimiter=",",
-                         names=["time", "correlator", "error", "quality"], skipinitialspace=True,
+                         names=columns, skipinitialspace=True,
                          delim_whitespace=True, converters={0: removecomma, 1: myconverter, 2: myconverter})
     if filetype == "space_seperated":
-        df = pd.read_csv(txt, delimiter=' ', names=["time", "correlator", "error", "quality"])
+        df = pd.read_csv(txt, delimiter=' ', names=columns)
     return df
 
 
@@ -175,10 +201,10 @@ def add_fit_info(filename, ax=None):
     if not ax:
         ax = plt
     funmap = {"two_exp": two_exp, "single_exp": single_exp, "periodic_two_exp": two_exp,
-              "fwd-back-exp": single_exp, "periodic_two_exp_const": periodic_two_exp_const, "fwd-back-exp_const": periodic_exp_const}
+              "fwd-back-exp": periodic_exp, "periodic_two_exp_const": periodic_two_exp_const, "fwd-back-exp_const": periodic_exp_const}
     try:
-        fittype, function, tmin, tmax, fitparams, fiterrors = get_fit(filename)
-        fun = funmap[function](Nt=256)
+        fittype, function, tmin, tmax, fitparams, fiterrors, Nt = get_fit(filename)
+        fun = funmap[function](Nt)
         massindex = fun.parameter_names.index("mass")
         mass = fitparams[massindex]
         masserror = fiterrors[massindex]
@@ -212,11 +238,36 @@ def add_fit_info(filename, ax=None):
 
 
 def add_function_plot(function_params, xmin, xmax):
+    logging.debug("adding function with parameters {}".format(function_params))
     print function_params
-    t = np.arange(xmin,xmax)
-    amp, mass = function_params
-    cor = amp*(np.exp(-1.0*mass*t) - np.exp(-1.0*mass*(96-t)))
-    plt.plot(t,cor)
+    function = function_params[0]
+    params = map(float,function_params[1:])
+    print function, params
+
+    plot_options = dict(lw=8)
+
+    if function == "constant":
+        plt.plot([xmin,xmax],[params[0],params[0]], **plot_options)
+        return
+    if function == "exp":
+        t = np.arange(xmin,xmax)
+        amp, mass = params
+        cor = amp*(np.exp(-1.0*mass*t))
+        plt.plot(t,cor, **plot_options)
+        return
+    if function == "periodic-exp":
+        t = np.arange(xmin,xmax)
+        amp, mass, period = params
+        cor = amp*(np.exp(-1.0*mass*t) + np.exp(-1.0*mass*(period-t)))
+        plt.plot(t,cor, **plot_options)
+        return
+    if function == "tanh":
+        t = np.arange(xmin,xmax)
+        amp, mass, period = params
+        cor = amp*((np.exp(-1.0*mass*t) - np.exp(-1.0*mass*(period-t))) / (np.exp(-1.0*mass*t) + np.exp(-1.0*mass*(period-t))))
+        plt.plot(t,cor, **plot_options)
+        return
+
 
 
 def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=False, real=False, title=None):
@@ -255,6 +306,9 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                     logging.warn("EMASS flag set but filename indicates a correlator file!")
             if "emass" in filename or args.emass:
                 axe.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$", **fontsettings)
+            if args.rel_error:
+                axe.set_ylabel("Relative Error", **fontsettings)
+
 
         if fit:
             if seperate:
@@ -272,7 +326,11 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         color = colors[index % len(colors)]
         df = read_file(filename)
         if len(df.time) > len(set(df.time)):
-            df = read_full_correlator(filename, args.emass)
+            df = read_full_correlator(filename, args.emass, args.eamp, args.symmetric)
+
+        if args.rel_error:
+            df["correlator"] = df["error"]/df["correlator"]
+            df["error"] = 0.0
 
         time_offset = df.time.values+(index*0.1)
         time_offset = df.time.values
@@ -282,6 +340,9 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
 
         plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=12, elinewidth=3, capsize=8,
                             capthick=2, mec=color, aa=True)
+        if args.rel_error:
+            plotsettings["elinewidth"] = 0
+            plotsettings["capthick"] = 0
         if seperate:
             logging.info("plotting {}  {}, {}".format(label, i, j))
             # axe.set_title(label)
@@ -339,9 +400,13 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     if args.logarithm:
         plt.yscale('log')
 
+    if args.constant:
+        bignum = 1000000
+        plt.plot([-1*bignum,bignum],[args.constant,args.constant])
+
 
     if title:
-        f.suptitle(title, **fontsettings)
+        f.suptitle(title.replace("_", " "), **fontsettings)
 
     f.canvas.set_window_title(files[0])
 
@@ -419,8 +484,10 @@ if __name__ == "__main__":
                         help="Attempt to translate the names (of operators)")
     parser.add_argument("-l", "--logarithm", action="store_true", required=False,
                         help="take the log on the y axis")
-    parser.add_argument("-pf", "--plotfunction", type=float, required=False, nargs=2,
+    parser.add_argument("-pf", "--plotfunction", type=str, required=False, nargs="+",
                         help="add a plot of a correlator with AMP and MASS")
+    parser.add_argument("--constant", type=float, required=False, nargs=1,
+                        help="add a constant line")
     parser.add_argument("-y", "--yrange", type=float, required=False, nargs=2,
                         help="set the yrange of the plot", default=None)
     parser.add_argument("-x", "--xrang", type=float, required=False, nargs=2,
@@ -429,7 +496,13 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
-    parser.add_argument("--emass", action="store_true",
+    parser.add_argument("--emass", type=float, default=None, required=False,
+                        help="plot emasses not correlators")
+    parser.add_argument("--symmetric", action="store_true",
+                        help="make the correlator symmetric")
+    parser.add_argument("--rel_error", action="store_true",
+                        help="plot the relative error instead")
+    parser.add_argument("--eamp", action="store_true",
                         help="plot emasses not correlators")
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
