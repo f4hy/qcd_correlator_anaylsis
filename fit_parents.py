@@ -89,7 +89,7 @@ class mass_amp(object):
         self.aoc = data
         self.inv_cov = invmatrix
         self.times = times
-        dof = len(guess)+len(data)
+        dof = len(data)-len(guess)
         m = Minuit(self.my_cov_fun, mass=guess[0], error_mass=guess[0]*0.1,
                    amp=guess[1], error_amp=guess[1]*0.1,
                    print_level=0, errordef=dof, pedantic=True)
