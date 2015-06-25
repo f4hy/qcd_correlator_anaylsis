@@ -514,6 +514,23 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
+
+    if args.output_stub is not None:
+        root = logging.getLogger()
+        errfilename = args.output_stub+".err"
+        errfilehandler = logging.FileHandler(errfilename, delay=True)
+        errfilehandler.setLevel(logging.WARNING)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        errfilehandler.setFormatter(formatter)
+        root.addHandler(errfilehandler)
+        logfilename = args.output_stub+".log"
+        logfilehandler = logging.FileHandler(logfilename, delay=True)
+        logfilehandler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        logfilehandler.setFormatter(formatter)
+        root.addHandler(logfilehandler)
+
+
     if args.sort:
         try:
             if args.fit_only:
