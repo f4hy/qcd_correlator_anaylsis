@@ -67,6 +67,8 @@ def combine_files(files, options):
         result = mk_mp(data)
     elif options.function == "weights":
         result = weighted(data, options.weights)
+    elif options.function == "ratio":
+        result = data[0]/data[1]
 
     if "decay_constants" in files[0]:
         # outputtext = result["decay"].to_csv(None)

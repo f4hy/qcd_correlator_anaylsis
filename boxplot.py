@@ -309,11 +309,11 @@ def boxplot_files():
                 plotindex = index
 
             med = lattice_scale(value.median())
+            mean = lattice_scale(value.mean())
             width = lattice_scale(value.std())
             values = lattice_scale(value.values)
 
-            print "level{}: {} {}".format(plotindex, med, width)
-
+            print "level{}: {} {}".format(label, mean, width)
             offset += size+0.1
 
             prevtextloc = med if med-prevtextloc > 0.01 else prevtextloc+0.01
