@@ -87,7 +87,14 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     def cov_fit(correlator, guess):
         ave_cor = correlator.average_sub_vev()
         y = [ave_cor[t] for t in fitrange]
+
+
         cov = covariance_matrix(correlator, tmin, tmax+1)
+
+        if options.debug_jkcov:
+            cov = jk_covariance_matrix(correlator, tmin, tmax+1)
+
+
         if options.debug_uncorrelated:
             logging.debug("Using uncorrlated")
             cov = np.diag(np.diag(cov))
@@ -431,6 +438,32 @@ def covariance_matrix(cor, tmin, tmax):
         # b = np.array(v.values()[tmin-start_time:tmax-start_time]).flat-aoc
         mymat += np.outer(b, b)
     return mymat*nm1*nm0
+
+
+def jk_covariance_matrix(cor, tmin, tmax):
+    """
+    Here is the formula for the covariance matrix I am using:
+    Let  < O >_J =  1/(N-1)  sum over bins, excluding Jth bin    O[bin]    for  N bins
+    then   < C(t) >_J = < O(t) Obar(0) >_J - < O >_J < Obar >_J      (complex values, of course)
+    Next, let  < C(t) >_avg = 1/N  *  sum over J < C(t) >_J
+    then  Cov(t,t') = (1 - 1/N)  sum over J   ( <C(t)>_J - <C(t)>_avg ) *   ( <C(t')>_J - <C(t')>_avg )
+    The last expression above is the jackknife estimate of the covariance.
+
+    """
+    mymat = np.zeros(((tmax - tmin), (tmax - tmin)))
+
+    N = len(cor.configs)
+    logging.debug("making covariance matrix with jackknifes")
+    for t1 in range(tmin, tmax):
+        for t2 in range(tmin, tmax):
+            index1 = t1-tmin
+            index2 = t2-tmin
+            O_i = [v[t1] for k,v in cor.jackknife_average_sub_vev().iteritems()]
+            O_j = [v[t2] for k,v in cor.jackknife_average_sub_vev().iteritems()]
+            mean1 = np.mean(O_i)
+            mean2 = np.mean(O_j)
+            mymat[(index1,index2)] = (N-1) * np.mean( [(i-mean1)*(j-mean2)  for i,j in zip(O_i,O_j)])
+    return mymat
 
 
 def CholeskyInverse(t):

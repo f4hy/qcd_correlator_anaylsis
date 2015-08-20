@@ -64,6 +64,8 @@ fitparser.add_argument("--debug_identcov", action="store_true",
                        help="set covariance to identity")
 fitparser.add_argument("--debug_uncorrelated", action="store_true",
                        help="only perform an uncorrelated fit")
+fitparser.add_argument("--debug_jkcov", action="store_true",
+                       help="use jackknifed covariance matrix")
 fitparser.add_argument("--jackknife", action="store_true",
                        help="jackknife instead of bootstrap")
 fitparser.add_argument("--bin", type=int, required=False,
