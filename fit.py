@@ -432,7 +432,7 @@ def covariance_matrix(cor, tmin, tmax):
     nm0 = 1.0 / (len(cor.configs))
     mymat = np.zeros(((tmax - tmin), (tmax - tmin)))
     start_time = cor.times[0]
-    aoc = np.fromiter(cor.average_over_configs().values(), np.float)[tmin-start_time:tmax-start_time]
+    aoc = np.fromiter(cor.average_sub_vev().values(), np.float)[tmin-start_time:tmax-start_time]
     for v in cor.data.values():
         b = np.fromiter(v.values(), np.float)[tmin-start_time:tmax-start_time] - aoc
         # b = np.array(v.values()[tmin-start_time:tmax-start_time]).flat-aoc
