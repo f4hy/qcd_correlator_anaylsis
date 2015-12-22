@@ -330,7 +330,7 @@ def boxplot_files():
             b.set_alpha(max(1.0-width*2.0, 0.1))
             b.set_zorder(-1*width)
             plt.setp(plots[label]["whiskers"], color=color, visible=hide)
-            plt.setp(plots[label]["fliers"], color=color, visible=hide)
+            plt.setp(plots[label]["fliers"], color=color, visible=False)
             plt.setp(plots[label]["caps"], color=color, visible=hide)
             plt.setp(plots[label]["medians"], visible=hide)
             if not args.experiment:
