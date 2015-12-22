@@ -91,7 +91,7 @@ if __name__ == "__main__":
         data =plot_files.read_file(args.datafile)[[args.column]].values
     else:
         with open(args.datafile) as dataf:
-            txt = [line for line in dataf.read().split() if not line.startswith("#")]
+            txt = [line.strip(",") for line in dataf.read().split() if not line.startswith("#")]
             data= map(float,txt)
 
     logging.info("making histogram of data of {} points".format(len(data)))
