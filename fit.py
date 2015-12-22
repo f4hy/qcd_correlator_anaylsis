@@ -20,6 +20,7 @@ from scipy.optimize import leastsq
 # from scipy.optimize import fmin_slsqp
 # from scipy.optimize import fmin_l_bfgs_b
 # from scipy.optimize import minimize
+
 OUTPUT = 25
 ALWAYSINFO = 26
 logging.addLevelName(OUTPUT, "OUTPUT")
@@ -89,15 +90,16 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         y = [ave_cor[t] for t in fitrange]
 
 
-        cov = covariance_matrix(correlator, tmin, tmax+1)
-
-        if options.debug_jkcov:
-            cov = jk_covariance_matrix(correlator, tmin, tmax+1)
-
-
         if options.debug_uncorrelated:
             logging.debug("Using uncorrlated")
-            cov = np.diag(np.diag(cov))
+            # cov = covariance_matrix(correlator, tmin, tmax+1)
+            # cov = np.diag(np.diag(cov))
+            cov = np.diag([correlator.jackknifed_errors()[t]**2 for t in fitrange])
+        elif options.debug_jkcov:
+            cov = jk_covariance_matrix(correlator, tmin, tmax+1)
+        else:
+            cov = covariance_matrix(correlator, tmin, tmax+1)
+
         inv_cov = bestInverse(cov)
 
 
@@ -183,6 +185,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             logging.debug("fails:{} attempts:{}, ratio:{}".format(failcount, attempted, failcount/float(attempted)))
             if failcount/float(attempted) > 0.15 and attempted > 40:
                 raise InvalidFit("more than 20% of boostraps failed to converge")
+        del strap
+
+
 
     if failcount > 0:
         logging.warn("{} bootstraps did not converge!".format(bootstraps-len(boot_params)))
@@ -421,7 +426,7 @@ def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None, jackknife=False):
         if filelog:
             with open(filelog+".straps", 'w') as bootfile:
                 bootfile.write("# boot straps used for fitting")
-        return [bootstrap(cor, filelog) for i in range(N)]
+        return (bootstrap(cor, filelog) for i in range(N))
     else:
         logging.info("Not bootstraping!")
         return [cor]
@@ -676,14 +681,14 @@ if __name__ == "__main__":
 
     # cor.make_symmetric()
     if args.symmetric:
-        if cor.check_symmetric(4.0):
+        if cor.check_symmetric(2.0):
             cor.make_symmetric()
         else:
             logging.error("Correlator was not symmetric!")
             exit()
 
     if args.antisymmetric:
-        if cor.check_symmetric(4.0, anti=True):
+        if cor.check_symmetric(2.0, anti=True):
             cor.make_symmetric(anti=True)
         else:
             logging.error("Correlator was not antisymmetric!")
