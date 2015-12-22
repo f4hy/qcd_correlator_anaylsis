@@ -59,6 +59,8 @@ def combine_files(files, options):
     elif options.function == "baryon_average":
         new = data[0][["time", "correlator"]]
         new["correlator"] = (data[0]["correlator"] - data[1]["correlator"] + data[2]["correlator"])/3.0
+    elif options.function == "baryon_reformat":
+        new = data[0][["time", "correlator"]]
     elif options.function == "ratio":
         if len(data) != 2:
             raise RuntimeError("Ratio requires exactly 2 correlators")
@@ -85,7 +87,7 @@ def combine_files(files, options):
 
 
 if __name__ == "__main__":
-    functs = ["average", "ratio", "sum", "baryon_average"]
+    functs = ["average", "ratio", "sum", "baryon_average", "baryon_reformat"]
     parser = argparse.ArgumentParser(description="average data files")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
