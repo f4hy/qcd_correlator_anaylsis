@@ -392,7 +392,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
             logging.debug("asymmetry in correlator({},{}): {}".format(tf,tb,asymmetry))
             max_asymmetry = max(asymmetry,max_asymmetry)
             if max_asymmetry>sigma:
-                logging.error("correlator is not symmetric within {}sigma".format(sigma))
+                logging.error("correlator is not symmetric within {}sigma is {}".format(sigma,asymmetry))
                 logging.error("C({}) - C({}) = {}, E({}) E({})".format(tf , tb, asv[tf] - asv[tb], errors[tf],errors[tb],))
                 disagreements+=1
                 #return False
