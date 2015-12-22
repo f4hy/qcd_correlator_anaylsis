@@ -14,7 +14,11 @@ def determine_fit_range(options):
     """ get fit range """
     logging.debug("Called with {}".format(options))
 
-    files = glob.glob("SymDW_sHtTanh_b2.0_smr3_*x{}x*0/data/*{}*{}-{}*{}".format(options.period, options.flavor, options.smearing1, options.smearing2, options.operator))
+    files = glob.glob("SymDW_sHtTanh_b2.0_smr3_*x{}x*b{}*0/data/*{}*{}*{}-{}*{}".format(options.period, options.beta, options.heavy, options.flavor, options.smearing1, options.smearing2, options.operator))
+
+    if len(files) < 1:
+        logging.error("no files")
+        exit(-1)
 
     print files
     files = files
@@ -53,7 +57,7 @@ def determine_fit_range(options):
             break
 
     maxt = maxt
-    mint = 1
+    mint = -1
 
     for cor in cors:
         emass = cor.cosh_effective_mass(1, fast=True, period=options.period)
@@ -73,7 +77,11 @@ def determine_fit_range(options):
 
             prev = emass[t]
 
-    params = [options.period, options.flavor, options.smearing1, options.smearing2, options.operator]
+    if mint < 0:
+        logging.error("could not find const")
+        exit(-1)
+
+    params = [options.period, options.beta, options.heavy, options.flavor, options.smearing1, options.smearing2, options.operator]
     params = map(str,params)
     string = "_".join(params)
     ofilename = options.output_stub+"/"+string
@@ -92,9 +100,11 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     parser.add_argument('period', type=int, help='PERIOD')
     parser.add_argument('operator', type=str, help='OPERATOR')
+    parser.add_argument('heavy', type=str, help='heavy')
     parser.add_argument('flavor', type=str, help='FLAVOR')
     parser.add_argument('smearing1', type=int, help='smearing1')
     parser.add_argument('smearing2', type=int, help='smearing2')
+    parser.add_argument('beta', type=str, help='beta')
     args = parser.parse_args()
 
     if args.verbose:
