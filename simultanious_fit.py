@@ -3,6 +3,8 @@ import fit
 import inspect
 import sys
 from simul_fitfunctions import *  # noqa
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
@@ -137,6 +139,57 @@ def auto_fit(cors, options=None):
 
     logging.info("starting fit with mergedcorrelator")
 
+
+def plot(cors, funct, time_starts, time_ends, averages, stds, chi, options):
+    import plot_helpers
+    import newton
+    dt = 1
+
+    fig = plt.figure()
+
+    corplots = {}
+    corplots[0] = plt.subplot(221)
+    corplots[1] = plt.subplot(222)
+    emassplots = {}
+    emassplots[0] = plt.subplot(223)
+    emassplots[1] = plt.subplot(224)
+
+
+    for i in [0,1]:
+        corplots[i].errorbar(cors[i].times,
+                             cors[i].average_sub_vev().values(),
+                             yerr=cors[i].jackknifed_errors().values(), fmt='o')
+        emass = cors[i].cosh_effective_mass(dt, fast=False, period=options.period)
+        emass_errs = cors[i].cosh_effective_mass_errors(dt).values()
+        emassplots[i].errorbar(emass.keys(), emass.values(),
+                               yerr=emass_errs, fmt='o')
+
+    fn = funct.individual(Nt=options.period)
+    for i in [0, 1]:
+        #X = np.array(cors[i].times)
+        X = np.linspace(time_starts[i], time_ends[i])
+        X = np.arange(time_starts[i], time_ends[i]+1, 1)
+        Xe = np.arange(time_starts[i], time_ends[i], 1)
+
+        Y = fn.formula((averages[0], averages[i+1]), X)
+        Ydt = fn.formula((averages[0], averages[i+1]), X+dt)
+        corplots[i].plot(X, Y)
+        guess = (1.0 / float(dt)) * np.log(Y/Ydt)
+        fitemass = {}
+        Yd = dict(enumerate(Y, start=time_starts[i]))
+        guess = dict(enumerate(guess, start=time_starts[i]))
+        for t in range(time_starts[i], time_ends[i]):
+            fitemass[t] = newton.newton_cosh_for_m(t, t+dt, Yd, guess[t], options.period)
+        emassplots[i].plot(fitemass.keys(),fitemass.values())
+
+    if options.output_stub:
+        filestub = options.output_stub
+        logging.info("Saving plot to {}".format(filestub+".png"))
+        fig.set_size_inches(18.5, 10.5)
+        plt.savefig(filestub+".png")
+    else:
+        plt.show()
+
 if __name__ == "__main__":
 
     # add the fit parser, but then override to use many correlators.
@@ -181,6 +234,7 @@ if __name__ == "__main__":
         logfilehandler.setFormatter(formatter)
         root.addHandler(logfilehandler)
 
+
     if args.output_stub and args.skip_done:
         filename = args.output_stub+".boot"
         try:
@@ -214,8 +268,10 @@ if __name__ == "__main__":
 
         print corrfile
         if "A4P" in corrfile:
+            cor.check_symmetric(anti=True)
             cor.make_symmetric(anti=True)
         elif "PP" in corrfile:
+            cor.check_symmetric()
             cor.make_symmetric()
 
         if args.bin:
@@ -231,4 +287,9 @@ if __name__ == "__main__":
         funct = functions[args.function](Nt=args.period, ranges=zip(args.time_start, args.time_end))
 
         logging.info("starting fit with mergedcorrelator")
-        fit.fit(funct, multicor, min(multicor.times), max(multicor.times), filestub=args.output_stub, return_chi=False, return_quality=True, options=args)
+        averages, stds, chi = fit.fit(funct, multicor,
+                                      min(multicor.times), max(multicor.times), bootstraps=args.bootstraps,
+                                      filestub=args.output_stub, return_chi=True,
+                                      return_quality=False, options=args)
+
+        plot(cors, funct, args.time_start, args.time_end, averages, stds, chi, args)
