@@ -16,6 +16,7 @@ from cStringIO import StringIO
 import build_corr
 import pandas_reader as pr
 import plot_helpers
+from plot_helpers import print_paren_error
 
 import re
 
@@ -72,15 +73,13 @@ def read_full_correlator(filename, emass=None, eamp=False, symmetric=False):
             cor.make_symmetric(anti=True)
         if "PP" in filename:
             cor.make_symmetric()
+        if "Nucleon" in filename:
+            cor.check_symmetric(anti=True, sigma=4)
+            cor.make_symmetric(anti=True)
 
-    if "48x96" in filename:
-        emass = 96
-    if "32x64" in filename:
-        emass = 64
 
     if emass:
         emasses = cor.cosh_effective_mass(1, fast=False, period=emass)
-        print emasses
         #emasses = cor.effective_mass(1)
         times = emasses.keys()
         data = [emasses[t] for t in times]
@@ -113,9 +112,11 @@ def read_file(filename, columns=None):
         df = pd.read_csv(txt, delimiter=' ', names=columns,
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
+        # df = pd.read_csv(txt, sep=",", delimiter=",",
+        #                  names=columns, skipinitialspace=True,
+        #                  delim_whitespace=True, converters={0: removecomma, 1: myconverter, 2: myconverter})
         df = pd.read_csv(txt, sep=",", delimiter=",",
-                         names=columns, skipinitialspace=True,
-                         delim_whitespace=True, converters={0: removecomma, 1: myconverter, 2: myconverter})
+                         names=columns, skipinitialspace=True)
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=columns)
     return df
@@ -200,7 +201,7 @@ def remove_common_prepost(names):
 def add_fit_info(filename, ax=None):
     if not ax:
         ax = plt
-    funmap = {"two_exp": two_exp, "single_exp": single_exp, "periodic_two_exp": two_exp,
+    funmap = {"two_exp": two_exp, "single_exp": single_exp, "periodic_two_exp": periodic_two_exp,
               "fwd-back-exp": periodic_exp, "periodic_two_exp_const": periodic_two_exp_const, "fwd-back-exp_const": periodic_exp_const}
     try:
         fittype, function, tmin, tmax, fitparams, fiterrors, Nt = get_fit(filename)
@@ -223,16 +224,18 @@ def add_fit_info(filename, ax=None):
             for i in range(len(fitpoints))[:-dt]:
                 emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
                 emassfit.append(emass)
-            ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r", lw=2, zorder=5)
             if args.fit_errors:
-                ax.plot([-100, 100], [mass+masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
-                ax.plot([-100, 100], [mass-masserror]*2, ls="dashed", color="b", lw=1.5, zorder=-5)
+                ax.plot(xpoints[:-dt], np.full_like(xpoints[:-dt],mass+masserror), ls="--", color="k", lw=2, zorder=50)
+                ax.plot(xpoints[:-dt], np.full_like(xpoints[:-dt],mass-masserror), ls="--", color="k", lw=2, zorder=50)
+            else:
+                ax.plot(xpoints[:-dt], emassfit, ls="dashed", color="r", lw=2, zorder=5)
         if masserror == 0:
             return "{}".format(mass)
         digits = -1.0*round(math.log10(masserror))
         formated_error = int(round(masserror * (10**(digits + 1))))
         formated_mass = "{m:.{d}f}".format(d=int(digits) + 1, m=mass)
-        return "{m}({e})".format(m=formated_mass, e=formated_error)
+        #return "{m}({e})".format(m=formated_mass, e=formated_error)
+        return print_paren_error(mass, masserror)
     except RuntimeError:
         logging.error("File {} had no fit into".format(filename))
 
@@ -274,7 +277,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     markers = ['o', "D", "^", "<", ">", "v", "x", "p", "8"]
     # colors, white sucks
     # colors = sorted([c for c in mpl.colors.colorConverter.colors.keys() if c != 'w' and c != "g"])
-    colors = ['b', 'r', 'k', 'm', 'c', 'y']
+    colors = ['b', 'c', 'm', 'r', 'k', 'y']
     plots = {}
     tmin_plot = {}
     has_colorbar = False
@@ -305,7 +308,11 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                 if args.emass:
                     logging.warn("EMASS flag set but filename indicates a correlator file!")
             if "emass" in filename or args.emass:
-                axe.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$", **fontsettings)
+                if args.scalefactor:
+                    axe.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$ [MeV]", **fontsettings)
+                else:
+                    axe.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$", **fontsettings)
+
             if args.rel_error:
                 axe.set_ylabel("Relative Error", **fontsettings)
 
@@ -320,7 +327,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
                     logging.info("setting label to {}".format(fitstring))
                     label = fitstring
                 else:
-                    label += " " + fitstring
+                    label += " $m_{fit}=$" + fitstring
 
         mark = markers[index % len(markers)]
         color = colors[index % len(colors)]
@@ -338,21 +345,28 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             time_offset = df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
 
-        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=12, elinewidth=3, capsize=8,
+        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=8, elinewidth=3, capsize=8,
                             capthick=2, mec=color, aa=True)
         if args.rel_error:
             plotsettings["elinewidth"] = 0
             plotsettings["capthick"] = 0
         if seperate:
             logging.info("plotting {}  {}, {}".format(label, i, j))
-            # axe.set_title(label)
+            #axe.set_title(label)
+            axe.legend(fancybox=True, shadow=True, loc=0)
         # Do a Tmin plot
+
+        if args.scalefactor:
+            scale = args.scalefactor
+        else:
+            scale = 1.0
+
         if any(df["quality"].notnull()):
             logging.info("found 4th column, plotting as quality")
             cmap = mpl.cm.cool
-            plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, fmt=None,
+            plots[label] = axe.errorbar(time_offset, scale*df.correlator.values, yerr=scale*df.error.values, fmt=None,
                                         zorder=0, **plotsettings)
-            tmin_plot[label] = axe.scatter(time_offset, df.correlator.values, c=df.quality.values,
+            tmin_plot[label] = axe.scatter(time_offset, scale*df.correlator.values, c=df.quality.values,
                                            s=50, cmap=cmap, marker=mark)
             tmin_plot[label].set_clim(0, 1)
             if seperate:
@@ -366,14 +380,14 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
 
         else:                   # Not a tmin plot!
             if np.iscomplexobj(df.correlator.values):
-                plots[label] = axe.errorbar(time_offset, np.real(df.correlator.values), yerr=np.real(df.error.values),
+                plots[label] = axe.errorbar(time_offset, scale*np.real(df.correlator.values), yerr=scale*np.real(df.error.values),
                                             **plotsettings)
                 if not real:
-                    plots["imag"+label] = axe.errorbar(time_offset, np.imag(df.correlator.values),
-                                                       yerr=np.imag(df.error.values), markerfacecolor='none',
+                    plots["imag"+label] = axe.errorbar(time_offset, scale*np.imag(df.correlator.values),
+                                                       yerr=scale*np.imag(df.error.values), markerfacecolor='none',
                                                        **plotsettings)
             else:
-                plots[label] = axe.errorbar(time_offset, df.correlator.values, yerr=df.error.values, **plotsettings)
+                plots[label] = axe.errorbar(time_offset, scale*df.correlator.values, yerr=scale*df.error.values, **plotsettings)
 
         if not yrange:
             ymin = min(ymin, min(df.correlator.fillna(1000)))
@@ -384,6 +398,8 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             xmax = max(xmax, max(df.time)+1)
             logging.debug("xmin {} xmax {}".format(xmin, xmax))
 
+        axe.legend(fancybox=True, shadow=True, loc=0)
+
     if args.plotfunction:
         add_function_plot(args.plotfunction, xmin,xmax)
 
@@ -391,7 +407,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
         if yrange:
             plt.ylim(yrange)
         else:
-            plt.ylim(plot_helpers.auto_fit_range(ymin,ymax))
+            plt.ylim(plot_helpers.auto_fit_range(scale*ymin,scale*ymax))
     if xrang:
         plt.xlim(xrang)
     else:
@@ -411,20 +427,24 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     f.canvas.set_window_title(files[0])
 
     if seperate:
-        plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
+        # plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
         if has_colorbar:
             f.subplots_adjust(right=0.95)
             cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
             f.colorbar(tmin_plot[label], cax=cbar_ax)
     else:
         if not args.nolegend:
-            leg = plt.legend(fancybox=True, shadow=True)
+            leg = plt.legend(fancybox=True, shadow=True, loc=0)
+
+
 
     if(output_stub):
-        f.set_size_inches(18.5, 18.5)
+        width = 10.0
+        f.set_size_inches(width, width*args.aspect)
         # plt.rcParams.update({'font.size': 20})
-        plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
-        #plt.tight_layout()
+        # plt.tight_layout(pad=2.0, h_pad=1.0, w_pad=2.0)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.90)
         if args.eps:
             logging.info("Saving plot to {}".format(output_stub+".eps"))
             plt.savefig(output_stub+".eps")
@@ -498,6 +518,8 @@ if __name__ == "__main__":
     #                     help='files to plot')
     parser.add_argument("--emass", type=float, default=None, required=False,
                         help="plot emasses not correlators")
+    parser.add_argument("--scalefactor", type=float, default=None, required=False,
+                        help="multiply by a scale factor")
     parser.add_argument("--symmetric", action="store_true",
                         help="make the correlator symmetric")
     parser.add_argument("--rel_error", action="store_true",
@@ -506,6 +528,8 @@ if __name__ == "__main__":
                         help="plot emasses not correlators")
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
+    parser.add_argument("--aspect", type=float, default=1.0, required=False,
+                        help="determine the plot aspect ratio")
     args = parser.parse_args()
 
     if args.verbose:
