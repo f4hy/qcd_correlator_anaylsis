@@ -23,6 +23,8 @@ from scipy.optimize import leastsq
 # from scipy.optimize import fmin_l_bfgs_b
 # from scipy.optimize import minimize
 
+import progress_bar
+
 OUTPUT = 25
 ALWAYSINFO = 26
 logging.addLevelName(OUTPUT, "OUTPUT")
@@ -163,9 +165,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     attempted = 0
 
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub, jackknife=options.jackknife):
+
+        pb = progress_bar.progress_bar(bootstraps)
+
         if options.jackknife:
             bootstraps = len(cor.configs) - 1
         attempted +=1
+        pb.update(attempted)
         if options.reguess:
             newguess = fn.starting_guess(strap, options.period, tmax, tmin)
         else:
@@ -188,7 +194,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             if failcount/float(attempted) > 0.15 and attempted > 40:
                 raise InvalidFit("more than 20% of boostraps failed to converge")
         del strap
-
+    pb.done()
 
 
     if failcount > 0:
