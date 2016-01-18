@@ -148,7 +148,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
     def effective_amp(self, dt):
         asv = self.average_sub_vev()
-        print asv
+
         emass = {}
         eamp = {}
         for t in self.times[:-dt]:
@@ -165,12 +165,12 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t + dt]))
                 emass[t] = float('NaN')
                 eamp[t] = float('NaN')
-        print eamp
         #exit()
         return eamp
 
 
     def cosh_effective_mass(self, dt, fast=True, period=None):
+        if fast: logging.warn("cosh emass computed fast method")
         if period is None:
             period = len(self.times)
         asv = self.average_sub_vev()
@@ -257,6 +257,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 for t in self.times[:-dt]}
 
     def cosh_effective_mass_errors(self, dt, fast=True, period=None):
+        if fast: logging.warn("cosh emass computed fast method")
         if period is None:
             period = len(self.times)
         jkasv = self.jackknife_average_sub_vev()
@@ -281,7 +282,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                     logging.error("index out of range")
             jkemass[cfg] = emass
         jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass)
-        effmass_dt = self.cosh_effective_mass(dt)
+        effmass_dt = self.cosh_effective_mass(dt, fast=fast, period=period)
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[dt:-dt]}
 
@@ -351,8 +352,8 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def writeemass(self, filename, dt=3, header=None, cosh=True):
         logging.info("Writing emass{} to {}".format(dt,filename))
         if cosh:
-            emass = self.cosh_effective_mass(dt)
-            error = self.cosh_effective_mass_errors(dt)
+            emass = self.cosh_effective_mass(dt, fast=False)
+            error = self.cosh_effective_mass_errors(dt, fast=False)
         with open(filename, 'w') as outfile:
             if header:
                 outfile.write(header)
@@ -378,10 +379,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def check_symmetric(self, sigma=1.0, anti=False):
         asv = self.average_sub_vev()
         errors = self.jackknifed_errors()
-        print asv
-        print errors
         seperations = [t for t in sorted(self.times) if t>0]
-        print seperations
         max_asymmetry = 0
         disagreements = 0
         for tf, tb in zip(seperations, reversed(seperations)):
@@ -436,3 +434,6 @@ class Correlator(configtimeobj.Cfgtimeobj):
         self.times = seperations
         self.asv = None
         self.jkasv = None
+        self.average = None
+        self.sums = None
+        self.vevdata = None
