@@ -62,28 +62,28 @@ def determine_type(txt):
 
 def read_full_correlator(filename, emass=None, eamp=False, symmetric=False):
     logging.info("reading file {}".format(filename))
-    try:
-        cor = build_corr.corr_and_vev_from_files_pandas(filename, None, None)
-    except AttributeError:
-        logging.info("Failed to read with pandas, reading normal")
-        cor = build_corr.corr_and_vev_from_files(filename, None, None)
+    cor = build_corr.corr_and_vev_from_pickle(filename, None, None)
+    logging.info("File read.")
 
     if symmetric:
         if "A4P" in filename:
             cor.make_symmetric(anti=True)
-        if "PP" in filename:
+        elif "PP" in filename:
             cor.make_symmetric()
-        if "Nucleon" in filename:
+        elif "Nucleon" in filename:
             cor.check_symmetric(anti=True, sigma=4)
             cor.make_symmetric(anti=True)
+        else:
+            cor.make_symmetric()
 
+        cor.prune_invalid(delete=False, sigma=2.0)
 
     if emass:
         emasses = cor.cosh_effective_mass(1, fast=False, period=emass)
         #emasses = cor.effective_mass(1)
         times = emasses.keys()
         data = [emasses[t] for t in times]
-        errs = cor.cosh_effective_mass_errors(1, fast=True)
+        errs = cor.cosh_effective_mass_errors(1, fast=False, period=emass)
         #errs = cor.effective_mass_errors(1)
         errors = [errs[t]  for t in times]
         logging.debug("emasses {}".format(emasses))

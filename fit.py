@@ -345,7 +345,7 @@ def plot_fit(fn, cor, tmin, tmax, options, fitted_params, errors=None, postfix=N
     plt.ylim(plot_helpers.auto_fit_range(min(corvals),max(corvals)))
     plt.xlim([0, tmax + 2])
     emass = cor.cosh_effective_mass(emass_dt, fast=False, period=options.period)
-    emass_errors = cor.cosh_effective_mass_errors(emass_dt).values()
+    emass_errors = cor.cosh_effective_mass_errors(emass_dt, fast=False, period=options.period).values()
     emassplot = plt.subplot(212)
     emassplot.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$")
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')
@@ -564,7 +564,7 @@ def allfits(funct, cor, filestub=None, bootstraps=NBOOTSTRAPS, options=None):
             if tmin > tmax:
                 continue
             try:
-                _, _, qual = fit(funct, cor, tmin, tmax, filestub=filestub+"_{}_{}_".format(tmin, tmax), bootstraps=bootstraps, return_chi=True, return_quality=False, options=options)
+                _, _, qual = fit(funct, cor, tmin, tmax, filestub=filestub+"_{}_{}".format(tmin, tmax), bootstraps=bootstraps, return_chi=True, return_quality=False, options=options)
             except RuntimeError:
                 logging.warn("Fitter failed, skipping this tmin,tmax {},{}".format(tmin, tmax))
             except InversionError:
@@ -680,23 +680,17 @@ if __name__ == "__main__":
         vev2 = args.vev2
 
 
-    try:
-        logging.info("reading file {}".format(corrfile))
-        cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
-    except AttributeError:
-        logging.info("Failed to read with pandas, reading normal")
-        cor = build_corr.corr_and_vev_from_files(corrfile, vev1, vev2)
+    cor = build_corr.corr_and_vev_from_pickle(corrfile, vev1, vev2)
 
-    # cor.make_symmetric()
     if args.symmetric:
-        if cor.check_symmetric(2.0):
+        if cor.check_symmetric(3.0):
             cor.make_symmetric()
         else:
             logging.error("Correlator was not symmetric!")
             exit()
 
     if args.antisymmetric:
-        if cor.check_symmetric(2.0, anti=True):
+        if cor.check_symmetric(3.0, anti=True):
             cor.make_symmetric(anti=True)
         else:
             logging.error("Correlator was not antisymmetric!")
@@ -745,7 +739,6 @@ if __name__ == "__main__":
     tmax = args.time_end
     fit_ranges = [(tmin, tmax)]
     if args.time_start is None:
-        print args.output_stub
         auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         exit()
 

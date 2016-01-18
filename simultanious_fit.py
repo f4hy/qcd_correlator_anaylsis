@@ -258,15 +258,8 @@ if __name__ == "__main__":
         if args.vev2:
             vev2 = args.vev2[i]
 
-        try:
-            logging.info("reading {}".format(corrfile))
-            cor = build_corr.corr_and_vev_from_files_pandas(corrfile, vev1, vev2)
-            cors.append(cor)
-        except AttributeError:
-            logging.info("Failed to read with pandas, reading normal")
-            cor = build_corr.corr_and_vev_from_files(corrfile, vev1, vev2)
+        cor = build_corr.corr_and_vev_from_pickle(corrfile, vev1, vev2)
 
-        print corrfile
         if "A4P" in corrfile:
             cor.check_symmetric(anti=True)
             cor.make_symmetric(anti=True)
