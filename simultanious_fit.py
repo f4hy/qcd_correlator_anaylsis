@@ -273,6 +273,10 @@ if __name__ == "__main__":
         elif "PP" in corrfile:
             cor.check_symmetric()
             cor.make_symmetric()
+        elif "vectorave" in corfile:
+            cor.check_symmetric()
+            cor.make_symmetric()
+
 
         if args.bin:
             cor = cor.reduce_to_bins(args.bin)
