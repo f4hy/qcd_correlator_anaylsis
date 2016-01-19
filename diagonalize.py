@@ -10,6 +10,8 @@ import pandas_reader
 import os.path
 from level_identifier import readops
 
+import build_corr
+
 DIAGTOL = 0.009
 
 
@@ -56,7 +58,7 @@ def diagonalize(correlator_pannel, t0, td, generalized=False):
     if min(evals) < 0.05:
         logging.warn("Warning, low eigenvalue detected. Eval={}".format(min(evals)))
     else:
-        logging.info("lowest eigenvalue={}".format(min(evals)))       
+        logging.info("lowest eigenvalue={}".format(min(evals)))
     logging.debug("eigen values are {}".format(evals))
     logging.debug("eigen vectors are {}".format(evecs))
     n = len(evecs)
@@ -184,6 +186,8 @@ if __name__ == "__main__":
                         help="just write the eigenvalues")
     parser.add_argument("-m", "--returnmaxeigen", action="store_true", required=False,
                         help="return max eigenvalue")
+    parser.add_argument("--symmetric", action="store_true",
+                        help="make the correlator symmetric")
 
     parser.add_argument("-o", "--outputformat", type=str, required=False,
                         help="format to write output")
@@ -221,10 +225,22 @@ if __name__ == "__main__":
         for src in args.operators:
             filename = args.input_dir + args.filewild.format(snk, src)
             logging.info("reading {}".format(filename))
+            if args.symmetric:
+                checkcor = build_corr.corr_and_vev_from_files(filename, None, None)
+                if "A4P" in filename:
+                    checkcor.check_symmetric(anti=True, sigma=4)
+                    checkcor.make_symmetric(anti=True)
+                if "PP" in filename:
+                    checkcor.check_symmetric(sigma=4)
+                    checkcor.make_symmetric()
             try:
-                cor_matrix[snk+src] = pandas_reader.read_configcols_paraenformat(filename)
+                tmpcor = pandas_reader.read_configcols_paraenformat(filename)
             except:
-                cor_matrix[snk+src] = pandas_reader.read_configcols_normal(filename)
+                tmpcor = pandas_reader.read_configcols_normal(filename)
+
+
+            cor_matrix[snk+src] = tmpcor
+
 
     p = pd.Panel(cor_matrix)
 
