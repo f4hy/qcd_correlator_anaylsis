@@ -16,18 +16,21 @@ import sys
 
 
 
-def make_fake_cor(cfgs, times, amps, masses):
+def make_fake_cor(cfgs, Nt, amps, masses):
     assert(len(amps) == len(masses))
     cfgs = list(range(cfgs))
-    times = list(range(times))
+    times = list(range(Nt))
     data = {}
     vev = {}
+
+    def noisy(value):
+        return np.random.normal(value,value*0.001,1)
+
     for c in cfgs:
         vev[c] = 0.0
         tmp = {}
         for t in times:
-            tmp[t] = sum([amps[i] * np.exp((-1.0*masses[i]) * t) for i in range(len(amps))])
-            tmp[t] += np.random.normal(0,0.01,1) * tmp[t]
+            tmp[t] = sum([noisy(amps[i]) * (np.exp((-1.0*masses[i]) * t)+np.exp((masses[i]) * (t-Nt))) for i in range(len(amps))])
             data[c] = tmp
 
     return correlator.Correlator.fromDataDicts(data, vev, vev)
@@ -38,9 +41,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a fake correlator")
     parser.add_argument("-o", "--output_stub", type=str, required=True,
                         help="stub of name to write output to")
-    parser.add_argument("-cfg", "--configs", type=int, required=False, default=50,
+    parser.add_argument("-cfg", "--configs", type=int, required=False, default=100,
                         help="number of configs to make")
-    parser.add_argument("-t", "--times", type=int, required=False, default=20,
+    parser.add_argument("-t", "--times", type=int, required=False, default=64,
                         help="number of times")
     parser.add_argument("-a", "--amps", type=float, nargs="+", required=True,
                         help="amplitudes for each exp")
