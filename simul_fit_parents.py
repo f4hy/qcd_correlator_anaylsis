@@ -41,6 +41,51 @@ class sharedmass_amp(object):
                    print_level=0, pedantic=True)
         return m
 
+class shared_twice_mass_amp(object):
+    """Parent class for functions which take a mass and an amplitude"""
+    def __init__(self):
+        self.starting_guess = self.thisguess
+        self.bounds = [mass_bounds, amp_bounds, amp_bounds, mass_bounds, amp_bounds, amp_bounds]
+        self.parameter_names = ["massa", "amp1a", "amp2a", "massb", "amp1b", "amp2b"]
+        self.subtract = False
+
+    def thisguess(self, cor, period, *args):
+        dt = 1
+        ave = cor.average_sub_vev()
+        emass = cor.cosh_effective_mass(dt, fast=True, period=period)
+        massa_guess = np.mean([emass[i[1]-dt-1] for i in self.indexes])
+        massb_guess = massa_guess
+
+        amp_guess1a = ave[self.indexes[0][1]]*np.exp(massa_guess*(self.ranges[0][1]))
+        amp_guess2a = ave[self.indexes[1][1]]*np.exp(massa_guess*(self.ranges[1][1]))
+        amp_guess1b = ave[self.indexes[0][1]]*np.exp(massb_guess*(self.ranges[0][1]))
+        amp_guess2b = ave[self.indexes[1][1]]*np.exp(massb_guess*(self.ranges[1][1]))
+        return [massa_guess, amp_guess1a, amp_guess2a, massb_guess, amp_guess1b, amp_guess2b]
+
+
+    def my_cov_fun(self, massa, amp1a, amp2a, massb, amp1b, amp2b):
+        vect = self.aoc - self.formula((massa, amp1a, amp2a, massb, amp1b, amp2b), self.times)
+        return vect.dot(self.inv_cov).dot(vect)
+
+    def valid(self, *kargs):
+        return True
+
+    def custom_minuit(self, data, invmatrix, times, guess):
+        self.aoc = data
+        self.inv_cov = invmatrix
+        self.times = times
+        dof = len(guess)+len(data)
+        m = Minuit(self.my_cov_fun, massa=guess[0], error_massa=guess[0]*0.1,
+                   amp1a=guess[1], error_amp1a=guess[1]*0.1,
+                   amp2a=guess[2], error_amp2a=guess[2]*0.1,
+                   massb=guess[0], error_massb=guess[0]*0.1,
+                   amp1b=guess[1], error_amp1b=guess[1]*0.1,
+                   amp2b=guess[2], error_amp2b=guess[2]*0.1,
+                   errordef=dof,
+                   print_level=0, pedantic=True)
+        return m
+
+
 class multirange(object):
     """ Parent class for functions which are periodic and need to know the time extent"""
     def setranges(self, ranges):
