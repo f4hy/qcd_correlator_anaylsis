@@ -97,7 +97,7 @@ def read_file(filename):
                          converters={1: parse_pair, 2: parse_pair})
     if filetype == "comma":
         df = pd.read_csv(txt, sep=",", delimiter=",", names=names, skipinitialspace=True,
-                         delim_whitespace=True, converters={0: removecomma, 1: myconverter, 2:myconverter})
+                         delim_whitespace=True, converters={0: removecomma, 1: myconverter, 2:myconverter, 3:myconverter, 4:myconverter, 5:myconverter, 6:myconverter})
     if filetype == "space_seperated":
         df = pd.read_csv(txt, delimiter=' ', names=names)
     return df
