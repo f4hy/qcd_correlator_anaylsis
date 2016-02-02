@@ -65,21 +65,11 @@ def read_full_correlator(filename, emass=None, eamp=False, symmetric=False):
     cor = build_corr.corr_and_vev_from_pickle(filename, None, None)
     logging.info("File read.")
 
-
-    # if symmetric:
-    #     if "A4P" in filename or "PA4":
-    #         cor.check_symmetric(anti=True, sigma=2)
-    #         cor.make_symmetric(anti=True)
-    #     elif "PP" in filename:
-    #         cor.make_symmetric()
-    #     elif "Nucleon" in filename:
-    #         cor.check_symmetric(anti=True, sigma=4)
-    #         cor.make_symmetric(anti=True)
-    #     else:
-    #         cor.make_symmetric()
-
     if symmetric:
         corsym = cor.determine_symmetry()
+        if corsym is None:
+            logging.error("called with symmetric but correlator isnt")
+            raise RuntimeError("called with symmetric but correlator isnt")
         logging.info("correlator found to be {}".format(corsym))
         cor.make_symmetric()
 

@@ -39,7 +39,7 @@ def determine_fit_range(options):
         if options.operator == "PP":
             c.make_symmetric()
         elif options.operator == "A4P" or options.operator == "PA4":
-            c.make_symmetric(anti=True)
+            c.make_symmetric()
             maxt = (options.period/2)-4
             p = 1.20
         else:

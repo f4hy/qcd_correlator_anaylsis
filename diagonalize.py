@@ -225,14 +225,6 @@ if __name__ == "__main__":
         for src in args.operators:
             filename = args.input_dir + args.filewild.format(snk, src)
             logging.info("reading {}".format(filename))
-            if args.symmetric:
-                checkcor = build_corr.corr_and_vev_from_files(filename, None, None)
-                if "A4P" in filename:
-                    checkcor.check_symmetric(anti=True, sigma=4)
-                    checkcor.make_symmetric(anti=True)
-                if "PP" in filename:
-                    checkcor.check_symmetric(sigma=4)
-                    checkcor.make_symmetric()
             try:
                 tmpcor = pandas_reader.read_configcols_paraenformat(filename)
             except:

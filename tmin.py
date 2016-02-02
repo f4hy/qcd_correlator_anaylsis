@@ -122,20 +122,13 @@ if __name__ == "__main__":
         logging.info("Failed to read with pandas, reading normal")
         cor = build_corr.corr_and_vev_from_files(corrfile, vev1, vev2)
 
-
-    if args.symmetric:
-        if cor.check_symmetric(4.0):
-            cor.make_symmetric()
-        else:
-            logging.error("Correlator was not symmetric!")
-            exit()
-
-    if args.antisymmetric:
-        if cor.check_symmetric(4.0, anti=True):
-            cor.make_symmetric(anti=True)
-        else:
-            logging.error("Correlator was not antisymmetric!")
-            exit()
+    if args.symmetric or args.antisymmetric:
+        corsym = cor.determine_symmetry()
+        if corsym is None:
+            logging.error("called with symmetric but correlator isnt")
+            raise RuntimeError("called with symmetric but correlator isnt")
+        logging.info("correlator found to be {}".format(corsym))
+        cor.make_symmetric()
 
 
     tmin_plot(funct, cor, args.time_start, args.time_end,
