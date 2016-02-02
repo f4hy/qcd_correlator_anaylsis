@@ -661,7 +661,7 @@ if __name__ == "__main__":
         try:
             if os.stat(filename).st_size > 0:
                 logging.info(".boot file exists and not empty, skip fit")
-                exit(-1)
+                exit(0)
             else:
                 logging.warn(".boot file exists but is empty!")
         except OSError as e:
