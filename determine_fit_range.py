@@ -25,24 +25,28 @@ def determine_fit_range(options):
     files = files
     #fhandles = [open(f) for f in files]
     maxt = (options.period/2)-1
+
+
     rel_err = {t:0 for t in range(1,options.period/2)}
 
 
     cors = [build_corr.corr_and_vev_from_pickle(f, None, None) for f in files]
 
+    p = 1.05
 
 
     for c in cors:
         if options.operator == "PP":
             c.make_symmetric()
-        elif options.operator == "A4P":
+        elif options.operator == "A4P" or options.operator == "PA4":
             c.make_symmetric(anti=True)
-            maxt = (options.period/2)-8
+            maxt = (options.period/2)-4
+            p = 1.20
         else:
             c.make_symmetric()
 
     for c in cors:
-        c.prune_invalid(delete=False, sigma=2.0)
+        c.prune_invalid(delete=True, sigma=2.0)
         maxt = min(maxt,max(c.times))
 
 
@@ -62,7 +66,6 @@ def determine_fit_range(options):
     maxt = maxt
     mint = -1
 
-    p = 1.05
 
     for f,cor in zip(files,cors):
         emass = cor.cosh_effective_mass(1, fast=False, period=options.period)
@@ -85,7 +88,8 @@ def determine_fit_range(options):
     if mint < 0:
         logging.error(files)
         logging.error("could not find const")
-        exit(-1)
+        mint = maxt-4
+        #exit(-1)
 
     ofilename = options.ofilename
 
@@ -95,7 +99,9 @@ def determine_fit_range(options):
             mint = maxt-4
             logging.error("setting fit range to {},{}!!".format(mint,maxt))
         else:
-            exit(-1)
+            mint = maxt-4
+            logging.error("setting fit range to {},{}!!".format(mint,maxt))
+            #exit(-1)
 
 
     logging.info("fit range deteremined to be {} {}".format(mint,maxt))
