@@ -26,10 +26,10 @@ def read_full_correlator(filename, emass=False):
         cor = build_corr.corr_and_vev_from_files(filename, None, None)
 
     if emass:
-        emasses = cor.cosh_effective_mass(1)
+        emasses = cor.periodic_effective_mass(1)
         times = emasses.keys()
         data = [emasses[t] for t in times]
-        errors = [cor.cosh_effective_mass_errors(1)[t]  for t in times]
+        errors = [cor.periodic_effective_mass_errors(1)[t]  for t in times]
     else:
         times = cor.times
         data = [cor.average_sub_vev()[t] for t in times]

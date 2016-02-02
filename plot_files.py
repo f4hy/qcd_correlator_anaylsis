@@ -65,31 +65,40 @@ def read_full_correlator(filename, emass=None, eamp=False, symmetric=False):
     cor = build_corr.corr_and_vev_from_pickle(filename, None, None)
     logging.info("File read.")
 
+
+    # if symmetric:
+    #     if "A4P" in filename or "PA4":
+    #         cor.check_symmetric(anti=True, sigma=2)
+    #         cor.make_symmetric(anti=True)
+    #     elif "PP" in filename:
+    #         cor.make_symmetric()
+    #     elif "Nucleon" in filename:
+    #         cor.check_symmetric(anti=True, sigma=4)
+    #         cor.make_symmetric(anti=True)
+    #     else:
+    #         cor.make_symmetric()
+
     if symmetric:
-        if "A4P" in filename:
-            cor.make_symmetric(anti=True)
-        elif "PP" in filename:
-            cor.make_symmetric()
-        elif "Nucleon" in filename:
-            cor.check_symmetric(anti=True, sigma=4)
-            cor.make_symmetric(anti=True)
-        else:
-            cor.make_symmetric()
+        corsym = cor.determine_symmetry()
+        logging.info("correlator found to be {}".format(corsym))
+        cor.make_symmetric()
 
         cor.prune_invalid(delete=False, sigma=2.0)
 
     if emass:
-        emasses = cor.cosh_effective_mass(1, fast=False, period=emass)
+        emasses = cor.periodic_effective_mass(1, fast=False, period=emass)
+        #emasses = cor.periodic_effective_mass(1, fast=False, period=emass)
         #emasses = cor.effective_mass(1)
         times = emasses.keys()
         data = [emasses[t] for t in times]
-        errs = cor.cosh_effective_mass_errors(1, fast=False, period=emass)
+        #errs = cor.periodic_effective_mass_errors(1, fast=False, period=emass)
+        errs = cor.periodic_effective_mass_errors(1, fast=False, period=emass)
         #errs = cor.effective_mass_errors(1)
         errors = [errs[t]  for t in times]
         logging.debug("emasses {}".format(emasses))
         logging.debug("errs {}".format(errs))
     elif eamp:
-        eamps = cor.cosh_effective_amp(1, len(cor.times), cor.cosh_effective_mass(1)[32] )
+        eamps = cor.periodic_effective_amp(1, len(cor.times), cor.periodic_effective_mass(1)[32] )
         times = eamps.keys()
         data = [eamps[t] for t in times]
         errors = [0  for t in times]

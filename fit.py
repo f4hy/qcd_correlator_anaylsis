@@ -344,8 +344,8 @@ def plot_fit(fn, cor, tmin, tmax, options, fitted_params, errors=None, postfix=N
 
     plt.ylim(plot_helpers.auto_fit_range(min(corvals),max(corvals)))
     plt.xlim([0, tmax + 2])
-    emass = cor.cosh_effective_mass(emass_dt, fast=False, period=options.period)
-    emass_errors = cor.cosh_effective_mass_errors(emass_dt, fast=False, period=options.period).values()
+    emass = cor.periodic_effective_mass(emass_dt, fast=False, period=options.period)
+    emass_errors = cor.periodic_effective_mass_errors(emass_dt, fast=False, period=options.period).values()
     emassplot = plt.subplot(212)
     emassplot.set_ylabel("${\mathrm{\mathbf{m}_{eff}}}$")
     dataplt = emassplot.errorbar(emass.keys(), emass.values(), yerr=emass_errors, fmt='o')

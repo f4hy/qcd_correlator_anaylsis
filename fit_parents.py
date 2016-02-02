@@ -13,7 +13,7 @@ def massamp_guess(cor, period, tmax, *args):
     dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
-    emass = cor.cosh_effective_mass(dt, fast=False, period=period)
+    emass = cor.periodic_effective_mass(dt, fast=False, period=period)
     if not emass[maxt] > 0:
         for t in range(maxt,0,-1):
             if emass[t] > 0:
@@ -47,7 +47,7 @@ def twoexp_sqr_guess(cor, period, tmax, tmin):
     dt = 1
     maxt = tmax - dt
     ave = cor.average_sub_vev()
-    emass = cor.cosh_effective_mass(dt, fast=False, period=period)
+    emass = cor.periodic_effective_mass(dt, fast=False, period=period)
     mass_guess = np.median(emass.values())
     amp_guess = ave[maxt]*np.exp(mass_guess*(maxt))
     mass2_guess = np.sqrt(emass[tmin+1])

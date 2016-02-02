@@ -45,8 +45,8 @@ def tmin_plot(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS):
 
     fig = plt.figure()
 
-    emass = cor.cosh_effective_mass(emass_dt)
-    emass_errors = cor.cosh_effective_mass_errors(emass_dt).values()
+    emass = cor.periodic_effective_mass(emass_dt)
+    emass_errors = cor.periodic_effective_mass_errors(emass_dt).values()
     emass_plot = plt.errorbar(np.array(emass.keys())+0.2, emass.values(), yerr=emass_errors, fmt='g^', zorder=0)
     cmap = mpl.cm.cool
 

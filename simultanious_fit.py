@@ -159,8 +159,8 @@ def plot(cors, funct, time_starts, time_ends, averages, stds, chi, options):
         corplots[i].errorbar(cors[i].times,
                              cors[i].average_sub_vev().values(),
                              yerr=cors[i].jackknifed_errors().values(), fmt='o')
-        emass = cors[i].cosh_effective_mass(dt, fast=False, period=options.period)
-        emass_errs = cors[i].cosh_effective_mass_errors(dt).values()
+        emass = cors[i].periodic_effective_mass(dt, fast=False, period=options.period)
+        emass_errs = cors[i].periodic_effective_mass_errors(dt).values()
         emassplots[i].errorbar(emass.keys(), emass.values(),
                                yerr=emass_errs, fmt='o')
 

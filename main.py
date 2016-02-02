@@ -174,8 +174,8 @@ def plot_corr(corr, out_folder, name, fitparams=None):
                                     emass.keys(), autoscale=True, addcomment=fitcomment)
 
         if args.periodic:             # Do it all again with periodic
-            cosh_emass = corr.cosh_effective_mass(dt)
-            cosh_emass_errors = corr.cosh_effective_mass_errors(dt)
+            cosh_emass = corr.periodic_effective_mass(dt)
+            cosh_emass_errors = corr.periodic_effective_mass_errors(dt)
             plot_cosh_emass = {"%s cosh_emass dt=%d, \t error" % (name, dt): (cosh_emass, cosh_emass_errors)}
             plot.plotwitherrorbarsnames("%scosh_emass%d.%s" % (out_folder, dt, name),  plot_cosh_emass,
                                         cosh_emass.keys(), autoscale=True)

@@ -68,8 +68,8 @@ def determine_fit_range(options):
 
 
     for f,cor in zip(files,cors):
-        emass = cor.cosh_effective_mass(1, fast=False, period=options.period)
-        errs = cor.cosh_effective_mass_errors(1, fast=False, period=options.period)
+        emass = cor.periodic_effective_mass(1, fast=False, period=options.period)
+        errs = cor.periodic_effective_mass_errors(1, fast=False, period=options.period)
         prev = emass[3]
         for t in range(4, maxt):
             if emass[t] > prev:

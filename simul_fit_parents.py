@@ -14,7 +14,7 @@ class sharedmass_amp(object):
     def thisguess(self, cor, period, *args):
         dt = 1
         ave = cor.average_sub_vev()
-        emass = cor.cosh_effective_mass(dt, fast=True, period=period)
+        emass = cor.periodic_effective_mass(dt, fast=True, period=period)
         mass_guess = np.mean([emass[i[1]-dt-1] for i in self.indexes])
 
         amp_guess1 = ave[self.indexes[0][1]]*np.exp(mass_guess*(self.ranges[0][1]))
@@ -52,7 +52,7 @@ class shared_twice_mass_amp(object):
     def thisguess(self, cor, period, *args):
         dt = 1
         ave = cor.average_sub_vev()
-        emass = cor.cosh_effective_mass(dt, fast=True, period=period)
+        emass = cor.periodic_effective_mass(dt, fast=True, period=period)
         massa_guess = np.mean([emass[i[1]-dt-1] for i in self.indexes])
         massb_guess = massa_guess
 
