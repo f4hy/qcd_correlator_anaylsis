@@ -7,6 +7,8 @@ import newton
 
 class Correlator(configtimeobj.Cfgtimeobj):
 
+    made_symmetric = False
+    symmetry = None
     vevdata = None
 
     # op1 = None
@@ -169,6 +171,41 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return eamp
 
 
+    def periodic_effective_mass(self, dt, fast=True, period=None):
+        if self.symmetry is None:
+            logging.warning("Called periodic effective mass without symmetry determined")
+            self.determine_symmetry()
+            if self.symmetry is None:
+                logging.error("Called periodic effective mass and symmetry can not be found")
+                raise RuntimeError("Could not determine symmetry")
+        if self.symmetry == "symmetric":
+            logging.info("Calling cosh emass")
+            return self.cosh_effective_mass(dt, fast=fast, period=period)
+        if self.symmetry == "anti-symmetric":
+            logging.info("Calling sinh emass")
+            return self.sinh_effective_mass(dt, fast=fast, period=period)
+
+        logging.error("Symmetry is not 'symmetric' nor 'anti-symmetric'")
+        raise RuntimeError("Could not determine symmetry")
+
+    def periodic_effective_mass_errors(self, dt, fast=True, period=None):
+
+        if self.symmetry is None:
+            logging.warning("Called periodic effective mass without symmetry determined")
+            self.determine_symmetry()
+            if self.symmetry is None:
+                logging.error("Called periodic effective mass and symmetry can not be found")
+                raise RuntimeError("Could not determine symmetry")
+        if self.symmetry == "symmetric":
+            return self.cosh_effective_mass_errors(dt, fast=fast, period=period)
+        if self.symmetry == "anti-symmetric":
+            return self.sinh_effective_mass_errors(dt, fast=fast, period=period)
+
+        logging.error("Symmetry is not 'symmetric' nor 'anti-symmetric'")
+        raise RuntimeError("Could not determine symmetry")
+
+
+
     def cosh_effective_mass(self, dt, fast=True, period=None):
         if fast: logging.warn("cosh emass computed fast method")
         if period is None:
@@ -191,6 +228,30 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t]))
                 emass[t] = float('NaN')
         return emass
+
+    def sinh_effective_mass(self, dt, fast=True, period=None):
+        if fast: logging.warn("sinh emass computed fast method")
+        if period is None:
+            period = len(self.times)
+        asv = self.average_sub_vev()
+        emass = {}
+        for t in self.times[dt:-dt]:
+            try:
+                guess = (1.0 / float(dt))*math.asinh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
+                if fast:
+                    emass[t] = guess
+                else:
+                    emass[t] = newton.newton_sinh_for_m(t,t+dt,asv, guess,period)
+            except ValueError:
+                logging.debug("invalid argument to asinh, setting to zero")
+                emass[t] = float('NaN')
+            except KeyError:
+                logging.error("index out of range")
+            except ZeroDivisionError:
+                logging.error("Div by zero either dt:{} or average value sub vev {}".format(dt,asv[t]))
+                emass[t] = float('NaN')
+        return emass
+
 
     def cosh_effective_amp(self, dt, period, mass):
         asv = self.average_sub_vev()
@@ -286,6 +347,37 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[dt:-dt]}
 
+    def sinh_effective_mass_errors(self, dt, fast=True, period=None):
+        if fast: logging.warn("sinh emass computed fast method")
+        if period is None:
+            period = len(self.times)
+        jkasv = self.jackknife_average_sub_vev()
+        jkemass = {}
+        for cfg in self.configs:
+            asvc = jkasv[cfg]
+            emass = {}
+            for t in self.times[dt:-dt]:
+                try:
+                    guess = (1.0 / float(dt))*math.asinh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
+                    if fast:
+                        emass[t] = guess
+                    else:
+                        emass[t] = newton.newton_sinh_for_m(t,t+dt,asvc, guess,period)
+                except ValueError:
+                    #logging.debug("invalid argument to log, setting to zero")
+                    emass[t] = 0.0
+                except ZeroDivisionError:
+                    logging.debug("div by zero, setting to zero")
+                    emass[t] = 0.0
+                except KeyError:
+                    logging.error("index out of range")
+            jkemass[cfg] = emass
+        jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass)
+        effmass_dt = self.sinh_effective_mass(dt, fast=fast, period=period)
+        return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
+                for t in self.times[dt:-dt]}
+
+
     def cosh_const_effective_mass_errors(self, dt):
 
         jkasv = self.jackknife_average_sub_vev()
@@ -349,11 +441,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
             for t, a in asv.iteritems():
                 outfile.write("{!r},   {!r}, {!r}\n".format(t, a, error[t]))
 
-    def writeemass(self, filename, dt=3, header=None, cosh=True):
+    def writeemass(self, filename, dt=3, header=None, periodic=True):
         logging.info("Writing emass{} to {}".format(dt,filename))
-        if cosh:
-            emass = self.cosh_effective_mass(dt, fast=False)
-            error = self.cosh_effective_mass_errors(dt, fast=False)
+        if periodic:
+            emass = self.periodic_effective_mass(dt, fast=False)
+            error = self.periodic_effective_mass_errors(dt, fast=False)
         with open(filename, 'w') as outfile:
             if header:
                 outfile.write(header)
@@ -373,36 +465,49 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 self.data[cfg][time] = self.data[cfg][time] - self.data[cfg][t]
         self.asv = None
         self.jkasv = None
+        self.average = None
         self.sums = None
+        self.vevdata = None
         self.times = new_times
 
     def check_symmetric(self, sigma=1.0, anti=False):
+        antistring = "anti-" if anti else ""
+        asymmetry = self.check_symmetric_sigma(anti=anti)
+        if asymmetry > sigma:
+            logging.error("correlator is not {}symmetric within {}sigma is {}".format(antistring, sigma,asymmetry))
+            return False
+        return True
+
+    def check_symmetric_sigma(self, anti=False):
+        antistring = "anti-" if anti else "     "
         asv = self.average_sub_vev()
         errors = self.jackknifed_errors()
         seperations = [t for t in sorted(self.times) if t>0]
         max_asymmetry = 0
-        disagreements = 0
         for tf, tb in zip(seperations, reversed(seperations)):
             if anti:
                 asymmetry = abs(asv[tf] + asv[tb]) / (errors[tf]+errors[tb])
             else:
                 asymmetry = abs(asv[tf] - asv[tb]) / (errors[tf]+errors[tb])
-            logging.debug("asymmetry in correlator({},{}): {}".format(tf,tb,asymmetry))
+            logging.debug("asymmetry in correlator {}symmetry ({},{}): {}".format(antistring, tf,tb,asymmetry))
             max_asymmetry = max(asymmetry,max_asymmetry)
-            if max_asymmetry>sigma:
-                logging.error("correlator is not symmetric within {}sigma is {}".format(sigma,asymmetry))
-                logging.error("C({}) - C({}) = {}, E({}) E({})".format(tf , tb, asv[tf] - asv[tb], errors[tf],errors[tb],))
-                disagreements+=1
-                #return False
-        logging.info("Max asymmetry in correlator: {}sigma".format(max_asymmetry))
-        if disagreements > 1:
-            logging.warn("found {} disagreemnts in symmetry".format(disagreements))
-            return False
+        logging.info("Max asymmetry in correlator {}symmetry: {}sigma".format(antistring, max_asymmetry))
+        return max_asymmetry
 
-        return True
+    def make_symmetric(self, sigma=1.0):
+        if self.made_symmetric:
+            logging.error("Already made symmetric!!!")
+            raise RuntimeError("Called make symmetric but correlator Already made symmetric!!!")
 
-    def make_symmetric(self, sigma=1.0, anti=False):
-        logging.info("making correlator {}symmetric".format("anti" if anti else ""))
+        corsym = self.determine_symmetry()
+        if not corsym:
+            logging.error("can not make symmetric, symmetry type undetermined")
+            raise RuntimeError("Called make symmetric but correlator unknown symmetry!!!")
+        anti = False
+        if (corsym == 'anti-symmetric'):
+            anti = True
+
+        logging.info("making correlator {}symmetric".format("anti-" if anti else "     "))
         logging.info("original times {}-{}".format( min(self.times), max(self.times) ) )
         asv = self.average_sub_vev()
         errors = self.jackknifed_errors()
@@ -437,3 +542,29 @@ class Correlator(configtimeobj.Cfgtimeobj):
         self.average = None
         self.sums = None
         self.vevdata = None
+        self.made_symmetric = True
+
+    def determine_symmetry(self, recheck=False):
+        if self.made_symmetric:
+            logging.error("Already made symmetric!!!")
+            raise RuntimeError("Called determine symmetry but correlator Already made symmetric!!!")
+
+
+        if self.symmetry:
+            logging.info("correlator symmetry is {}".format(self.symmetry))
+            if not recheck:
+                return self.symmetry
+
+        sym = self.check_symmetric_sigma()
+        asym = self.check_symmetric_sigma(anti=True)
+
+        if min(asym,sym) > 6.0:
+            logging.info("No symmetry found within 6sigma!!")
+        elif sym < asym:
+            self.symmetry = "symmetric"
+            logging.info("correlator found to be symmetric!")
+        else:
+            self.symmetry = "anti-symmetric"
+            logging.info("correlator found to be anti-symmetric!")
+
+        return self.symmetry

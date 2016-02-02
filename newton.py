@@ -33,8 +33,8 @@ def newton_sinh_for_m(i, j, ave_cor, guess, T):
         denominator = np.exp(-m*j) - np.exp(-1.0*m*(T-j))
         return numerator/denominator - ave_cor[i]/ave_cor[j]
 
-    logging.debug("newtons method to find sinh (T={}) emass starting guess "
-                  "{}, {},{}".format(T, guess, i, j))
+    logging.debug("newtons method to find sinh (T={}) emass starting guess"
+                  " {}, {},{}, fguess={}".format(T, guess, i, j, f(guess)))
     try:
         result = scipy.optimize.newton(f, guess)
     except RuntimeError:

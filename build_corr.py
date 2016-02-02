@@ -18,11 +18,13 @@ def corr_and_vev_from_pickle(corrfile, srcvevfile=None, snkvevfile=None, cfgs=No
     try:
         logging.info("reading file {} with pandas".format(corrfile))
         c = corr_and_vev_from_files_pandas(corrfile, srcvevfile, snkvevfile)
+        c.determine_symmetry()
         pickle.dump(c, open( picklefile, "wb" ) )
         return c
     except AttributeError:
         logging.info("Failed to read with pandas, reading normal")
         c = corr_and_vev_from_files(corrfile, srcvevfile, snkvevfile)
+        c.determine_symmetry()
         pickle.dump(c, open( picklefile, "wb" ) )
         return c
 
