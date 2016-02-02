@@ -63,11 +63,12 @@ class Cfgtimeobj(object):
 
         for cfg in self.configs:
             for time in self.times:
-                if type(self.data[cfg][time]) != self.datatype:
-                    logging.error(str(type(self.data[cfg][time])))
-                    print self.datatype
-                    print type(self.data[cfg][time])
-                    raise TypeError("Not all data is the same type")
+                # if type(self.data[cfg][time]) != self.datatype:
+                #     logging.error(str(type(self.data[cfg][time])))
+                #     print self.datatype
+                #     print type(self.data[cfg][time])
+                #     print self.data
+                #     raise TypeError("Not all data is the same type")
                 if self.data[cfg][time] is None:
                     raise ValueError("indexed value is none")
 
