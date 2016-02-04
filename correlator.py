@@ -10,12 +10,14 @@ class Correlator(configtimeobj.Cfgtimeobj):
     made_symmetric = False
     symmetry = None
     vevdata = None
-
+    period = None
     # op1 = None
     # op2 = None
 
     asv = None
     jkasv = None
+
+    emass_skip_times = []
 
     @classmethod
     def fromOpvalCTO(cls, opval1, opval2, dts=None):
@@ -208,17 +210,20 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
     def cosh_effective_mass(self, dt, fast=True, period=None):
         if fast: logging.warn("cosh emass computed fast method")
-        if period is None:
-            period = len(self.times)
+
+        T = self.period_check(period)
         asv = self.average_sub_vev()
         emass = {}
         for t in self.times[dt:-dt]:
+            if t in self.emass_skip_times:
+                emass[t] = 0.0
+                continue
             try:
                 guess = (1.0 / float(dt))*math.acosh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
                 if fast:
                     emass[t] = guess
                 else:
-                    emass[t] = newton.newton_cosh_for_m(t,t+dt,asv, guess,period)
+                    emass[t] = newton.newton_cosh_for_m(t,t+dt,asv, guess, T)
             except ValueError:
                 logging.debug("invalid argument to acosh, setting to zero")
                 emass[t] = float('NaN')
@@ -231,17 +236,19 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
     def sinh_effective_mass(self, dt, fast=True, period=None):
         if fast: logging.warn("sinh emass computed fast method")
-        if period is None:
-            period = len(self.times)
+        T = self.period_check(period)
         asv = self.average_sub_vev()
         emass = {}
         for t in self.times[dt:-dt]:
+            if t in self.emass_skip_times:
+                emass[t] = 0.0
+                continue
             try:
                 guess = (1.0 / float(dt))*math.asinh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
                 if fast:
                     emass[t] = guess
                 else:
-                    emass[t] = newton.newton_sinh_for_m(t,t+dt,asv, guess,period)
+                    emass[t] = newton.newton_sinh_for_m(t,t+dt,asv, guess, T)
             except ValueError:
                 logging.debug("invalid argument to asinh, setting to zero")
                 emass[t] = float('NaN')
@@ -258,6 +265,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
         emass = {}
         eamp = {}
         for t in self.times[dt:-dt]:
+            if t in self.emass_skip_times:
+                emass[t] = 0.0
+                continue
             try:
                 # emass[t] = (1.0 / float(dt))*math.acosh((asv[t+dt] + asv[t-dt])/(2.0*asv[t]))
                 # eamp[t] = asv[t] / (math.exp(emass[t]*t)+math.exp(emass[t]*(period-t)))
@@ -280,6 +290,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
         asvt = {t: asv[t+dt]-asv[t] for t in self.times[:-dt] }
         emass = {}
         for t in self.times[dt:-(dt+dt)]:
+            if t in self.emass_skip_times:
+                emass[t] = 0.0
+                continue
             try:
                 emass[t] = (1.0 / float(dt))*math.acosh((asvt[t+dt] + asvt[t-dt])/(2.0*asvt[t]))
             except ValueError:
@@ -301,6 +314,10 @@ class Correlator(configtimeobj.Cfgtimeobj):
             asvc = jkasv[cfg]
             emass = {}
             for t in self.times[:-dt]:
+                if t in self.emass_skip_times:
+                    emass[t] = 0.0
+                    continue
+
                 try:
                     emass[t] = (1.0 / float(dt)) * math.log(asvc[t] / asvc[t + dt])
                 except ValueError:
@@ -319,14 +336,18 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
     def cosh_effective_mass_errors(self, dt, fast=True, period=None):
         if fast: logging.warn("cosh emass computed fast method")
-        if period is None:
-            period = len(self.times)
+        period = self.period
+
         jkasv = self.jackknife_average_sub_vev()
         jkemass = {}
         for cfg in self.configs:
             asvc = jkasv[cfg]
             emass = {}
             for t in self.times[dt:-dt]:
+                if t in self.emass_skip_times:
+                    emass[t] = 0.0
+                    continue
+
                 try:
                     guess = (1.0 / float(dt))*math.acosh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
                     if fast:
@@ -347,22 +368,28 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[dt:-dt]}
 
+
+
     def sinh_effective_mass_errors(self, dt, fast=True, period=None):
         if fast: logging.warn("sinh emass computed fast method")
-        if period is None:
-            period = len(self.times)
+
+        T = self.period_check(period)
+
         jkasv = self.jackknife_average_sub_vev()
         jkemass = {}
         for cfg in self.configs:
             asvc = jkasv[cfg]
             emass = {}
             for t in self.times[dt:-dt]:
+                if t in self.emass_skip_times:
+                    emass[t] = 0.0
+                    continue
                 try:
                     guess = (1.0 / float(dt))*math.asinh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
                     if fast:
                         emass[t] = guess
                     else:
-                        emass[t] = newton.newton_sinh_for_m(t,t+dt,asvc, guess,period)
+                        emass[t] = newton.newton_sinh_for_m(t,t+dt,asvc, guess, T)
                 except ValueError:
                     #logging.debug("invalid argument to log, setting to zero")
                     emass[t] = 0.0
@@ -373,7 +400,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                     logging.error("index out of range")
             jkemass[cfg] = emass
         jkemassobj = configtimeobj.Cfgtimeobj.fromDataDict(jkemass)
-        effmass_dt = self.sinh_effective_mass(dt, fast=fast, period=period)
+        effmass_dt = self.sinh_effective_mass(dt, fast=fast, period=T)
         return {t: jackknife.errorbars(effmass_dt[t], jkemassobj.get(time=t))
                 for t in self.times[dt:-dt]}
 
@@ -387,6 +414,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
             emass = {}
             asvct = {t: asvc[t+dt] - asvc[t] for t in self.times[:-dt]}
             for t in self.times[dt:-(dt+1)]:
+                if t in self.emass_skip_times:
+                    emass[t] = 0.0
+                    continue
                 try:
                     emass[t] = (1.0 / float(dt))*math.acosh((asvc[t+dt] + asvc[t-dt])/(2.0*asvc[t]))
                 except ValueError:
@@ -470,6 +500,24 @@ class Correlator(configtimeobj.Cfgtimeobj):
         self.vevdata = None
         self.times = new_times
 
+    def period_check(self, period):
+        if period is None:
+            if self.period:
+                return self.period
+            else:
+                logging.warning("Period assmed to be number of times")
+                T = len(self.times)
+                if self.made_symmetric:
+                    T *= 2
+                return T
+        else:
+            if self.period is not None:
+                if period != self.period:
+                    logging.error("passed period does not agree with internal period")
+                    raise RuntimeError("passed period does not agree with internal period")
+        return period
+
+
     def check_symmetric(self, sigma=1.0, anti=False):
         antistring = "anti-" if anti else ""
         asymmetry = self.check_symmetric_sigma(anti=anti)
@@ -514,7 +562,12 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
         removed_data = []
         # new_times = [t for t in self.times if asv[t] - 2.0 * errors[t] > 0.0]
-        period = len(self.times)
+        if self.period is not None:
+            if self.period != len(self.times):
+                raise RuntimeError("trying to make symmetric but period does not match times!")
+        else:
+            self.period = len(self.times)
+        period = self.period
         seperations = list(range(1,period/2+1))
         biggest_change = 0.0
         for t in self.times:
