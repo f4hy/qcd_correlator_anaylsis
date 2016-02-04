@@ -36,11 +36,11 @@ def corr_and_vev_from_files(corrfile, srcvevfile=None, snkvevfile=None, cfgs=Non
     if(srcvevfile):
         vevdata_src = read.read_config_vev(srcvevfile)
     else:
-        vevdata_src = {cfg: 0.0 for cfg in corrdata}
+        vevdata_src = None
     if(snkvevfile):
         vevdata_snk = read.read_config_vev(snkvevfile)
     else:
-        vevdata_snk = {cfg: 0.0 for cfg in corrdata}
+        vevdata_snk = None
     return correlator.Correlator.fromDataDicts(corrdata, vevdata_src, vevdata_snk)
 
 

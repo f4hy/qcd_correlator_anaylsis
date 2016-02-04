@@ -47,6 +47,7 @@ def mergecors(cors, tmins, tmaxs):
 
     newdata = {}
     dummyvev = {}
+    boundries = set()
     for conf in configs:
         dummyvev[conf] = 0.0
         dataindex = 0
@@ -55,10 +56,16 @@ def mergecors(cors, tmins, tmaxs):
             for t in range(tmins[i], tmaxs[i]+1):
                 confdata[dataindex] = cors[i].get(config=conf, time=t)
                 dataindex +=1
+            boundries.add(dataindex-1)
+            boundries.add(dataindex)
         newdata[conf] = confdata
 
+    if cors[0].vev1 is None and cors[1].vev1 is None:
+        dummyvev = None
 
-    return correlator.Correlator.fromDataDicts(newdata, dummyvev, dummyvev)
+    c = correlator.Correlator.fromDataDicts(newdata, dummyvev, dummyvev)
+    c.emass_skip_times = boundries
+    return c
 
 
 def auto_fit(cors, options=None):
@@ -159,8 +166,9 @@ def plot(cors, funct, time_starts, time_ends, averages, stds, chi, options):
         corplots[i].errorbar(cors[i].times,
                              cors[i].average_sub_vev().values(),
                              yerr=cors[i].jackknifed_errors().values(), fmt='o')
+
         emass = cors[i].periodic_effective_mass(dt, fast=False, period=options.period)
-        emass_errs = cors[i].periodic_effective_mass_errors(dt).values()
+        emass_errs = cors[i].periodic_effective_mass_errors(dt, fast=False).values()
         emassplots[i].errorbar(emass.keys(), emass.values(),
                                yerr=emass_errs, fmt='o')
 
@@ -260,30 +268,39 @@ if __name__ == "__main__":
 
         cor = build_corr.corr_and_vev_from_pickle(corrfile, vev1, vev2)
 
+
         corsym = cor.determine_symmetry()
         if corsym is None:
             logging.error("called with symmetric but correlator isnt")
             raise RuntimeError("called with symmetric but correlator isnt")
         logging.info("correlator found to be {}".format(corsym))
         cor.make_symmetric()
+        cor.prune_invalid(delete=True, sigma=args.prune)
+
 
 
         if args.bin:
             cor = cor.reduce_to_bins(args.bin)
 
+
         cors.append(cor)
 
+    logging.info("fitting using start times {} and end times{} ".format( args.time_start, args.time_end))
 
     if not args.time_start:
         auto_fit(cors, options=args)
     else:
         multicor = mergecors(cors, args.time_start, args.time_end)
+        multicor.symmetric = True
+        multicor.symmetry = "symmetric" # hack
+        multicor.period = args.period
+
         funct = functions[args.function](Nt=args.period, ranges=zip(args.time_start, args.time_end))
 
         logging.info("starting fit with mergedcorrelator")
         averages, stds, chi = fit.fit(funct, multicor,
                                       min(multicor.times), max(multicor.times), bootstraps=args.bootstraps,
                                       filestub=args.output_stub, return_chi=True,
-                                      return_quality=False, options=args)
+                                      return_quality=False, writecor=False, options=args)
 
         plot(cors, funct, args.time_start, args.time_end, averages, stds, chi, args)

@@ -59,8 +59,12 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return cls(data, vev1, vev2)
 
     def __init__(self, datadict, vev1, vev2):
-        self.vev1 = vev.Vev(vev1)
-        self.vev2 = vev.Vev(vev2)
+        if vev1 is not None and vev2 is not None:
+            self.vev1 = vev.Vev(vev1)
+            self.vev2 = vev.Vev(vev2)
+        else:
+            self.vev1 = None
+            self.vev2 = None
         super(Correlator, self).__init__(datadict)
 
     @classmethod
@@ -72,36 +76,45 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def verify(self):
         logging.debug("verifying correlator")
 
-        assert self.configs == self.vev1.configs
-        assert self.configs == self.vev2.configs
+        if self.vev1 is not None:
+            assert self.configs == self.vev1.configs
+            assert self.configs == self.vev2.configs
 
         super(Correlator, self).verify()
 
     def writefullfile(self, filename, comp=False):
-        logging.debug("writting vevs to %s", filename + ".vev1,2")
-        self.vev1.writefullfile(filename + ".vev1")
-        self.vev2.writefullfile(filename + ".vev2")
+        if self.vev1 is not None:
+            logging.debug("writting vevs to %s", filename + ".vev1,2")
+            self.vev1.writefullfile(filename + ".vev1")
+            self.vev2.writefullfile(filename + ".vev2")
         logging.debug("writting correlator to %s", filename + ".cor")
         super(Correlator, self).writefullfile(filename + ".cor", comp=comp)
 
     def average_sub_vev(self):
         if not self.asv:
-            vev1 = self.vev1.average()
-            vev2 = self.vev2.average()
-            self.asv = {t: corr - vev1 * vev2
-                        for t, corr in self.average_over_configs().iteritems()}
+            if self.vev1 is None:
+                self.asv = self.average_over_configs()
+            else:
+                vev1 = self.vev1.average()
+                vev2 = self.vev2.average()
+                self.asv = {t: corr - vev1 * vev2
+                            for t, corr in self.average_over_configs().iteritems()}
         return self.asv
 
     def jackknife_average_sub_vev(self):
         if not self.jkasv:
+            if self.vev1 is None:
+                self.jkasv = self.jackknifed_averages()
+            else:
 
-            jkvev1 = self.vev1.jackknife()
-            jkvev2 = self.vev2.jackknife()
-            #corrjk = self.jackknifed_averages()
-            jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages())
-            self.jkasv = {c: {t: jk.get(config=c, time=t) - jkvev1[c] * jkvev2[c]
-                              for t in self.times}
-                          for c in self.configs}
+                jkvev1 = self.vev1.jackknife()
+                jkvev2 = self.vev2.jackknife()
+                #corrjk = self.jackknifed_averages()
+                jk = configtimeobj.Cfgtimeobj.fromDataDict(self.jackknifed_averages())
+                self.jkasv = {c: {t: jk.get(config=c, time=t) - jkvev1[c] * jkvev2[c]
+                                  for t in self.times}
+                              for c in self.configs}
+
         return self.jkasv
 
     def jackknifed_errors(self):
@@ -445,8 +458,11 @@ class Correlator(configtimeobj.Cfgtimeobj):
             reduced[i] = {t: math.fsum((self.get(config=c, time=t) for c in b)) / size
                           for t in self.times}
 
-            binedvev1[i] = math.fsum((self.vev1[c] for c in b)) / size
-            binedvev2[i] = math.fsum((self.vev2[c] for c in b)) / size
+            if self.vev1 is None:
+                binedvev1 = binnedvev2 = None
+            else:
+                binedvev1[i] = math.fsum((self.vev1[c] for c in b)) / size
+                binedvev2[i] = math.fsum((self.vev2[c] for c in b)) / size
 
         logging.info("Binned from %d, reduced to %d bins", self.numconfigs, len(reduced.keys()))
         # Make a new correlator for the bined data
@@ -621,3 +637,26 @@ class Correlator(configtimeobj.Cfgtimeobj):
             logging.info("correlator found to be anti-symmetric!")
 
         return self.symmetry
+
+    def multiply_by_value_dict(self):
+
+        heavy_correction_m_point86001 = {1: 4.30584, 2: 2.60719, 3: 2.09027, 4: 1.83352, 5: 1.67657,
+                                         6: 1.56929, 7: 1.49068, 8: 1.43028, 9: 1.38226, 10: 1.34307,
+                                         11: 1.31044, 12: 1.2828, 13: 1.25909, 14: 1.23851, 15: 1.22048,
+                                         16: 1.20455, 17: 1.19038, 18: 1.17769, 19: 1.16627, 20: 1.15593,
+                                         21: 1.14654, 22: 1.13797, 23: 1.13013, 24: 1.12293, 25: 1.11629,
+                                         26: 1.11016, 27: 1.10448, 28: 1.09921, 29: 1.0943, 30: 1.08973,
+                                         31: 1.08546, 32: 1.08147}
+
+        d = heavy_correction_m_point86001
+        logging.warn("Dividing correlator by {}!!!!!".format(d))
+
+        for c in self.configs:
+            for t in self.times:
+                self.data[c][t] = self.data[c][t]/d[t]
+
+        self.asv = None
+        self.jkasv = None
+        self.average = None
+        self.sums = None
+        self.vevdata = None

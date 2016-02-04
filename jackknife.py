@@ -1,5 +1,5 @@
 import math
-
+import numpy as np
 
 def jackknife_errors(data, datajk):
     """Compute the error bars from the data and the data with specific
@@ -18,6 +18,6 @@ def jackknife_errors(data, datajk):
 
 
 def errorbars(data, datajk):
-    total = math.fsum(((data - datajk[cfg]) ** 2) for cfg in datajk.keys())
+    total = math.fsum((np.array(datajk.values()) - data)**2)
     fm = float(len(datajk))
     return math.sqrt(((fm - 1.0) / (fm)) * total)

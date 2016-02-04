@@ -33,9 +33,8 @@ logging.addLevelName(ALWAYSINFO, "INFO")
 Nt = 128
 NBOOTSTRAPS = 1000
 
-
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False,
-        return_chi=False, options=None):
+        return_chi=False, writecor=True, options=None):
     if(tmax-tmin < len(fn.parameter_names)):
         raise InvalidFit("Can not fit to less points than parameters")
 
@@ -98,7 +97,8 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             logging.debug("Using uncorrlated")
             # cov = covariance_matrix(correlator, tmin, tmax+1)
             # cov = np.diag(np.diag(cov))
-            cov = np.diag([correlator.jackknifed_errors()[t]**2 for t in fitrange])
+            jke = correlator.jackknifed_errors()
+            cov = np.diag([jke[t]**2 for t in fitrange])
         elif options.debug_jkcov:
             cov = jk_covariance_matrix(correlator, tmin, tmax+1)
         else:
@@ -282,7 +282,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 strparams = ", ".join([str(p) for p in params])
                 bootfile.write("{}, {}\n".format(i, strparams))
 
-    if options.output_stub:
+    if options.output_stub and writecor:
         write_fitted_cor(fn, cor, tmin, tmax, options, boot_averages, errors=boot_std)
     if options.plot and bootstraps > 1:
         plot_fit(fn, cor, tmin, tmax, options, boot_averages, errors=boot_std)
@@ -409,8 +409,11 @@ def bootstrap(cor, filelog=None):
             bootfile.write(",".join([str(c) for c in newcfgs]))
             bootfile.write("\n")
     newcor = {i: cor.get(config=c) for i, c in enumerate(newcfgs)}
-    newvev1 = {i: cor.vev1[c] for i, c in enumerate(newcfgs)}
-    newvev2 = {i: cor.vev2[c] for i, c in enumerate(newcfgs)}
+    if cor.vev1 is None:
+        newvev1 = newvev2 = None
+    else:
+        newvev1 = {i: cor.vev1[c] for i, c in enumerate(newcfgs)}
+        newvev2 = {i: cor.vev2[c] for i, c in enumerate(newcfgs)}
     return correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2)
 
 
