@@ -166,10 +166,11 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
     for strap in bootstrap_ensamble(cor, N=bootstraps, filelog=filestub, jackknife=options.jackknife):
 
+        if options.jackknife:
+            bootstraps = len(cor.configs)
+
         pb = progress_bar.progress_bar(bootstraps)
 
-        if options.jackknife:
-            bootstraps = len(cor.configs) - 1
         attempted +=1
         pb.update(attempted)
         if options.reguess:
@@ -210,8 +211,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info('Uncorelated total fit: %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_params)})
     results.info('Correlated total fit:  %s', {n: p for n, p in zip(fn.parameter_names, original_ensamble_correlatedfit)})
 
+    factor = 1
+    if options.jackknife:
+        factor = np.sqrt(len(cor.configs)-1)
+
+
     boot_averages = np.mean(boot_params, 0)
-    boot_std = np.std(boot_params, 0)
+    boot_std = factor * np.std(boot_params, 0)
     boota = np.array(boot_params)
     upper_quartiles = [stats.scoreatpercentile(boota[:, i], 75) for i in range(len(boot_averages))]
     medians = [stats.scoreatpercentile(boota[:, i], 50) for i in range(len(boot_averages))]
@@ -274,8 +280,11 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
 
     if bootstraps > 1 and filestub:
-        results.info("writing each bootstrap parameter to {}.boot".format(filestub))
-        with open(filestub+".boot", 'w') as bootfile:
+        bootfilename = filestub+".boot"
+        if options.jackknife:
+            bootfilename = filestub+".jack"
+        results.info("writing each bootstrap parameter to {}".format(bootfilename))
+        with open(bootfilename, 'w') as bootfile:
             str_ensamble_params = ", ".join([str(p) for p in original_ensamble_correlatedfit])
             bootfile.write("#bootstrap, {}, \t ensamble mean: {}\n".format(", ".join(fn.parameter_names), str_ensamble_params))
             for i, params in enumerate(boot_params):
@@ -423,10 +432,13 @@ def jackknife_ensemble(cor):
     for cfg in cor.configs:
         newcfgs = [n for n in cor.configs if n != cfg]
         newcor = {i: cor.get(config=c) for i, c in enumerate(newcfgs)}
-        newvev1 = {i: cor.vev1[c] for i, c in enumerate(newcfgs)}
-        newvev2 = {i: cor.vev2[c] for i, c in enumerate(newcfgs)}
-        jkensambles.append(correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2))
-    return jkensambles
+        if cor.vev1 is None:
+            newvev1 = newvev2 = None
+        else:
+            newvev1 = {i: cor.vev1[c] for i, c in enumerate(newcfgs)}
+            newvev2 = {i: cor.vev2[c] for i, c in enumerate(newcfgs)}
+        # jkensambles.append()
+        yield correlator.Correlator.fromDataDicts(newcor, newvev1, newvev2)
 
 def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None, jackknife=False):
     if jackknife:
