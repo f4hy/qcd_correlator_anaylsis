@@ -212,6 +212,10 @@ if __name__ == "__main__":
     parser.add_argument("-te", "--time-end", type=int, action='append', required=False,
                             help="last time slice to fit, can be a list of times")
 
+    parser.add_argument("--debug_heavycorrection", action="store_true",
+                        help="make the correlator symmetric")
+
+
     function_list = inspect.getmembers(sys.modules["simul_fitfunctions"], inspect.isclass)
     functions = {name: f for name, f in function_list}
     parser.add_argument("-f", "--function", choices=functions.keys(),
@@ -277,6 +281,14 @@ if __name__ == "__main__":
         cor.make_symmetric()
         cor.prune_invalid(delete=True, sigma=args.prune)
 
+        if args.debug_heavycorrection:
+            import heavy_correction_dicts
+            beta = [b for b in ["4.17", "4.35", "4.47"] if b in args.inputfile[i]][0]
+            mtype = [b for b in ["m0", "m1", "m2", "m3", "m4", "m5"] if b in args.inputfile[i]][0]
+            print beta
+            print mtype
+            d = heavy_correction_dicts.get_heavy_correction(beta, mtype)
+            cor.multiply_by_value_dict(d)
 
 
         if args.bin:

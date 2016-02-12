@@ -638,17 +638,9 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
         return self.symmetry
 
-    def multiply_by_value_dict(self):
+    def multiply_by_value_dict(self, d):
 
-        heavy_correction_m_point86001 = {1: 4.30584, 2: 2.60719, 3: 2.09027, 4: 1.83352, 5: 1.67657,
-                                         6: 1.56929, 7: 1.49068, 8: 1.43028, 9: 1.38226, 10: 1.34307,
-                                         11: 1.31044, 12: 1.2828, 13: 1.25909, 14: 1.23851, 15: 1.22048,
-                                         16: 1.20455, 17: 1.19038, 18: 1.17769, 19: 1.16627, 20: 1.15593,
-                                         21: 1.14654, 22: 1.13797, 23: 1.13013, 24: 1.12293, 25: 1.11629,
-                                         26: 1.11016, 27: 1.10448, 28: 1.09921, 29: 1.0943, 30: 1.08973,
-                                         31: 1.08546, 32: 1.08147}
 
-        d = heavy_correction_m_point86001
         logging.warn("Dividing correlator by {}!!!!!".format(d))
 
         for c in self.configs:
