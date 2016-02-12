@@ -19,7 +19,7 @@ def newton_cosh_for_m(i, j, ave_cor, guess, T):
         try:
             result = scipy.optimize.newton(f, guess, tol=1.48e-6)
         except RuntimeError:
-            logging.error("Newtons failed to converge using standard for {},{}".format(i, j))
+            logging.error("Newtons failed to converge (T={}) using standard for {},{}".format(T, i, j))
             logging.error("Newtons failed, fallback is {}".format(guess))
             return guess
         logging.debug("newtons method converged to {} from {}".format(result, guess))
@@ -38,7 +38,7 @@ def newton_sinh_for_m(i, j, ave_cor, guess, T):
     try:
         result = scipy.optimize.newton(f, guess)
     except RuntimeError:
-        logging.error("Newtons failed to converge using standard for {},{}".format(i, j))
+        logging.error("Newtons failed to converge (T={}) using standard for {},{}".format(T, i, j))
         logging.error("Newtons failed, fallback is {}".format(guess))
         return guess
     logging.debug("newtons method converged to {}".format(result))
