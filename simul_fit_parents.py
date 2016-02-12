@@ -17,8 +17,12 @@ class sharedmass_amp(object):
         emass = cor.periodic_effective_mass(dt, fast=True, period=period)
         mass_guess = np.mean([emass[i[1]-dt-1] for i in self.indexes])
 
-        amp_guess1 = ave[self.indexes[0][1]]*np.exp(mass_guess*(self.ranges[0][1]))
-        amp_guess2 = ave[self.indexes[1][1]]*np.exp(mass_guess*(self.ranges[1][1]))
+        mid1 = (self.indexes[0][0]+self.indexes[0][1])/2
+        mid2 = (self.indexes[1][0]+self.indexes[1][1])/2
+        rmid1 = (self.ranges[0][0]+self.ranges[0][1])/2
+        rmid2 = (self.ranges[1][0]+self.ranges[1][1])/2
+        amp_guess1 = ave[mid1]*np.exp(mass_guess*(rmid1))
+        amp_guess2 = ave[mid2]*np.exp(mass_guess*(rmid2))
         return [mass_guess, amp_guess1, amp_guess2]
 
 
@@ -52,14 +56,14 @@ class shared_twice_mass_amp(object):
     def thisguess(self, cor, period, *args):
         dt = 1
         ave = cor.average_sub_vev()
-        emass = cor.periodic_effective_mass(dt, fast=True, period=period)
+        emass = cor.periodic_effective_mass(dt, fast=False, period=period)
         massa_guess = np.mean([emass[i[1]-dt-1] for i in self.indexes])
         massb_guess = massa_guess
 
-        amp_guess1a = ave[self.indexes[0][1]]*np.exp(massa_guess*(self.ranges[0][1]))
-        amp_guess2a = ave[self.indexes[1][1]]*np.exp(massa_guess*(self.ranges[1][1]))
-        amp_guess1b = ave[self.indexes[0][1]]*np.exp(massb_guess*(self.ranges[0][1]))
-        amp_guess2b = ave[self.indexes[1][1]]*np.exp(massb_guess*(self.ranges[1][1]))
+        amp_guess1a = ave[self.indexes[0][0]]*np.exp(massa_guess*(self.ranges[0][0]))
+        amp_guess2a = ave[self.indexes[1][0]]*np.exp(massa_guess*(self.ranges[1][0]))
+        amp_guess1b = ave[self.indexes[0][0]]*np.exp(massb_guess*(self.ranges[0][0]))
+        amp_guess2b = ave[self.indexes[1][0]]*np.exp(massb_guess*(self.ranges[1][0]))
         return [massa_guess, amp_guess1a, amp_guess2a, massb_guess, amp_guess1b, amp_guess2b]
 
 
