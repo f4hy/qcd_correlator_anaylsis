@@ -222,7 +222,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
 
     def cosh_effective_mass(self, dt, fast=True, period=None):
-        if fast: logging.warn("cosh emass computed fast method")
+        if fast: logging.info("cosh emass computed fast method")
 
         T = self.period_check(period)
         asv = self.average_sub_vev()
@@ -248,7 +248,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
         return emass
 
     def sinh_effective_mass(self, dt, fast=True, period=None):
-        if fast: logging.warn("sinh emass computed fast method")
+        if fast: logging.info("sinh emass computed fast method")
         T = self.period_check(period)
         asv = self.average_sub_vev()
         emass = {}
@@ -348,7 +348,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                 for t in self.times[:-dt]}
 
     def cosh_effective_mass_errors(self, dt, fast=True, period=None):
-        if fast: logging.warn("cosh emass computed fast method")
+        if fast: logging.info("cosh emass computed fast method")
         period = self.period
 
         jkasv = self.jackknife_average_sub_vev()
@@ -384,7 +384,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
 
     def sinh_effective_mass_errors(self, dt, fast=True, period=None):
-        if fast: logging.warn("sinh emass computed fast method")
+        if fast: logging.info("sinh emass computed fast method")
 
         T = self.period_check(period)
 
