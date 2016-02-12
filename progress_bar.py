@@ -9,11 +9,13 @@ class progress_bar(object):
 
     def update(self, progress):
         percent = 100*progress/self.total
-        sys.stdout.write('\r[{0}] {1}/{2}'.format('#'*(percent/10)+' '*(10-percent/10), progress, self.total))
-        sys.stdout.flush()
+        if self.total > 1:
+            sys.stdout.write('\r[{0}] {1}/{2}'.format('#'*(percent/10)+' '*(10-percent/10), progress, self.total))
+            sys.stdout.flush()
 
     def done(self):
-        sys.stdout.write('\r[{0}] {1}/{2} DONE!\n'.format('#'*10, self.total, self.total))
+        if self.total > 1:
+            sys.stdout.write('\r[{0}] {1}/{2} DONE!\n'.format('#'*10, self.total, self.total))
 
 
 def test():
