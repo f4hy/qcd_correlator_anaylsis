@@ -77,6 +77,17 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in fitrange]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
+    jk_original_cov = jk_covariance_matrix(cor, tmin, tmax+1)
+    original_cov = covariance_matrix(cor, tmin, tmax+1)
+
+    if options.debug_singlecov:
+        if options.debug_jkcov:
+            original_cov = jk_covariance_matrix(cor, tmin, tmax+1)
+        else:
+            original_cov = covariance_matrix(cor, tmin, tmax+1)
+        inv_original_cov = bestInverse(original_cov)
+
+
     if options.debugguess:
         #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
         if options.plot:
@@ -101,10 +112,15 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             cov = np.diag([jke[t]**2 for t in fitrange])
         elif options.debug_jkcov:
             cov = jk_covariance_matrix(correlator, tmin, tmax+1)
+        elif options.debug_singlecov:
+            cov = original_cov
         else:
             cov = covariance_matrix(correlator, tmin, tmax+1)
 
-        inv_cov = bestInverse(cov)
+        if options.debug_singlecov:
+            inv_cov = inv_original_cov
+        else:
+            inv_cov = bestInverse(cov)
 
 
         if options.debug_identcov:
@@ -598,14 +614,14 @@ class InversionError(Exception):
 
 def bestInverse(M):
     TOLERANCE = 1.E-5
-
     def invert_error(i):
         return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
 
     try:
         inv = linalg.inv(M)         # Will raise error if singular
     except np.linalg.linalg.LinAlgError:
-        raise InversionError("Could not invert within tolerance")
+        logging.error("linalg invert failed")
+        raise InversionError("linalg invert failed")
 
     error = invert_error(inv)
 
@@ -614,7 +630,8 @@ def bestInverse(M):
     except np.linalg.linalg.LinAlgError:
         logging.error("Not positive definite!")
         logging.exception("Could not invert Not positive definite!")
-        raise InversionError("Could not invert within tolerance")
+        logging.info("Invert error {}".format(error))
+        raise InversionError("Cholesky invert failed")
 
     else:
         chol_inv = CholeskyInverse(chol)
@@ -673,15 +690,17 @@ if __name__ == "__main__":
 
     if args.output_stub and args.skip_done:
         filename = args.output_stub+".boot"
+        if args.jackknife:
+            filename = args.output_stub+".jack"
         try:
             if os.stat(filename).st_size > 0:
                 logging.info(".boot file exists and not empty, skip fit")
+                logging.info("{}".format(filename))
                 exit(0)
             else:
                 logging.warn(".boot file exists but is empty!")
         except OSError as e:
             logging.info("running fit")
-
 
     if args.random:
         logging.info("Setting random seed to %s", args.random)
