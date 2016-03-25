@@ -249,15 +249,17 @@ if __name__ == "__main__":
 
     if args.output_stub and args.skip_done:
         filename = args.output_stub+".boot"
+        if args.jackknife:
+            filename = args.output_stub+".jack"
         try:
             if os.stat(filename).st_size > 0:
                 logging.info(".boot file exists and not empty, skip fit")
+                logging.info("{}".format(filename))
                 exit(0)
             else:
                 logging.warn(".boot file exists but is empty!")
         except OSError:
             logging.info("running fit")
-
 
     consistant_argument_counts(args)
 
@@ -299,20 +301,38 @@ if __name__ == "__main__":
 
     logging.info("fitting using start times {} and end times{} ".format( args.time_start, args.time_end))
 
+    DONE = False
+
     if not args.time_start:
         auto_fit(cors, options=args)
     else:
-        multicor = mergecors(cors, args.time_start, args.time_end)
-        multicor.symmetric = True
-        multicor.symmetry = "symmetric" # hack
-        multicor.period = args.period
+        while not DONE:
+            multicor = mergecors(cors, args.time_start, args.time_end)
+            multicor.symmetric = True
+            multicor.symmetry = "symmetric" # hack
+            multicor.period = args.period
 
-        funct = functions[args.function](Nt=args.period, ranges=zip(args.time_start, args.time_end))
+            funct = functions[args.function](Nt=args.period, ranges=zip(args.time_start, args.time_end))
 
-        logging.info("starting fit with mergedcorrelator")
-        averages, stds, chi = fit.fit(funct, multicor,
-                                      min(multicor.times), max(multicor.times), bootstraps=args.bootstraps,
-                                      filestub=args.output_stub, return_chi=True,
-                                      return_quality=False, writecor=False, options=args)
+            logging.info("starting fit with mergedcorrelator")
+            try:
+                averages, stds, chi = fit.fit(funct, multicor,
+                                              min(multicor.times), max(multicor.times), bootstraps=args.bootstraps,
+                                              filestub=args.output_stub, return_chi=True,
+                                              return_quality=False, writecor=False, options=args)
+            except fit.InversionError:
+                logging.error("Could not invert, trying smaller time")
 
-        plot(cors, funct, args.time_start, args.time_end, averages, stds, chi, args)
+                logging.error("old time ends {}".format(args.time_end))
+                args.time_end = [x-1 for x in args.time_end]
+                logging.error("new time ends {}".format(args.time_end))
+                for s,e in zip(args.time_start, args.time_end):
+                    print s,e,
+                    if e-s < 6:
+                        raise RuntimeError("Shrunk too far still cant invert")
+                continue
+
+            DONE = True
+
+            if args.plot:
+                plot(cors, funct, args.time_start, args.time_end, averages, stds, chi, args)
