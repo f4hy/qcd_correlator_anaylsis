@@ -87,6 +87,27 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             original_cov = covariance_matrix(cor, tmin, tmax+1)
         inv_original_cov = bestInverse(original_cov)
 
+    if options.debug_singleuncorrelated:
+        logging.debug("Using uncorrlated")
+        jke = cor.jackknifed_errors()
+        original_cov = np.diag([jke[t]**2 for t in fitrange])
+        inv_original_cov = bestInverse(original_cov)
+
+    if options.debug_outputcov:
+        def invert_error(M,i):
+            return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
+        def invert_error_one(M,i):
+            return np.sum(np.abs((np.dot(M, i) - np.identity(len(i)))))
+        def invert_error_two(M,i):
+            return np.sum(((np.dot(M, i) - np.identity(len(i))))**2)
+
+        logging.info("inv=\n{}".format(inv_original_cov))
+        logging.info("invert errors:")
+        logging.info("inv error max norm {}".format(invert_error(original_cov, inv_original_cov)))
+        logging.info("inv error one norm {}".format(invert_error_one(original_cov, inv_original_cov)))
+        logging.info("inv error two norm {}".format(invert_error_two(original_cov, inv_original_cov)))
+        exit(0)
+
 
     if options.debugguess:
         #return original_ensamble_params, [0.01, 0.01, 0.01, 0.01] # For testing initila guess in plot
@@ -117,7 +138,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         else:
             cov = covariance_matrix(correlator, tmin, tmax+1)
 
-        if options.debug_singlecov:
+        if options.debug_singlecov or options.debug_singleuncorrelated:
             inv_cov = inv_original_cov
         else:
             inv_cov = bestInverse(cov)
@@ -612,8 +633,8 @@ class InversionError(Exception):
         return repr(self.value)
 
 
-def bestInverse(M):
-    TOLERANCE = 1.E-5
+def bestInverse(M, print_error=False):
+    TOLERANCE = 1.E-7
     def invert_error(i):
         return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
 
@@ -637,6 +658,10 @@ def bestInverse(M):
         chol_inv = CholeskyInverse(chol)
         chol_error = invert_error(chol_inv)
 
+
+
+        if print_error:
+            logging.info("Inversions errors were inv={}, chol={}".format(error, chol_error))
         logging.debug("Inversions errors were inv={}, chol={}".format(error, chol_error))
 
         if chol_error > TOLERANCE and error > TOLERANCE:
@@ -772,16 +797,27 @@ if __name__ == "__main__":
         auto_fit(funct, cor, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
         exit()
 
-    try:
-        fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
-    except InvalidFit:
-        logging.error("Function does not have a fallback, fit failed")
-        exit(-1)
-        logging.error("Fit was invalid, trying backup")
-        if funct.fallback and not args.nofallback:
-            logging.error("function has a fallback {}".format(funct.fallback))
-            fallback = functions[funct.fallback](Nt=args.period)
-            fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
-        else:
-            logging.error("Function does not have a fallback, fit failed")
-            exit(-1)
+    DONE = False
+    while not DONE:
+        try:
+            fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
+        except (InversionError, InvalidFit):
+            logging.error("Could not invert, trying smaller time")
+            tmax = tmax - 1
+            if tmax-tmin < 4:
+                raise RuntimeError("Shrunk too far still cant invert")
+            continue
+
+
+        # except InvalidFit:
+        #     logging.error("Function does not have a fallback, fit failed")
+        #     exit(-1)
+        #     logging.error("Fit was invalid, trying backup")
+        #     if funct.fallback and not args.nofallback:
+        #         logging.error("function has a fallback {}".format(funct.fallback))
+        #         fallback = functions[funct.fallback](Nt=args.period)
+        #         fit(fallback, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
+        #     else:
+        #         logging.error("Function does not have a fallback, fit failed")
+        #         exit(-1)
+        DONE = True
