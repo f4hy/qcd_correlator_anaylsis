@@ -18,7 +18,7 @@ def make_histogram(data, options, output_stub, numbins=10, norm=False):
     print "norm", norm
 
     if options.logarithm:
-        data = Xnp.log(data)
+        data = np.log(data)
 
     fig = plt.figure()          # noqa
     if np.iscomplexobj(data):
@@ -50,6 +50,8 @@ def make_histogram(data, options, output_stub, numbins=10, norm=False):
     # if options.title:
     #     plt.suptitle(options.title)
 
+    if options.zero:
+        plt.xlim(0, plt.xlim()[1])
 
     if(output_stub):
         logging.info("Saving plot to {}".format(output_stub+".png"))
@@ -75,6 +77,8 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     parser.add_argument("--title", type=str, required=False,
                         help="title to add to plot")
+    parser.add_argument("-z", "--zero", action="store_true",
+                        help="include zero")
     parser.add_argument('datafile', metavar='f', type=str, help='file to plot')
     args = parser.parse_args()
 
@@ -87,8 +91,12 @@ if __name__ == "__main__":
     if args.time:
         #data = pandas_reader.read_single_time_paraenformat(args.datafile, args.time)
         data = pandas_reader.read_single_time_commaformat(args.datafile, args.time)
-    elif args.column:
-        data =plot_files.read_file(args.datafile)[[args.column]].values
+    elif args.column is not None:
+        data =plot_files.read_file(args.datafile, list(range(100)))[[args.column]].values
+        if all(np.isnan(data)):
+            logging.error("Column is all nan")
+            logging.shutdown()
+            exit(-1)
     else:
         with open(args.datafile) as dataf:
             txt = [line.strip(",") for line in dataf.read().split() if not line.startswith("#")]
