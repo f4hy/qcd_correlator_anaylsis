@@ -70,12 +70,12 @@ fitparser.add_argument("--debug_singlecov", action="store_true",
                        help="assume covariance matrix of the original ensemble")
 fitparser.add_argument("--debug_outputcov", action="store_true",
                        help="just print the covariacne matrix")
-fitparser.add_argument("--debug_jkcov", action="store_true",
-                       help="use jackknifed covariance matrix")
 fitparser.add_argument("--jackknife", action="store_true",
                        help="jackknife instead of bootstrap")
 fitparser.add_argument("--bin", type=int, required=False,
                        help="bin the correlators first")
+fitparser.add_argument("--tstride", type=int, default=1, required=False,
+                       help="skip every N points")
 fitparser.add_argument("--nofallback", action="store_true",
                        help="don't fall back, for testing")
 fitparser.add_argument("-a", "--alltimes", action="store_true", required=False,

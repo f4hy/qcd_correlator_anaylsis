@@ -489,9 +489,12 @@ class Correlator(configtimeobj.Cfgtimeobj):
 
     def writeemass(self, filename, dt=3, header=None, periodic=True):
         logging.info("Writing emass{} to {}".format(dt,filename))
+        print self.symmetry
+        period = self.period_check(None)
+        self.period = period
         if periodic:
-            emass = self.periodic_effective_mass(dt, fast=False)
-            error = self.periodic_effective_mass_errors(dt, fast=False)
+            emass = self.periodic_effective_mass(dt, fast=False, period=period)
+            error = self.periodic_effective_mass_errors(dt, fast=False, period=period)
         with open(filename, 'w') as outfile:
             if header:
                 outfile.write(header)

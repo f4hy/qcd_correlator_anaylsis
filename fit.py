@@ -34,7 +34,7 @@ Nt = 128
 NBOOTSTRAPS = 1000
 
 def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quality=False,
-        return_chi=False, writecor=True, options=None):
+        return_chi=False, writecor=True, tstride=1, options=None):
     if(tmax-tmin < len(fn.parameter_names)):
         raise InvalidFit("Can not fit to less points than parameters")
 
@@ -59,17 +59,6 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
-    #tmax = tmax+1  # I use ranges, so this needs to be offset by one
-    fitrange = range(tmin, tmax+1)
-    fun = lambda v, mx, my: (fn.formula(v, mx) - my)
-    initial_guess = fn.starting_guess(cor, options.period, tmax, tmin)
-    logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
-
-    x = np.array(fitrange)
-    dof = len(x) - len(fn.parameter_names)
-    orig_ave_cor = cor.average_sub_vev()
-    y = [orig_ave_cor[t] for t in fitrange]
-
     if fn.subtract:
         logging.debug("before suctracted correlator is:")
         logging.debug(cor.average_sub_vev())
@@ -80,20 +69,30 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         logging.debug("subtracted correlator is:")
         logging.debug(cor.average_sub_vev())
 
+
+    #tmax = tmax+1  # I use ranges, so this needs to be offset by one
+    fitrange = range(tmin, tmax+1, tstride)
+    fun = lambda v, mx, my: (fn.formula(v, mx) - my)
+    initial_guess = fn.starting_guess(cor, options.period, tmax, tmin)
+    logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
+
+
+
+    x = np.array(fitrange)
+    dof = len(x) - len(fn.parameter_names)
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in fitrange]
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
-    jk_original_cov = jk_covariance_matrix(cor, tmin, tmax+1)
-    original_cov = covariance_matrix(cor, tmin, tmax+1)
+
+    original_cov = covariance_matrix(cor, fitrange)
+
+
     logging.info("original ensemble full cov")
     matrix_stats(original_cov, None, cond=True)
 
     if options.debug_singlecov:
         logging.info("original ensemble single cov")
-        if options.debug_jkcov:
-            original_cov = jk_covariance_matrix(cor, tmin, tmax+1)
-        else:
-            original_cov = covariance_matrix(cor, tmin, tmax+1)
+        original_cov = covariance_matrix(cor, fitrange)
         inv_original_cov = bestInverse(original_cov, print_error=True)
         matrix_stats(original_cov, eval_file, cond=True)
 
@@ -139,16 +138,15 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
 
         if options.debug_uncorrelated:
             logging.debug("Using uncorrlated")
-            # cov = covariance_matrix(correlator, tmin, tmax+1)
-            # cov = np.diag(np.diag(cov))
-            jke = correlator.jackknifed_errors()
-            cov = np.diag([jke[t]**2 for t in fitrange])
-        elif options.debug_jkcov:
-            cov = jk_covariance_matrix(correlator, tmin, tmax+1)
+            fcov = covariance_matrix(correlator, fitrange)
+            cov = np.diag(np.diag(fcov))
+            # jke = correlator.jackknifed_errors()
+            # cov = np.diag([jke[t]**2 for t in fitrange])
+
         elif options.debug_singlecov:
             cov = original_cov
         else:
-            cov = covariance_matrix(correlator, tmin, tmax+1)
+            cov = covariance_matrix(correlator, fitrange)
 
         if options.debug_singlecov or options.debug_singleuncorrelated:
             inv_cov = inv_original_cov
@@ -306,7 +304,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     except Exception as e:
         pass
 
-    results.log(OUTPUT, "Full esamble fitted parameters t=%2d to %2d---------------------", tmin, tmax)
+    results.log(OUTPUT, "Full ensemble fitted parameters t={}---------------------".format(fitrange))
     results.log(OUTPUT, "Name      : Average,        STD,           (1st Quart, Median, 3rd Quart, IQR)")
     for name, ave, std, low, med, up, iqr in zip(fn.parameter_names, boot_averages, boot_std,
                                                  upper_quartiles, medians, lower_quartiles, inter_range):
@@ -504,21 +502,23 @@ def bootstrap_ensamble(cor, N=NBOOTSTRAPS, filelog=None, jackknife=False):
         logging.info("Not bootstraping!")
         return [cor]
 
-
-def covariance_matrix(cor, tmin, tmax):
+def covariance_matrix(cor, times):
     nm1 = (1.0 / (len(cor.configs) - 1))
     nm0 = 1.0 / (len(cor.configs))
-    mymat = np.zeros(((tmax - tmin), (tmax - tmin)))
+    N = len(times)
+    mymat = np.zeros((N, N))
     start_time = cor.times[0]
-    aoc = np.fromiter(cor.average_sub_vev().values(), np.float)[tmin-start_time:tmax-start_time]
+    asv = cor.average_sub_vev()
+    aoc = np.fromiter((asv[t] for t in times), np.float)
     for v in cor.data.values():
-        b = np.fromiter(v.values(), np.float)[tmin-start_time:tmax-start_time] - aoc
+        b = np.fromiter((v.values()[t] for t in times), np.float) - aoc
         # b = np.array(v.values()[tmin-start_time:tmax-start_time]).flat-aoc
         mymat += np.outer(b, b)
     return mymat*nm1*nm0
 
 
-def jk_covariance_matrix(cor, tmin, tmax):
+
+def jk_covariance_matrix(cor, times):
     """
     Here is the formula for the covariance matrix I am using:
     Let  < O >_J =  1/(N-1)  sum over bins, excluding Jth bin    O[bin]    for  N bins
@@ -528,12 +528,13 @@ def jk_covariance_matrix(cor, tmin, tmax):
     The last expression above is the jackknife estimate of the covariance.
 
     """
-    mymat = np.zeros(((tmax - tmin), (tmax - tmin)))
+
+    mymat = np.zeros((len(times), len(times)))
 
     N = len(cor.configs)
     logging.debug("making covariance matrix with jackknifes")
-    for t1 in range(tmin, tmax):
-        for t2 in range(tmin, tmax):
+    for t1 in times:
+        for t2 in times:
             index1 = t1-tmin
             index2 = t2-tmin
             O_i = [v[t1] for k,v in cor.jackknife_average_sub_vev().iteritems()]
@@ -541,6 +542,9 @@ def jk_covariance_matrix(cor, tmin, tmax):
             mean1 = np.mean(O_i)
             mean2 = np.mean(O_j)
             mymat[(index1,index2)] = (N-1) * np.mean( [(i-mean1)*(j-mean2)  for i,j in zip(O_i,O_j)])
+
+    if np.allclose(covariance_matrix(cor, times), mymat):
+        raise DeprecationWarning("jk_covariance was tested against my normal covariance and shown to be equal, DEPRECATED")
     return mymat
 
 
@@ -826,8 +830,8 @@ if __name__ == "__main__":
     DONE = False
     while not DONE:
         try:
-            fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, options=args)
-        except (InversionError, InvalidFit):
+            fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, tstride=args.tstride, options=args)
+        except (InversionError, InvalidFit) as e:
             logging.error("Could not invert, trying smaller time")
             tmax = tmax - 1
             if tmax-tmin < 4:
