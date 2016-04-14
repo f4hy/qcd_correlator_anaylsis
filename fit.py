@@ -42,6 +42,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         logging.info("Setting random seed to %s", options.random)
         np.random.seed(options.random)
 
+    eval_file = None
     results = logging.getLogger("results")
     if filestub and not results.handlers:
         filename = filestub+".stats"
@@ -49,6 +50,11 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         filehandler.level = OUTPUT
         results.addHandler(filehandler)
         logging.info("Writing output to file {}".format(filename))
+
+    if filestub:
+        eval_filename = filestub + ".evals"
+        eval_file = open(eval_filename, 'w')
+        eval_file.write("# evals seqeuntial\n")
 
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
@@ -79,19 +85,25 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
     jk_original_cov = jk_covariance_matrix(cor, tmin, tmax+1)
     original_cov = covariance_matrix(cor, tmin, tmax+1)
+    logging.info("original ensemble full cov")
+    matrix_stats(original_cov, None, cond=True)
 
     if options.debug_singlecov:
+        logging.info("original ensemble single cov")
         if options.debug_jkcov:
             original_cov = jk_covariance_matrix(cor, tmin, tmax+1)
         else:
             original_cov = covariance_matrix(cor, tmin, tmax+1)
-        inv_original_cov = bestInverse(original_cov)
+        inv_original_cov = bestInverse(original_cov, print_error=True)
+        matrix_stats(original_cov, eval_file, cond=True)
 
     if options.debug_singleuncorrelated:
         logging.debug("Using uncorrlated")
         jke = cor.jackknifed_errors()
         original_cov = np.diag([jke[t]**2 for t in fitrange])
-        inv_original_cov = bestInverse(original_cov)
+        inv_original_cov = bestInverse(original_cov, print_error=True)
+        matrix_stats(original_cov, eval_file, cond=True)
+
 
     if options.debug_outputcov:
         def invert_error(M,i):
@@ -143,6 +155,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         else:
             inv_cov = bestInverse(cov)
 
+        matrix_stats(cov, eval_file)
 
         if options.debug_identcov:
             results.log(30, "using identcov debug option")
@@ -633,6 +646,18 @@ class InversionError(Exception):
         return repr(self.value)
 
 
+def matrix_stats(M, output, cond=False):
+    evals, evecs = np.linalg.eigh(M)
+    if cond:
+        logging.info("l_min {}, l_max {}, cond {}".format(min(evals), max(evals), max(evals)/ min(evals)))
+    else:
+        logging.debug("l_min {}, l_max {}, cond {}".format(min(evals), max(evals), max(evals)/ min(evals)))
+    outstring = ", ".join(["{}".format(e) for e in evals])
+    if output:
+        output.write(outstring)
+        output.write("\n")
+    logging.debug("evals {}".format(outstring))
+
 def bestInverse(M, print_error=False):
     TOLERANCE = 1.E-7
     def invert_error(i):
@@ -667,6 +692,7 @@ def bestInverse(M, print_error=False):
         if chol_error > TOLERANCE and error > TOLERANCE:
             logging.error("Error, {}".format(error))
             logging.error("chol_Error, {}".format(chol_error))
+            matrix_stats(M, None)
             raise InversionError("Could not invert within tolerance")
 
         if chol_error < error:
