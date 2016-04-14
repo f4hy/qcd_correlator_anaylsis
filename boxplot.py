@@ -267,6 +267,8 @@ def boxplot_files():
     for index, (label, value) in enumerate(values):
         # for index, label in enumerate(labels):
         color = "b" if args.experiment else colors[index % len(colors)]
+        if args.colorwild:
+            color = args.color[index]
 
         if args.seperate:
             logging.info("Ploting staircase")
@@ -494,6 +496,8 @@ if __name__ == "__main__":
     #                     help='files to plot')
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
+    parser.add_argument("--colorwild", action='append', required=False, default=None,
+                        help="color code by wildcard")
     args = parser.parse_args()
 
 
@@ -519,6 +523,16 @@ if __name__ == "__main__":
 
     if args.color:
         args.color = get_colors(args.color)
+
+    if args.colorwild:
+        colors = 'brmckg'
+        plotcolors = [""]*len(args.files)
+        for c, w in enumerate(args.colorwild):
+            for i in range(len(args.files)):
+                if w in args.files[i]:
+                    plotcolors[i] = colors[c]
+        args.color = plotcolors
+
 
     if args.experiment and args.color is not None:
         logging.info("experiemental and single, so only ploting the singles against experiment")
