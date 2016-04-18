@@ -314,21 +314,20 @@ if __name__ == "__main__":
 
             funct = functions[args.function](Nt=args.period, ranges=zip(args.time_start, args.time_end))
 
+            funct.stride = args.tstride
+
             logging.info("starting fit with mergedcorrelator")
             try:
                 averages, stds, chi = fit.fit(funct, multicor,
                                               min(multicor.times), max(multicor.times), bootstraps=args.bootstraps,
                                               filestub=args.output_stub, return_chi=True,
-                                              return_quality=False, writecor=False, options=args)
-            except fit.InversionError:
-                logging.error("Could not invert, trying smaller time")
-
-                logging.error("old time ends {}".format(args.time_end))
-                args.time_end = [x-1 for x in args.time_end]
-                logging.error("new time ends {}".format(args.time_end))
+                                              return_quality=False, writecor=False, tstride=args.tstride, options=args)
+            except (fit.InversionError, InvalidFit):
+                logging.error("Could not invert, trying larger stride time {}->{}".format(args.tstride, args.tstride+1))
+                args.tstride += 1
+                funct.stride = args.tstride
                 for s,e in zip(args.time_start, args.time_end):
-                    print s,e,
-                    if e-s < 6:
+                    if (e-s)/args.tstride < 4:
                         raise RuntimeError("Shrunk too far still cant invert")
                 continue
 

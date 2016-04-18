@@ -10,6 +10,7 @@ class sharedmass_amp(object):
         self.bounds = [mass_bounds, amp_bounds, amp_bounds]
         self.parameter_names = ["mass", "amp1", "amp2"]
         self.subtract = False
+        self.stride = 1
 
     def thisguess(self, cor, period, *args):
         dt = 1
@@ -52,6 +53,7 @@ class shared_twice_mass_amp(object):
         self.bounds = [mass_bounds, amp_bounds, amp_bounds, mass_bounds, amp_bounds, amp_bounds]
         self.parameter_names = ["massa", "amp1a", "amp2a", "massb", "amp1b", "amp2b"]
         self.subtract = False
+        self.stride = 1
 
     def thisguess(self, cor, period, *args):
         dt = 1

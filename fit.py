@@ -76,15 +76,24 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     initial_guess = fn.starting_guess(cor, options.period, tmax, tmin)
     logging.info("Starting with initial_guess: {}".format(repr(initial_guess)))
 
-
+    try:
+        ranges = []
+        for i in fn.indexes:
+            ranges.extend(range(i[0], i[1]+1, tstride))
+        fitrange = ranges
+    except AttributeError:
+        logging.info("no indexes on fit function, using normal fitrange")
 
     x = np.array(fitrange)
     dof = len(x) - len(fn.parameter_names)
     orig_ave_cor = cor.average_sub_vev()
     y = [orig_ave_cor[t] for t in fitrange]
+    logging.info("x {}".format(x))
+    logging.info("y {}".format(y))
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
 
     original_cov = covariance_matrix(cor, fitrange)
+    inv_original_cov = bestInverse(original_cov, print_error=True)
 
 
     logging.info("original ensemble full cov")
@@ -663,7 +672,7 @@ def matrix_stats(M, output, cond=False):
     logging.debug("evals {}".format(outstring))
 
 def bestInverse(M, print_error=False):
-    TOLERANCE = 1.E-7
+    TOLERANCE = 1.5E-7
     def invert_error(i):
         return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
 
@@ -832,9 +841,9 @@ if __name__ == "__main__":
         try:
             fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, tstride=args.tstride, options=args)
         except (InversionError, InvalidFit) as e:
-            logging.error("Could not invert, trying smaller time")
-            tmax = tmax - 1
-            if tmax-tmin < 4:
+            logging.error("Could not invert, trying largers stride")
+            args.tstride += 1
+            if (tmax-tmin)/args.tstride < 4:
                 raise RuntimeError("Shrunk too far still cant invert")
             continue
 

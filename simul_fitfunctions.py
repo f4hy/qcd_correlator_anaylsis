@@ -17,7 +17,7 @@ class twocor_periodic_twoexp(sfp.shared_twice_mass_amp, fp.periodic, sfp.multira
         ys = []
         for i in range(len(self.ranges)):
             r = self.ranges[i]
-            tx = np.arange(r[0], r[1]+1, 1)
+            tx = np.arange(r[0], r[1]+1, self.stride)
             ys.append( (v[1+i] * (np.exp((-1.0) * v[0] * tx)*(1.0 + v[4+i]*np.exp((-1.0)*(v[3]**2)*tx))))
                     + (v[1+i] *(np.exp(v[0] * (tx-(self.Nt)))*(1.0 + v[4+i]*np.exp((v[3]**2) * (tx-(self.Nt))))))
             )
@@ -39,7 +39,7 @@ class twocor_periodic_exp(sfp.sharedmass_amp, fp.periodic, sfp.multirange):
         ys = []
         for i in range(len(self.ranges)):
             r = self.ranges[i]
-            tx = np.arange(r[0], r[1]+1, 1)
+            tx = np.arange(r[0], r[1]+1, self.stride)
             ys.append(v[1+i] * (np.exp((-1.0) * v[0] * tx) + np.exp(v[0] * (tx-(self.Nt)))))
             # (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
         return np.concatenate(ys)
@@ -58,7 +58,7 @@ class twocor_antiperiodic_exp(sfp.sharedmass_amp, fp.periodic, sfp.multirange):
         ys = []
         for i in range(len(self.ranges)):
             r = self.ranges[i]
-            tx = np.arange(r[0], r[1]+1, 1)
+            tx = np.arange(r[0], r[1]+1, self.stride)
             ys.append(v[1+i] * (np.exp((-1.0) * v[0] * tx) - np.exp(v[0] * (tx-(self.Nt)))))
             # (v[1] * (np.exp((-1.0) * v[0] * x) + np.exp(v[0] * (x-(self.Nt)))))
         return np.concatenate(ys)
@@ -77,10 +77,10 @@ class twocor_antiperiodic_periodic_exp(sfp.sharedmass_amp, fp.periodic, sfp.mult
         ys = []
 
         r = self.ranges[0]
-        tx = np.arange(r[0], r[1]+1, 1)
+        tx = np.arange(r[0], r[1]+1, self.stride)
         ys.append(v[1] * (np.exp((-1.0) * v[0] * tx) - np.exp(v[0] * (tx-(self.Nt)))))
         r = self.ranges[1]
-        tx = np.arange(r[0], r[1]+1, 1)
+        tx = np.arange(r[0], r[1]+1, self.stride)
         ys.append(v[2] * (np.exp((-1.0) * v[0] * tx) + np.exp(v[0] * (tx-(self.Nt)))))
 
         return np.concatenate(ys)
