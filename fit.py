@@ -841,6 +841,7 @@ if __name__ == "__main__":
         try:
             fit(funct, cor, tmin, tmax, filestub=args.output_stub, bootstraps=args.bootstraps, tstride=args.tstride, options=args)
         except (InversionError, InvalidFit) as e:
+            logging.error("Could not invert, {}".format(e))
             logging.error("Could not invert, trying largers stride")
             args.tstride += 1
             if (tmax-tmin)/args.tstride < 4:

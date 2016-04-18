@@ -274,6 +274,8 @@ if __name__ == "__main__":
 
         cor = build_corr.corr_and_vev_from_pickle(corrfile, vev1, vev2)
 
+        if args.bin:
+            cor = cor.reduce_to_bins(args.bin)
 
         corsym = cor.determine_symmetry()
         if corsym is None:
@@ -293,8 +295,6 @@ if __name__ == "__main__":
             cor.multiply_by_value_dict(d)
 
 
-        if args.bin:
-            cor = cor.reduce_to_bins(args.bin)
 
 
         cors.append(cor)
@@ -322,8 +322,9 @@ if __name__ == "__main__":
                                               min(multicor.times), max(multicor.times), bootstraps=args.bootstraps,
                                               filestub=args.output_stub, return_chi=True,
                                               return_quality=False, writecor=False, tstride=args.tstride, options=args)
-            except (fit.InversionError, InvalidFit):
-                logging.error("Could not invert, trying larger stride time {}->{}".format(args.tstride, args.tstride+1))
+            except (fit.InversionError, InvalidFit) as e:
+                logging.error("Could not invert, {}".format(e))
+                logging.error("Trying larger stride time {}->{}".format(args.tstride, args.tstride+1))
                 args.tstride += 1
                 funct.stride = args.tstride
                 for s,e in zip(args.time_start, args.time_end):
