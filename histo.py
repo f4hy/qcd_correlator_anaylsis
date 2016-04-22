@@ -17,8 +17,11 @@ def make_histogram(data, options, output_stub, numbins=10, norm=False):
 
     print "norm", norm
 
-    if options.logarithm:
-        data = np.log(data)
+    try:
+        if options.logarithm:
+            data = np.log(data)
+    except AttributeError:
+        pass
 
     fig = plt.figure()          # noqa
     if np.iscomplexobj(data):
@@ -49,9 +52,11 @@ def make_histogram(data, options, output_stub, numbins=10, norm=False):
 
     # if options.title:
     #     plt.suptitle(options.title)
-
-    if options.zero:
-        plt.xlim(0, plt.xlim()[1])
+    try:
+        if options.zero:
+            plt.xlim(min(0,min(data)[0]), plt.xlim()[1])
+    except AttributeError:
+        pass
 
     if(output_stub):
         logging.info("Saving plot to {}".format(output_stub+".png"))
