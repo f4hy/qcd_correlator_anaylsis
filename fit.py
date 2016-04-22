@@ -93,7 +93,7 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
 
     original_cov = covariance_matrix(cor, fitrange)
-    inv_original_cov = bestInverse(original_cov, print_error=True)
+    inv_original_cov = bestInverse(original_cov, print_error=True, ignore_error=options.debug_ignoreinverterror)
 
 
     logging.info("original ensemble full cov")
@@ -102,14 +102,14 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     if options.debug_singlecov:
         logging.info("original ensemble single cov")
         original_cov = covariance_matrix(cor, fitrange)
-        inv_original_cov = bestInverse(original_cov, print_error=True)
+        inv_original_cov = bestInverse(original_cov, print_error=True, ignore_error=options.debug_ignoreinverterror)
         matrix_stats(original_cov, eval_file, cond=True)
 
     if options.debug_singleuncorrelated:
         logging.debug("Using uncorrlated")
         jke = cor.jackknifed_errors()
         original_cov = np.diag([jke[t]**2 for t in fitrange])
-        inv_original_cov = bestInverse(original_cov, print_error=True)
+        inv_original_cov = bestInverse(original_cov, print_error=True, ignore_error=options.debug_ignoreinverterror)
         matrix_stats(original_cov, eval_file, cond=True)
 
 
@@ -157,10 +157,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         else:
             cov = covariance_matrix(correlator, fitrange)
 
+        matrix_stats(cov, eval_file)
+
+
         if options.debug_singlecov or options.debug_singleuncorrelated:
             inv_cov = inv_original_cov
         else:
-            inv_cov = bestInverse(cov)
+            inv_cov = bestInverse(cov, ignore_error=options.debug_ignoreinverterror)
 
         matrix_stats(cov, eval_file)
 
@@ -234,7 +237,13 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
             newguess = fn.starting_guess(strap, options.period, tmax, tmin)
         else:
             newguess = initial_guess
-        fitted_params, fitted_chisqr = cov_fit(strap, newguess)
+        try:
+            fitted_params, fitted_chisqr = cov_fit(strap, newguess)
+        except (InversionError, InvalidFit) as e:
+            if options.debug_ignoreinverterror:
+                fitted_params = None
+            else:
+                raise e
         if fitted_params is not None:
             boot_params.append(fitted_params)
             boot_chisqr.append(fitted_chisqr)
@@ -245,12 +254,12 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
                 plot_fit(fn, strap, tmin, tmax, options, fitted_params, postfix=".bootstrap{}".format(attempted))
         else:
             logging.error("bootstrap failed to converge!")
-            raise InvalidFit("one bootstrap failed")
+            #raise InvalidFit("one bootstrap failed")
             #raw_input("test")
             failcount+=1
             logging.debug("fails:{} attempts:{}, ratio:{}".format(failcount, attempted, failcount/float(attempted)))
-            if failcount/float(attempted) > 0.15 and attempted > 40:
-                raise InvalidFit("more than 20% of boostraps failed to converge")
+            # if failcount/float(attempted) > 0.15 and attempted > 40:
+            #     raise InvalidFit("more than 20% of boostraps failed to converge")
         del strap
     pb.done()
 
@@ -671,8 +680,11 @@ def matrix_stats(M, output, cond=False):
         output.write("\n")
     logging.debug("evals {}".format(outstring))
 
-def bestInverse(M, print_error=False):
+def bestInverse(M, print_error=False, ignore_error=False):
     TOLERANCE = 1.5E-7
+    if ignore_error:
+        TOLERANCE = 100.0
+
     def invert_error(i):
         return np.max(np.abs((np.dot(M, i) - np.identity(len(i)))))
 

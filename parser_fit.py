@@ -70,6 +70,10 @@ fitparser.add_argument("--debug_singlecov", action="store_true",
                        help="assume covariance matrix of the original ensemble")
 fitparser.add_argument("--debug_outputcov", action="store_true",
                        help="just print the covariacne matrix")
+fitparser.add_argument("--debug_noretry", action="store_true",
+                       help="do not retry fit ")
+fitparser.add_argument("--debug_ignoreinverterror", action="store_true",
+                       help="do not fail if invert fails")
 fitparser.add_argument("--jackknife", action="store_true",
                        help="jackknife instead of bootstrap")
 fitparser.add_argument("--bin", type=int, required=False,

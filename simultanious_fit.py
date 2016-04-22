@@ -324,6 +324,8 @@ if __name__ == "__main__":
                                               return_quality=False, writecor=False, tstride=args.tstride, options=args)
             except (fit.InversionError, InvalidFit) as e:
                 logging.error("Could not invert, {}".format(e))
+                if args.debug_noretry:
+                    exit(-1)
                 logging.error("Trying larger stride time {}->{}".format(args.tstride, args.tstride+1))
                 args.tstride += 1
                 funct.stride = args.tstride
