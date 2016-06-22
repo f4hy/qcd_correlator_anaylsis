@@ -56,6 +56,11 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
         eval_file = open(eval_filename, 'w')
         eval_file.write("# evals seqeuntial\n")
 
+        tstride_filename = filestub + ".tstride"
+        tstride_file = open(tstride_filename, 'w')
+        tstride_file.write("{}\n".format(tstride))
+
+
     results.info("Fitting data to {} from t={} to t={} using {} bootstrap samples".format(
         fn.description, tmin, tmax, bootstraps))
 
@@ -93,7 +98,9 @@ def fit(fn, cor, tmin, tmax, filestub=None, bootstraps=NBOOTSTRAPS, return_quali
     original_ensamble_params, success = leastsq(fun, initial_guess, args=(x, y), maxfev=10000)
 
     original_cov = covariance_matrix(cor, fitrange)
-    inv_original_cov = bestInverse(original_cov, print_error=True, ignore_error=options.debug_ignoreinverterror)
+    logging.info("inverting original cov")
+    igonre_error_original_cov = options.debug_ignoreinverterror or options.debug_uncorrelated
+    inv_original_cov = bestInverse(original_cov, print_error=True, ignore_error=igonre_error_original_cov)
 
 
     logging.info("original ensemble full cov")
@@ -856,7 +863,12 @@ if __name__ == "__main__":
             logging.error("Could not invert, {}".format(e))
             logging.error("Could not invert, trying largers stride")
             args.tstride += 1
-            if (tmax-tmin)/args.tstride < 4:
+
+            if args.tstride > 2:
+                args.tstride = 1
+                tmax = tmax - 1
+
+            if (tmax-tmin+args.tstride)/args.tstride < 4:
                 raise RuntimeError("Shrunk too far still cant invert")
             continue
 

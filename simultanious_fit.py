@@ -329,6 +329,14 @@ if __name__ == "__main__":
                 logging.error("Trying larger stride time {}->{}".format(args.tstride, args.tstride+1))
                 args.tstride += 1
                 funct.stride = args.tstride
+
+                if args.tstride > 3:
+                    args.time_start = [t+1 for t in args.time_start]
+                    args.time_end = [t-1 for t in args.time_end]
+                    args.tstride = 1
+                    logging.info("new tstarts: {} new tends: {}".format(args.time_start, args.time_end))
+                    continue
+
                 for s,e in zip(args.time_start, args.time_end):
                     if (e-s)/args.tstride < 4:
                         raise RuntimeError("Shrunk too far still cant invert")

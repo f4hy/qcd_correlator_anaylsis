@@ -2,7 +2,7 @@ import numpy as np
 from iminuit import Minuit
 import logging
 
-mass_bounds = (0.005, 5.0)
+mass_bounds = (0.00001, 5.0)
 amp_bounds = (-1.0e5, 1.0e5)
 const_bounds = (-5.0, 1.0e8)
 
@@ -90,7 +90,7 @@ class mass_amp(object):
         self.inv_cov = invmatrix
         self.times = times
         dof = len(data)-len(guess)
-        m = Minuit(self.my_cov_fun, mass=guess[0], error_mass=guess[0]*0.1,
+        m = Minuit(self.my_cov_fun, mass=guess[0], error_mass=guess[0]*0.1, limit_mass=mass_bounds,
                    amp=guess[1], error_amp=guess[1]*0.1,
                    print_level=0, errordef=dof, pedantic=True)
         return m
