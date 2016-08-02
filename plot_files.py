@@ -221,8 +221,13 @@ def add_fit_info(filename, ax=None):
             emassfit = []
             dt = 3
             for i in range(len(fitpoints))[:-dt]:
-                emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
-                emassfit.append(emass)
+                try:
+                    #emass = (1.0 / float(dt)) * np.log(fitpoints[i] / fitpoints[i + dt])
+                    emass = (1.0 / float(dt)) * math.acosh((fitpoints[i+dt] + fitpoints[i-dt])/(2.0*fitpoints[i]))
+                    emassfit.append(emass)
+                except:
+                    emassfit.append(np.nan)
+
             if args.fit_errors:
                 ax.plot(xpoints[:-dt], np.full_like(xpoints[:-dt],mass+masserror), ls="--", color="k", lw=2, zorder=50)
                 ax.plot(xpoints[:-dt], np.full_like(xpoints[:-dt],mass-masserror), ls="--", color="k", lw=2, zorder=50)
@@ -344,7 +349,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             time_offset = df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
 
-        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=8, elinewidth=3, capsize=8,
+        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=1, elinewidth=2, capsize=2,
                             capthick=2, mec=color, aa=True)
         if args.rel_error:
             plotsettings["elinewidth"] = 0
@@ -426,7 +431,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
     f.canvas.set_window_title(files[0])
 
     if seperate:
-        # plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
+        plt.tight_layout(pad=0.0, h_pad=0.0, w_pad=0.0)
         if has_colorbar:
             f.subplots_adjust(right=0.95)
             cbar_ax = f.add_axes([0.96, 0.05, 0.01, 0.9])
