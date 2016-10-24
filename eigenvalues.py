@@ -198,7 +198,7 @@ def read_configdir_timeorlevel_evalues(dirname, N=-1, store=True, recall=True):
 
         data[config] = configdata
     if(store):
-        pickle.dump(data, open(dirname + "save.p", "wb"))
+        pickle.dump(data, open(dirname + "save.p", "wb") , protocol=pickle.HIGHEST_PROTOCOL)
         logging.info("stored data as %s save.p", dirname)
     return data
 
