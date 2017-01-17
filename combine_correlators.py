@@ -78,7 +78,7 @@ def combine_files(files, options):
     formated.columns = ["#time", "correlator"]
     outputtext = formated.to_csv(None, sep=",", index=False, header=False, index_label="#time").replace(",", ", ")
     if options.output_stub:
-        outfile = "{}.dat".format(options.output_stub)
+        outfile = "{}".format(options.output_stub)
         with open(outfile, 'w') as ofile:
             ofile.write(outputtext)
             logging.info("wrote ave cor to {}".format(outfile))
