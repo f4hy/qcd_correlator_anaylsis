@@ -350,6 +350,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
     def cosh_effective_mass_errors(self, dt, fast=True, period=None):
         if fast: logging.info("cosh emass computed fast method")
         period = self.period
+        T = self.period_check(period)
 
         jkasv = self.jackknife_average_sub_vev()
         jkemass = {}
@@ -366,7 +367,7 @@ class Correlator(configtimeobj.Cfgtimeobj):
                     if fast:
                         emass[t] = guess
                     else:
-                        emass[t] = newton.newton_cosh_for_m(t,t+dt,asvc, guess,period)
+                        emass[t] = newton.newton_cosh_for_m(t,t+dt,asvc, guess,T)
                 except ValueError:
                     #logging.debug("invalid argument to log, setting to zero")
                     emass[t] = 0.0
