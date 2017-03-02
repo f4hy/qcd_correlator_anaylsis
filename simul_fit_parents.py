@@ -42,7 +42,7 @@ class sharedmass_amp(object):
         m = Minuit(self.my_cov_fun, mass=guess[0], error_mass=guess[0]*0.1,
                    amp1=guess[1], error_amp1=guess[1]*0.1,
                    amp2=guess[2], error_amp2=guess[2]*0.1,
-                   errordef=dof,
+                   errordef=1.0,
                    print_level=0, pedantic=True)
         return m
 
@@ -87,7 +87,7 @@ class shared_twice_mass_amp(object):
                    massb=guess[0], error_massb=guess[0]*0.1,
                    amp1b=guess[1], error_amp1b=guess[1]*0.1,
                    amp2b=guess[2], error_amp2b=guess[2]*0.1,
-                   errordef=dof,
+                   errordef=1.0,
                    print_level=0, pedantic=True)
         return m
 

@@ -92,7 +92,7 @@ class mass_amp(object):
         dof = len(data)-len(guess)
         m = Minuit(self.my_cov_fun, mass=guess[0], error_mass=guess[0]*0.1, limit_mass=mass_bounds,
                    amp=guess[1], error_amp=guess[1]*0.1,
-                   print_level=0, errordef=dof, pedantic=True)
+                   print_level=0, errordef=1.0, pedantic=True)
         return m
 
 

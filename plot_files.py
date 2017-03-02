@@ -349,7 +349,7 @@ def plot_files(files, output_stub=None, yrange=None, xrang=None, cols=-1, fit=Fa
             time_offset = df.time.values
         logging.debug("%s %s %s", df.time.values, df.correlator.values, df.error.values)
 
-        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=1, elinewidth=2, capsize=2,
+        plotsettings = dict(linestyle="none", c=color, marker=mark, label=label, ms=5, elinewidth=2, capsize=5,
                             capthick=2, mec=color, aa=True)
         if args.rel_error:
             plotsettings["elinewidth"] = 0
@@ -520,8 +520,8 @@ if __name__ == "__main__":
                         help="stub of name to write output to")
     # parser.add_argument('files', metavar='f', type=argparse.FileType('r'), nargs='+',
     #                     help='files to plot')
-    parser.add_argument("--emass", type=float, default=None, required=False,
-                        help="plot emasses not correlators")
+    parser.add_argument("--emass", metavar="Nt", type=float, default=None, required=False,
+                        help="plot emasses not correlators, requires Nt the period in time")
     parser.add_argument("--scalefactor", type=float, default=None, required=False,
                         help="multiply by a scale factor")
     parser.add_argument("--symmetric", action="store_true",
@@ -529,7 +529,7 @@ if __name__ == "__main__":
     parser.add_argument("--rel_error", action="store_true",
                         help="plot the relative error instead")
     parser.add_argument("--eamp", action="store_true",
-                        help="plot emasses not correlators")
+                        help="plot eamps not correlators")
     parser.add_argument('files', metavar='f', type=str, nargs='+',
                         help='files to plot')
     parser.add_argument("--aspect", type=float, default=1.0, required=False,
