@@ -1,3 +1,8 @@
+import math
+import numpy as np
+from scipy import integrate
+import sys
+
 def get_heavyq_mass(beta, heavytype):
     if heavytype is None:
         return None
@@ -207,6 +212,37 @@ heavy_correction[0.210476] = {1:1.17692, 2:1.0554, 3:1.02167,
                               54:1., 55:1., 56:1., 57:1., 58:1., 59:1., 60:1., 61:1., 62:1., 63:1.,
                               64:1.}
 
-def get_heavy_correction(beta, heavytype):
 
-    return heavy_correction[get_heavyq_mass(beta, heavytype)]
+def get_heavy_correction(beta, heavytype):
+    m = get_heavyq_mass(beta, heavytype)
+
+    def prop(p):
+        W = 1-np.cos(p)
+        Weplus = W + 1./2 + np.sqrt(W + 1./4)
+        Wemins = W + 1./2 - np.sqrt(W + 1./4)
+        num = np.sin(p) * np.sin(p*t) + m*(1-Wemins) * np.cos(p*t)
+        #num = 2*np.sin(p) * np.sin(p*t) #+ m*(1-Wemins) * np.cos(p*t)
+        den = - (1-Weplus) + m**2*(1-Wemins)
+        return num/den /(2*np.pi)
+
+    Q = ((1+m**2)/(1-m**2))**2
+    T  = (1-Q)/2 + np.sqrt(3*Q+Q**2)/2
+    W0 = (1+Q)/2 - np.sqrt(3*Q+Q**2)/2
+    m1 = np.log(T+np.sqrt(T**2-1))
+    K = 2.0/((1-m**2)*(1.0+np.sqrt(Q/(1.0+4*W0))))
+
+    Nt = 65
+    it = np.arange(Nt)
+    Ct = np.empty(Nt)
+    R  = {}
+    minDouble  = math.ldexp(1.0, -1022)
+    smallEpsilon  = math.ldexp(1.0, -1074)
+    epsilon  = math.ldexp(1.0, -53)
+    for t in it:
+        Ct[t], err = integrate.quad(prop,-np.pi,np.pi)
+        if Ct[t] < err or (K*np.exp(-m1*t)) < err:
+            R[t] = 1.
+        else:
+            R[t] = Ct[t] / (K*np.exp(-m1*t))
+
+    return R
