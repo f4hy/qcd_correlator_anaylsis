@@ -7,6 +7,8 @@ import pandas as pd
 import math
 import re
 
+class InconsistentData(Exception):
+    pass
 
 def compare_boots(options):
     """ Compare two data files to find the differences """
@@ -39,6 +41,9 @@ def compare_boots(options):
 
     if any(stats["sigma1"] > 1.0):
         logging.error("not within one sigma")
+        if options.require_match:
+            logging.error("They were not within one sigma!")
+            raise InconsistentData
     else:
         logging.info("within one sigma")
 
@@ -46,6 +51,7 @@ def compare_boots(options):
         logging.info("file2 has larger errors")
         if options.force_improvement:
             logging.error("file2 is not better than file1")
+            raise InconsistentData
     elif all(df1.std() > df2.std()):
         logging.info("file1 has larger errors")
     else:
@@ -61,6 +67,10 @@ if __name__ == "__main__":
                         help="increase output verbosity")
     parser.add_argument("--force_improvement", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("--require_match", action="store_true",
+                        help="require_matching otherwise exit")
+    parser.add_argument("-s", "--sigma", type=float, default=1.0,
+                        help="how many sigma to consider a match")
     parser.add_argument("-o", "--output_stub", type=str, required=False,
                         help="stub of name to write output to")
     parser.add_argument('files', metavar='f', type=str, nargs='+',
@@ -88,5 +98,10 @@ if __name__ == "__main__":
         logfilehandler.setFormatter(formatter)
         root.addHandler(logfilehandler)
 
-
-    compare_boots(args)
+    try:
+        compare_boots(args)
+    except InconsistentData:
+        logging.error("Found inconsistant data for {}".format(" ".join(args.files)))
+        logging.error("meld {}".format(" ".join([f.replace(".boot", ".stats") for f in args.files])))
+        if args.output_stub is None:
+            exit(-1)
